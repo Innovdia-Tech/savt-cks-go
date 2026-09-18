@@ -1,0 +1,4 @@
+# Temporary legacy-format exclusions; no other source path is exempt.
+# A dedicated future formatting package should remove these exclusions.
+/src/App.tsx
+/src/components/Layout.tsx

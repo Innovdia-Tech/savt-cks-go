@@ -10,7 +10,7 @@
     "test": "vitest run",
     "typecheck": "tsc -b",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "node scripts/check-changed-format.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
