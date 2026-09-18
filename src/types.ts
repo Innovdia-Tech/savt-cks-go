@@ -1,4 +1,5 @@
-export type Screen = "home" | "listing" | "detail" | "cart" | "checkout" | "tracking";
+export type Screen =
+  "home" | "listing" | "detail" | "cart" | "checkout" | "tracking" | "profile";
 
 export type Product = {
   id: string;

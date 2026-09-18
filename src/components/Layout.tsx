@@ -1,3 +1,4 @@
+import { DeliveryAddressLink } from "../customer/components";
 import { useEffect, useRef, type ReactNode } from "react";
 import { BagIcon, ChevronLeftIcon, GridIcon, HomeIcon, PinIcon, ShieldIcon, TruckIcon } from "./Icons";
 import { branch } from "../data/mockData";
@@ -24,7 +25,7 @@ export function AppShell({ children, active, cartCount, onNavigate, onLogout, st
     <main className="h-dvh overflow-hidden bg-[#EAF2ED] text-savt-ink sm:py-6">
       <section className="mx-auto flex h-full w-full max-w-[430px] flex-col overflow-hidden bg-[#F7FAF8] shadow-2xl sm:h-[880px] sm:rounded-[34px]">
         <div ref={scrollRef} className={`no-scrollbar relative min-h-0 flex-1 overflow-y-auto overscroll-contain ${sticky ? "pb-8" : "pb-6"}`}>
-          <DeliveryHeader onLogout={onLogout} />
+          <DeliveryHeader onLogout={onLogout} onManage={() => onNavigate("profile")} />
           {children}
         </div>
         {sticky}
@@ -34,7 +35,7 @@ export function AppShell({ children, active, cartCount, onNavigate, onLogout, st
   );
 }
 
-function DeliveryHeader({ onLogout }: { onLogout?: () => void }) {
+function DeliveryHeader({ onLogout, onManage }: { onLogout?: () => void; onManage: () => void }) {
   return (
     <header className="z-20 border-b border-slate-100/80 bg-white/95 px-5 pb-4 pt-3 shadow-[0_8px_26px_rgba(15,23,42,0.04)] backdrop-blur-xl">
       <div className="flex items-center justify-between text-xs font-semibold text-slate-900">
@@ -76,9 +77,7 @@ function DeliveryHeader({ onLogout }: { onLogout?: () => void }) {
             {branch.eta}
           </div>
         </div>
-        <button className="mt-1 flex min-h-11 max-w-full items-center text-left text-[18px] font-black leading-6 text-slate-950">
-          <span className="truncate">Deliver to {branch.address}</span>
-        </button>
+        <DeliveryAddressLink onManage={onManage} />
         <div className="flex items-center gap-2 text-[12px] font-semibold text-slate-500">
           <ShieldIcon className="h-3.5 w-3.5 text-savt-dark" />
           <span>{branch.note}</span>
