@@ -8,10 +8,7 @@ import {
 import type { HandoffDetail } from "../webview/bridge";
 
 export type ApiFailureCategory =
-  | "offline"
-  | "expired"
-  | "retryable"
-  | "unrecoverable";
+  "offline" | "expired" | "retryable" | "unrecoverable";
 
 export class ApiClientError extends Error {
   constructor(
