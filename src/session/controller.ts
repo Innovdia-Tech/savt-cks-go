@@ -84,6 +84,30 @@ export class CustomerSessionController {
     }
   }
 
+  // Infrastructure only: credentials never enter a presentation snapshot.
+  async withCredentials<T>(
+    operation: (csrfToken: string) => Promise<T>,
+  ): Promise<T> {
+    const generation = this.generation;
+    if (this.state.phase !== "authenticated" || !this.csrfToken)
+      throw new ApiClientError("expired", "CUSTOMER_SESSION_INVALID");
+    try {
+      const result = await operation(this.csrfToken);
+      if (generation !== this.generation)
+        throw new ApiClientError("expired", "CUSTOMER_SESSION_INVALID");
+      return result;
+    } catch (error) {
+      if (
+        generation === this.generation &&
+        error instanceof ApiClientError &&
+        error.category === "expired"
+      ) {
+        ++this.generation;
+        this.fail(error);
+      }
+      throw error;
+    }
+  }
   private authenticate(session: SessionData): void {
     this.csrfToken = session.csrfToken;
     this.transition({ phase: "authenticated", expiresAt: session.expiresAt });

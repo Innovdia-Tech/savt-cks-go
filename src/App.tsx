@@ -1,3 +1,5 @@
+import { CustomerProfileScreen, CheckoutAddress } from "./customer/components";
+import { useCustomer } from "./customer/context";
 import { type ReactNode, useMemo, useState } from "react";
 import {
   buyAgainProducts,
@@ -71,6 +73,7 @@ function findProducts(query: string) {
 }
 
 export default function App({ onLogout }: { onLogout?: () => void }) {
+  const { guardNavigation } = useCustomer();
   const [screen, setScreen] = useState<Screen>("home");
   const [selectedCategory, setSelectedCategory] = useState("fresh");
   const [selectedProduct, setSelectedProduct] = useState<Product>(products[0]);
@@ -122,7 +125,7 @@ export default function App({ onLogout }: { onLogout?: () => void }) {
     if (nextScreen === "listing") {
       setSearchQuery("");
     }
-    setScreen(nextScreen);
+    guardNavigation(() => setScreen(nextScreen));
   };
 
   const activeNav = screen === "listing" ? "Categories" : ["cart", "checkout"].includes(screen) ? "Cart" : screen === "tracking" ? "Orders" : "Home";
@@ -159,6 +162,7 @@ export default function App({ onLogout }: { onLogout?: () => void }) {
         ) : undefined
       }
     >
+      {screen === "profile" && <CustomerProfileScreen />}
       {screen === "home" && (
         <HomeScreen
           selectedCategory={selectedCategory}
@@ -183,7 +187,7 @@ export default function App({ onLogout }: { onLogout?: () => void }) {
       {screen === "cart" && (
         <CartScreen cart={cart} totals={totals} voucherApplied={voucherApplied} onVoucher={() => setVoucherApplied(true)} onQuantity={updateQuantity} />
       )}
-      {screen === "checkout" && <CheckoutScreen cart={cart} totals={totals} voucherApplied={voucherApplied} />}
+      {screen === "checkout" && <CheckoutScreen cart={cart} totals={totals} voucherApplied={voucherApplied} onManage={() => setScreen("profile")} />}
       {screen === "tracking" && <TrackingScreen cart={cart} totals={totals} onHome={() => setScreen("home")} />}
     </AppShell>
   );
@@ -435,11 +439,13 @@ function CartScreen({
 function CheckoutScreen({
   cart,
   totals,
-  voucherApplied
+  voucherApplied,
+  onManage
 }: {
   cart: CartItem[];
   totals: CartTotals;
   voucherApplied: boolean;
+  onManage: () => void;
 }) {
   return (
     <div className="space-y-4 px-5 py-4">
@@ -447,7 +453,7 @@ function CheckoutScreen({
         <p className="text-xs font-black uppercase tracking-[0.18em] text-savt-dark">Secure checkout</p>
         <h1 className="mt-1 text-[28px] font-black leading-8 text-slate-950">Checkout</h1>
       </div>
-      <InfoCard title="Delivery address" subtitle="Taman Ria, Tawau" meta="Change address only" />
+      <CheckoutAddress onManage={onManage} />
       <InfoCard title="Delivery time" subtitle="ETA 30-45 mins" meta="Auto-assigned from CKS Lintas" />
       <InfoCard title="Payment method" subtitle="SAVT Wallet - Visa ending 4288" meta="Mock payment for prototype" />
       <div className="rounded-[26px] border border-white/80 bg-white p-4 shadow-soft">
