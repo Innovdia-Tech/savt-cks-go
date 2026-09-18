@@ -70,7 +70,7 @@ function findProducts(query: string) {
   return filterProducts(products, query);
 }
 
-export default function App() {
+export default function App({ onLogout }: { onLogout?: () => void }) {
   const [screen, setScreen] = useState<Screen>("home");
   const [selectedCategory, setSelectedCategory] = useState("fresh");
   const [selectedProduct, setSelectedProduct] = useState<Product>(products[0]);
@@ -132,6 +132,7 @@ export default function App() {
       active={activeNav}
       cartCount={cartCount}
       onNavigate={navigate}
+      onLogout={onLogout}
       screenKey={screen}
       sticky={
         screen === "detail" ? (

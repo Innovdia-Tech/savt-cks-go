@@ -8,11 +8,12 @@ type AppShellProps = {
   active: "Home" | "Categories" | "Cart" | "Orders";
   cartCount: number;
   onNavigate: (screen: Screen) => void;
+  onLogout?: () => void;
   sticky?: ReactNode;
   screenKey?: string;
 };
 
-export function AppShell({ children, active, cartCount, onNavigate, sticky, screenKey }: AppShellProps) {
+export function AppShell({ children, active, cartCount, onNavigate, onLogout, sticky, screenKey }: AppShellProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,7 +24,7 @@ export function AppShell({ children, active, cartCount, onNavigate, sticky, scre
     <main className="h-dvh overflow-hidden bg-[#EAF2ED] text-savt-ink sm:py-6">
       <section className="mx-auto flex h-full w-full max-w-[430px] flex-col overflow-hidden bg-[#F7FAF8] shadow-2xl sm:h-[880px] sm:rounded-[34px]">
         <div ref={scrollRef} className={`no-scrollbar relative min-h-0 flex-1 overflow-y-auto overscroll-contain ${sticky ? "pb-8" : "pb-6"}`}>
-          <DeliveryHeader />
+          <DeliveryHeader onLogout={onLogout} />
           {children}
         </div>
         {sticky}
@@ -33,7 +34,7 @@ export function AppShell({ children, active, cartCount, onNavigate, sticky, scre
   );
 }
 
-function DeliveryHeader() {
+function DeliveryHeader({ onLogout }: { onLogout?: () => void }) {
   return (
     <header className="z-20 border-b border-slate-100/80 bg-white/95 px-5 pb-4 pt-3 shadow-[0_8px_26px_rgba(15,23,42,0.04)] backdrop-blur-xl">
       <div className="flex items-center justify-between text-xs font-semibold text-slate-900">
@@ -50,7 +51,18 @@ function DeliveryHeader() {
           <ChevronLeftIcon className="h-4 w-4" />
         </button>
         <span className="text-[13px] font-black tracking-[0.16em] text-slate-950">CKS GO</span>
-        <span className="w-11" aria-hidden="true" />
+        {onLogout ? (
+          <button
+            type="button"
+            aria-label="Log out of CKS Go"
+            onClick={onLogout}
+            className="grid min-h-11 min-w-11 place-items-center rounded-full text-[11px] font-black text-slate-500 transition active:bg-slate-100"
+          >
+            Exit
+          </button>
+        ) : (
+          <span className="w-11" aria-hidden="true" />
+        )}
       </div>
       <div className="mt-3">
         <div className="flex items-center justify-between gap-3">

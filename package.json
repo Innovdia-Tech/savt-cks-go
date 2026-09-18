@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite --config vite.config.js --configLoader runner",
     "build": "tsc -b && vite build --config vite.config.js --configLoader runner",
-    "preview": "vite preview --config vite.config.js --configLoader runner"
+    "preview": "vite preview --config vite.config.js --configLoader runner",
+    "test": "vitest run",
+    "typecheck": "tsc -b",
+    "format": "prettier --write .",
+    "format:check": "node scripts/check-changed-format.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
@@ -20,6 +24,8 @@
     "postcss": "^8.5.0",
     "autoprefixer": "^10.4.20",
     "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0"
+    "@types/react-dom": "^19.0.0",
+    "prettier": "^3.6.2",
+    "vitest": "^3.2.4"
   }
 }
