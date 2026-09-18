@@ -43,6 +43,7 @@ export class CustomerApiClient implements CustomerApi {
   constructor(
     private readonly apiOrigin: string,
     private readonly fetcher: typeof fetch = fetch,
+    private readonly timeoutMs = 15_000,
   ) {}
 
   bootstrap(): Promise<BootstrapData> {
@@ -79,12 +80,15 @@ export class CustomerApiClient implements CustomerApi {
   }
 
   async logout(csrfToken: string): Promise<void> {
-    const response = await this.request("/api/v1/customer/session/logout", {
-      method: "POST",
-      headers: { "x-cks-csrf": csrfToken },
-      body: "{}",
+    return this.withDeadline(async (signal) => {
+      const response = await this.request("/api/v1/customer/session/logout", {
+        method: "POST",
+        headers: { "x-cks-csrf": csrfToken },
+        body: "{}",
+        signal,
+      });
+      if (response.status !== 204) await this.throwResponseError(response);
     });
-    if (response.status !== 204) await this.throwResponseError(response);
   }
 
   private async jsonRequest<T>(
@@ -92,13 +96,35 @@ export class CustomerApiClient implements CustomerApi {
     parser: (value: unknown) => T,
     init: RequestInit,
   ): Promise<T> {
-    const response = await this.request(path, init);
-    if (!response.ok) await this.throwResponseError(response);
+    return this.withDeadline(async (signal) => {
+      const response = await this.request(path, { ...init, signal });
+      if (!response.ok) await this.throwResponseError(response);
+      try {
+        return parser(await response.json());
+      } catch (error) {
+        if (error instanceof ApiClientError) throw error;
+        throw new ApiClientError("unrecoverable", "INVALID_RESPONSE");
+      }
+    });
+  }
+
+  private async withDeadline<T>(
+    operation: (signal: AbortSignal) => Promise<T>,
+  ): Promise<T> {
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const deadline = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        // Settle the deadline first so abort-induced fetch/body errors cannot
+        // replace REQUEST_TIMEOUT. The race also bounds non-cooperative fetches.
+        reject(new ApiClientError("retryable", "REQUEST_TIMEOUT"));
+        controller.abort();
+      }, this.timeoutMs);
+    });
     try {
-      return parser(await response.json());
-    } catch (error) {
-      if (error instanceof ApiClientError) throw error;
-      throw new ApiClientError("unrecoverable", "INVALID_RESPONSE");
+      return await Promise.race([deadline, operation(controller.signal)]);
+    } finally {
+      clearTimeout(timer);
     }
   }
 
