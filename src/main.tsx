@@ -1,3 +1,7 @@
+import { CatalogueApi } from "./catalogue/api";
+import { CatalogueController } from "./catalogue/state";
+import { CatalogueProvider } from "./catalogue/context";
+import "./catalogue/catalogue.css";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
@@ -36,15 +40,51 @@ async function start() {
             production,
           )
         : undefined;
+    const catalogueDevelopment =
+      import.meta.env.DEV && config.developmentApi
+        ? new (
+            await import("./catalogue/development")
+          ).DevelopmentCatalogueAdapter(production)
+        : undefined;
+    const DevelopmentControls =
+      import.meta.env.DEV && config.developmentApi
+        ? (await import("./catalogue/development-controls")).DevelopmentControls
+        : undefined;
     const customer = new CustomerDataController(
-      new CustomerDataApi(config.apiOrigin, session, development?.fetch),
+      new CustomerDataApi(
+        config.apiOrigin,
+        session,
+        development && catalogueDevelopment
+          ? catalogueDevelopment.customerFetch(development.fetch)
+          : development?.fetch,
+      ),
       session,
+    );
+    const catalogue = new CatalogueController(
+      new CatalogueApi(config.apiOrigin, session, catalogueDevelopment?.fetch),
+      Date.now,
+      () => customer.load(),
     );
     root.render(
       <React.StrictMode>
         <CustomerSessionBoundary controller={session}>
           <CustomerDataProvider controller={customer} development={development}>
-            <App onLogout={() => void session.logout()} />
+            <CatalogueProvider
+              controller={catalogue}
+              customer={customer}
+              session={session}
+              controls={
+                catalogueDevelopment && DevelopmentControls ? (
+                  <DevelopmentControls
+                    adapter={catalogueDevelopment}
+                    customer={customer}
+                    catalogue={catalogue}
+                  />
+                ) : undefined
+              }
+            >
+              <App onLogout={() => void session.logout()} />
+            </CatalogueProvider>
           </CustomerDataProvider>
         </CustomerSessionBoundary>
       </React.StrictMode>,

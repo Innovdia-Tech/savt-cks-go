@@ -338,7 +338,13 @@ export function CustomerProfileScreen() {
     </div>
   );
 }
-export function CheckoutAddress({ onManage }: { onManage: () => void }) {
+export function CheckoutAddress({
+  onManage,
+  catalogue = false,
+}: {
+  onManage: () => void;
+  catalogue?: boolean;
+}) {
   const { state, controller } = useCustomer();
   const active = state.addresses.filter((a) => a.status === "ACTIVE");
   const selected = controller.selectedAddress();
@@ -375,16 +381,19 @@ export function CheckoutAddress({ onManage }: { onManage: () => void }) {
           No active saved address. Add or reactivate an address to use it here.
         </p>
       )}
-      <button className="customer-button" onClick={onManage}>
-        {active.length
-          ? "Manage saved addresses"
-          : state.readOnly
-            ? "View saved addresses"
-            : "Add an address"}
-      </button>
+      {!catalogue && (
+        <button className="customer-button" onClick={onManage}>
+          {active.length
+            ? "Manage saved addresses"
+            : state.readOnly
+              ? "View saved addresses"
+              : "Add an address"}
+        </button>
+      )}
       <p className="text-xs text-slate-500">
-        Address selection is for this prototype. Prices, delivery, payment and
-        order confirmation remain mocked.
+        {catalogue
+          ? "Your outlet is assigned automatically for the selected address."
+          : "Address selection is for this prototype. Prices, delivery, payment and order confirmation remain mocked."}
       </p>
     </section>
   );
