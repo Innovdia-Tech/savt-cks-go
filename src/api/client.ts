@@ -42,7 +42,8 @@ const categoryFor = (status: number, code: string): ApiFailureCategory => {
 export class CustomerApiClient implements CustomerApi {
   constructor(
     private readonly apiOrigin: string,
-    private readonly fetcher: typeof fetch = fetch,
+    private readonly fetcher: typeof fetch = (input, init) =>
+      globalThis.fetch(input, init),
     private readonly timeoutMs = 15_000,
   ) {}
 
