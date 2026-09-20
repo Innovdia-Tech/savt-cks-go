@@ -5,6 +5,8 @@ import { CustomerDataApi } from "../customer/api";
 import { CustomerSessionController } from "../session/controller";
 import { DevelopmentBridgeAdapter } from "../webview/bridge";
 import { CatalogueApi } from "../catalogue/api";
+import { QuoteApi } from "../checkout/api";
+import { quoteEnvelope } from "../checkout/test-fixtures";
 
 type RecordedRequest = { url: string; init?: RequestInit };
 
@@ -248,5 +250,38 @@ describe("default browser fetch receiver", () => {
     expect(requests.some(({ url }) => /quote|payment|order/i.test(url))).toBe(
       false,
     );
+  });
+
+  it("preserves the Window receiver for trusted checkout quotes", async () => {
+    const requests = installReceiverSensitiveFetch(() =>
+      Response.json(quoteEnvelope()),
+    );
+    const api = new QuoteApi(
+      "https://api.cks.test",
+      await authenticatedSession(),
+    );
+
+    await expect(
+      api.create(
+        {
+          outletId,
+          customerAddressId: addressId,
+          deliveryType: "NOW",
+          items: [{ outletProductId, quantity: 2 }],
+        },
+        "88888888-8888-4888-8888-888888888888",
+      ),
+    ).resolves.toMatchObject({
+      quoteId: "11111111-1111-4111-8111-111111111111",
+    });
+    expect(requests).toEqual([
+      {
+        url: "https://api.cks.test/api/v1/checkout/quote",
+        init: expect.objectContaining({
+          method: "POST",
+          credentials: "include",
+        }),
+      },
+    ]);
   });
 });
