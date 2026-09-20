@@ -40,6 +40,8 @@ describe("customer data state and synthetic transport", () => {
     expect(state.getSnapshot().addresses.map((a) => a.status)).toEqual([
       "ACTIVE",
       "INACTIVE",
+      "ACTIVE",
+      "ACTIVE",
     ]);
   });
   it("preserves stale profile indication and empty addresses", async () => {
@@ -119,7 +121,7 @@ describe("customer data state and synthetic transport", () => {
     const { state } = await setup("readonly");
     expect(state.getSnapshot().readOnly).toBe(true);
     await state.mutate("create", undefined, input);
-    expect(state.getSnapshot().addresses).toHaveLength(2);
+    expect(state.getSnapshot().addresses).toHaveLength(4);
   });
   it("clears profile, addresses, choice, and pending action on logout", async () => {
     const { state, session, adapter } = await setup();

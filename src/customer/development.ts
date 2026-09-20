@@ -47,6 +47,21 @@ export class DevelopmentDataAdapter {
                     isDefault: false,
                     status: "INACTIVE" as const,
                   },
+                  {
+                    ...syntheticAddress,
+                    id: "44444444-4444-4444-8444-444444444444",
+                    label: "Demo flat",
+                    addressLine1: "2 Example Street",
+                    isDefault: false,
+                  },
+                  {
+                    ...syntheticAddress,
+                    id: "55555555-5555-4555-8555-555555555555",
+                    label: "Demo suburb",
+                    addressLine1: "3 Example Street",
+                    city: "Sample Town",
+                    isDefault: false,
+                  },
                 ]),
           ];
   }

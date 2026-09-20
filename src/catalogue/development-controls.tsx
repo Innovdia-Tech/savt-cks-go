@@ -15,7 +15,7 @@ export function DevelopmentControls({
   return (
     <details className="catalogue-dev">
       <summary>Synthetic development fixtures</summary>
-      <label htmlFor="catalogue-scenario">Catalogue scenario</label>
+      <label htmlFor="catalogue-scenario">Catalogue and quote scenario</label>
       <select
         id="catalogue-scenario"
         value={value}
@@ -37,7 +37,10 @@ export function DevelopmentControls({
       >
         Expire context and renew
       </button>
-      <p>Local fixtures only. No live catalogue or commerce requests.</p>
+      <p>
+        Local fixtures only. No live catalogue, quote, payment or order
+        requests.
+      </p>
     </details>
   );
 }

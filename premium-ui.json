@@ -1,6 +1,11 @@
 {
   "profile": "product-admin",
-  "sourceRoots": ["src/customer", "src/addresses"],
+  "sourceRoots": [
+    "src/customer",
+    "src/addresses",
+    "src/catalogue",
+    "src/checkout"
+  ],
   "locale": "en-MY",
   "canonicalMap": "UX-CONTRACT.md",
   "requiredCapabilities": ["Select/Listbox", "Form", "Toast", "CRUD"],

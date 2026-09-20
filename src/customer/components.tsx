@@ -341,9 +341,13 @@ export function CustomerProfileScreen() {
 export function CheckoutAddress({
   onManage,
   catalogue = false,
+  onSelect,
+  selecting = false,
 }: {
   onManage: () => void;
   catalogue?: boolean;
+  onSelect?: (addressId: string) => void;
+  selecting?: boolean;
 }) {
   const { state, controller } = useCustomer();
   const active = state.addresses.filter((a) => a.status === "ACTIVE");
@@ -364,8 +368,13 @@ export function CheckoutAddress({
             id="checkout-address"
             className="customer-input"
             value={selected.id}
-            disabled={state.busy}
-            onChange={(e) => controller.select(e.target.value)}
+            disabled={state.busy || selecting}
+            aria-busy={selecting || undefined}
+            onChange={(e) =>
+              onSelect
+                ? onSelect(e.target.value)
+                : controller.select(e.target.value)
+            }
           >
             {active.map((a) => (
               <option key={a.id} value={a.id}>
@@ -375,6 +384,9 @@ export function CheckoutAddress({
             ))}
           </select>
           <AddressText address={selected} />
+          {selecting && (
+            <p role="status">Checking the assigned outlet for this address…</p>
+          )}
         </>
       ) : (
         <p>
@@ -393,7 +405,7 @@ export function CheckoutAddress({
       <p className="text-xs text-slate-500">
         {catalogue
           ? "Your outlet is assigned automatically for the selected address."
-          : "Address selection is for this prototype. Prices, delivery, payment and order confirmation remain mocked."}
+          : "Your selected address determines the assigned outlet. A trusted quote confirms prices, stock, fees and timing before any future payment step."}
       </p>
     </section>
   );

@@ -7,21 +7,20 @@ React + TypeScript + TailwindCSS customer-web foundation for the CKS GO grocery 
 - CKS GO Home
 - Category / Product Listing
 - Product Detail
-- Cart
-- Checkout
-- Order Tracking
-- Mock products, vouchers, rewards, cashback, cart state, and order flow
+- Assigned-outlet cart backed by real catalogue product identities
+- Server-authoritative trusted checkout quotes
 - Strict customer-session bootstrap, native handoff, exchange, restoration and logout
 - Explicit loading, offline, expired-session, bridge-unavailable and error states
 
-Catalogue, quote, payment, checkout, order tracking and receipt content remains mocked. Those real integrations are intentionally deferred to later packages.
+Catalogue, saved addresses, cart and trusted checkout quotes use their real customer-web contracts. Payment, order creation, order history, tracking and receipts are intentionally not connected. The retained mock prototype cannot be reached from the exported real catalogue/cart flow.
 
 ## Business rules represented
 
 - Users are already logged into SAVT.
-- The nearest CKS branch is automatically selected.
-- The UI shows `Delivering from CKS Lintas`.
-- Users can change delivery address conceptually, but cannot choose a branch manually.
+- An outlet is assigned automatically from the active saved delivery address.
+- One assigned outlet owns a cart; products are never remapped across outlets.
+- A different-outlet address change clears a nonempty cart only after explicit confirmation.
+- Prices, stock, fees and timing become authoritative only after an explicit trusted-quote request.
 
 ## Run locally
 
@@ -57,7 +56,7 @@ Pre-existing formatting debt remains. Only `src/App.tsx` and `src/components/Lay
 
 ## Customer profile and saved addresses (CUST01B)
 
-The delivery-address header opens **Profile & addresses**. Profile and saved-address data now use `/api/v1/customer/me` and `/api/v1/customer/me/addresses`; create, PATCH edit, default, deactivate and reactivate follow the current CKS Go DTOs. Checkout chooses an active saved address and keeps that choice in memory. It still uses mocked totals, delivery, payment, tracking and receipts.
+The delivery-address header opens **Profile & addresses**. Profile and saved-address data now use `/api/v1/customer/me` and `/api/v1/customer/me/addresses`; create, PATCH edit, default, deactivate and reactivate follow the current CKS Go DTOs. Checkout chooses an active saved address and keeps that choice in memory. CUST02C uses that selection for the assigned-outlet cart and trusted quote; payment, tracking and receipts remain unavailable.
 
 The contract authority reviewed locally was the CKS integration checkout at `bac1f2f`: `customer.dtos.ts`, `customer.controller.ts`, `customer-address.service.ts` and the customer session/identity guards. No backend contracts were changed.
 
@@ -65,4 +64,12 @@ The same explicit development API/bridge flags also enable synthetic customer da
 
 Mutations use in-memory CSRF through a session infrastructure callback. Create/transition operations hold an immutable request body, original quoted row version and UUIDv4 idempotency key for retries. Changed requests create new operations. Edits use PATCH with quoted If-Match and no idempotency header, as the backend specifies. After successful mutation, the client reloads the full address list to obtain versions changed by default reassignment. A failed list refresh never repeats a successful mutation. Conflicts require explicit reload and discard of the open form. An uncertain submission is locked to retrying its original operation.
 
-`premium-ui.json` scopes the supplemental static design audit to the new customer/address modules. Legacy mocked action buttons and shell scrollbar styling remain outside CUST01B, consistent with the no-redesign scope. This audit is supplemental to the tests, TypeScript build and actual browser acceptance.
+`premium-ui.json` scopes the supplemental static design audit to customer/address, catalogue and checkout modules. The audit is supplemental to tests, TypeScript, production build and browser acceptance.
+
+## Cart and trusted quote (CUST02C)
+
+The memory-only cart stores its assigned outlet, exact outlet-product identity, product display snapshot, quantity and current displayed MYR price. It merges only the same `outletProductId`, enforces the backend line/quantity bounds and invalidates a quote after any cart or same-outlet address change.
+
+The only commercial request is an explicit `POST /api/v1/checkout/quote`. Its body contains authoritative identifiers, quantities and delivery type; CSRF and a stable UUIDv4 idempotency key are headers. No displayed prices or client-calculated totals, distance, fees or ETA are sent. Returned lines, totals, currency, timing and expiry are parsed strictly. Changed prices require customer review and expired quotes require deliberate requote.
+
+Assignment context, CSRF, quote token and credentials stay in memory and out of URLs, browser storage, logs and visible UI. There is no payment or order API call and no real-cart route to the retained mock success/tracking implementation.

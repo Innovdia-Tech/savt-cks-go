@@ -21,17 +21,33 @@ const product = {
   currency: "MYR" as const,
   availability: "AVAILABLE" as const,
 };
-it("renders only approved price and disabled commerce with neutral images", () => {
+it("renders approved price and enables real-cart add only for available products", () => {
   const html = renderToStaticMarkup(
-    createElement(ProductTile, { product, onOpen: () => {} }),
+    createElement(ProductTile, {
+      product,
+      onOpen: () => {},
+      onAdd: () => {},
+      orderingDisabled: false,
+    }),
   );
   expect(html).toContain("Rice");
   expect(html).toContain("12.34");
-  expect(html).toContain("disabled");
+  expect(html).not.toMatch(/<button[^>]+disabled[^>]*>Add/);
   expect(html).toContain("Image unavailable");
   expect(html).not.toMatch(
     /cashback|reward|member price|original price|bestseller|ETA|savings|flash sale/i,
   );
+});
+it("keeps add disabled for an unavailable outlet product", () => {
+  const html = renderToStaticMarkup(
+    createElement(ProductTile, {
+      product: { ...product, availability: "UNAVAILABLE" },
+      onOpen: () => {},
+      onAdd: () => {},
+      orderingDisabled: false,
+    }),
+  );
+  expect(html).toMatch(/<button[^>]+disabled[^>]*>Add/);
 });
 it("uses approved returned image URLs without inventing sources", () => {
   const html = renderToStaticMarkup(
