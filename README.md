@@ -10,10 +10,11 @@ React + TypeScript + TailwindCSS customer-web foundation for the CKS GO grocery 
 - Assigned-outlet cart backed by real catalogue product identities
 - Server-authoritative trusted checkout quotes
 - Backend-owned payment initiation and observational payment results
+- Customer order history, detail, backend-projected tracking, supported cancellation and receipt download
 - Strict customer-session bootstrap, native handoff, exchange, restoration and logout
 - Explicit loading, offline, expired-session, bridge-unavailable and error states
 
-Catalogue, saved addresses, cart, trusted checkout quotes and customer payment/result calls use their real customer-web contracts. Provider communication and paid Order materialization remain backend-owned; order history, tracking and receipts are intentionally not connected. The retained mock prototype cannot be reached from the exported real catalogue/cart flow.
+Catalogue, saved addresses, cart, trusted checkout quotes, payment results and customer orders use their real customer-web contracts. Provider communication, paid Order materialization, fulfilment authority and cancellation eligibility remain backend-owned. The retained mock prototype cannot be reached from the exported real catalogue/cart flow.
 
 ## Business rules represented
 
@@ -23,6 +24,8 @@ Catalogue, saved addresses, cart, trusted checkout quotes and customer payment/r
 - A different-outlet address change clears a nonempty cart only after explicit confirmation.
 - Prices, stock, fees and timing become authoritative only after an explicit trusted-quote request.
 - Returning from external payment is navigation only; only backend `PAID` plus Order evidence confirms an order.
+- History and tracking display only customer-safe backend projections; the browser never creates Orders or derives fulfilment state.
+- Cancellation and receipt actions appear only when the exact order contract supports them and remain backend-authoritative.
 
 ## Run locally
 
@@ -62,7 +65,7 @@ The delivery-address header opens **Profile & addresses**. Profile and saved-add
 
 The contract authority reviewed locally was the CKS integration checkout at `bac1f2f`: `customer.dtos.ts`, `customer.controller.ts`, `customer-address.service.ts` and the customer session/identity guards. No backend contracts were changed.
 
-The same explicit development API/bridge flags also enable synthetic customer data and backend-observational payment states. On the profile screen, **Synthetic development scenarios** supplies empty/default/mixed, stale/failed sync and read-only fixtures, plus next-request conflict, offline, retryable, lost-response, expiry and CSRF failures. The catalogue fixture panel supplies payment PENDING, PAID_PROCESSING, PAID, FAILED and malformed paid-without-Order states. These controls and fixtures cannot activate in a production build. Refresh resets synthetic fixtures; logout clears application profile/address/selection/draft/operation state. All fixture values are invented.
+The same explicit development API/bridge flags also enable synthetic customer data, backend-observational payment states and customer-order states. On the profile screen, **Synthetic development scenarios** supplies empty/default/mixed, stale/failed sync and read-only fixtures, plus next-request conflict, offline, retryable, lost-response, expiry and CSRF failures. The catalogue fixture panel supplies payment PENDING, PAID_PROCESSING, PAID, FAILED and malformed paid-without-Order states, plus active, empty, delivered, receipt-ready, error and malformed customer-order scenarios. These controls and fixtures cannot activate in a production build. Refresh resets synthetic fixtures; logout clears application profile/address/selection/draft/operation state. All fixture values are invented.
 
 Mutations use in-memory CSRF through a session infrastructure callback. Create/transition operations hold an immutable request body, original quoted row version and UUIDv4 idempotency key for retries. Changed requests create new operations. Edits use PATCH with quoted If-Match and no idempotency header, as the backend specifies. After successful mutation, the client reloads the full address list to obtain versions changed by default reassignment. A failed list refresh never repeats a successful mutation. Conflicts require explicit reload and discard of the open form. An uncertain submission is locked to retrying its original operation.
 
@@ -82,4 +85,14 @@ The customer web calls only CKS Go's `POST /api/v1/customer/checkout/payments` a
 
 An accepted quote is frozen before the explicit payment action. Uncertain initiation retries retain the same UUIDv4 idempotency key; successful initiation stores one PaymentIntent and a strictly validated HTTPS checkout URL in memory. Production requests external navigation through the small native `payment-handoff` bridge message and fails closed when that capability is absent.
 
-External return, focus and visibility trigger backend observation only. PENDING, FAILED and PAID_PROCESSING remain non-confirming. The customer sees “Order Confirmed” only for PAID with strict backend-projected Order identity. Logout/session loss clears payment memory and fences late asynchronous completion. Receipt, history and tracking remain out of scope.
+External return, focus and visibility trigger backend observation only. PENDING, FAILED and PAID_PROCESSING remain non-confirming. The customer sees “Order Confirmed” only for PAID with strict backend-projected Order identity. Logout/session loss clears payment memory and fences late asynchronous completion. CUST03B adds a link from that exact confirmed state to backend-backed order detail without changing this finality rule.
+
+## Customer order history and tracking (CUST03B)
+
+The customer web calls CKS Go's `GET /api/v1/customer/orders`, `GET /api/v1/customer/orders/:orderId` and, when offered, `POST /api/v1/customer/orders/:orderId/cancel`. It uses the customer-safe receipt download path returned by the strict order-detail contract. The browser never creates an Order, invents a customer stage, derives fulfilment authority, calls a payment provider, or presents internal operational fields.
+
+History is paginated and includes explicit loading, empty, error, expired-session and refresh states. Detail renders the backend order stage, returned milestones, customer-safe items and totals, delivery destination and refund requirement. Raw delivery state, rider data, SKU snapshots, payment-provider data and internal identifiers are not presented.
+
+Cancellation posts an empty body with in-memory CSRF and a stable UUIDv4 idempotency key. `canCancel` controls the affordance only; the backend remains authoritative and the UI updates solely from its response. Receipt download is available only when the detail contract declares it and the exact current-order path returns a PDF. Order state, receipt blobs and action credentials are not persisted.
+
+The read-only backend contract authority reviewed for CUST03B was `Innovdia-Tech/cks-go` at `9f5b779e38eea447e0bf425e0489e70107231356`. No backend code was changed.

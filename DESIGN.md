@@ -1,6 +1,6 @@
-# CKS GO customer catalogue, cart, quote and payment result
+# CKS GO customer catalogue, checkout and orders
 
-CUST01B through CUST03A extend the existing English-language, Malaysia-focused mobile grocery prototype. Preserve the existing green palette, Inter/system typography, rounded white cards and 430px shell. CUST03A connects payment initiation and backend-observational payment results without adding receipt, history, tracking, or frontend Order creation. No redesign or backend changes.
+CUST01B through CUST03B extend the existing English-language, Malaysia-focused mobile grocery prototype. Preserve the existing green palette, Inter/system typography, rounded white cards and 430px shell. CUST03B adds backend-authoritative customer order history, detail, tracking, cancellation and receipt download after CUST03A payment finality. It does not add frontend Order creation, infer fulfilment state, or change the backend.
 
 ## Runtime owners
 
@@ -9,10 +9,11 @@ CUST01B through CUST03A extend the existing English-language, Malaysia-focused m
 - Customer forms: `src/addresses/AddressForm.tsx`; 16px inputs and 44px action targets.
 - Lifecycle and feedback: `src/customer/state.ts`, `errors.ts`, `components.tsx`.
 - Session authority: existing `src/session/controller.ts`; its credential callback is infrastructure-only.
+- Customer orders: `src/orders/contracts.ts` (closed customer-safe projections), `api.ts` (exact customer routes), `state.ts` (memory, retry identity and request fencing), `context.tsx` (application ownership), and `components.tsx` / `orders.css` (presentation).
 
 Use native buttons, labels and a native checkout select (platform popup is intentional). The app-owned unsaved-change dialog uses native dialog focus and Escape behavior. Inline deactivation confirmation names its reversible effect. Customer data and drafts remain in memory. Never persist identity, address PII or CSRF.
 
-Profile and address requests follow the CKS integration checkout DTOs and routes at `bac1f2f`. Mutations wait for the server. Reload all addresses after success because default changes update other versions. A conflict requires explicit reload; uncertain submissions retain the same immutable operation for retry. Payment, order creation, tracking and receipts remain disconnected.
+Profile and address requests follow the CKS integration checkout DTOs and routes at `bac1f2f`. Mutations wait for the server. Reload all addresses after success because default changes update other versions. A conflict requires explicit reload; uncertain submissions retain the same immutable operation for retry. Order creation remains disconnected and backend-owned.
 
 ## CUST02B catalogue binding
 
@@ -51,3 +52,13 @@ Payment starts only from “Proceed to payment” on an accepted, unexpired quot
 Production WebView navigation is not changed directly. The native bridge receives exactly `{ type: "payment-handoff", payload: { checkoutUrl } }` and production fails closed when the channel is absent or throws. The development bridge records this navigation request only; it cannot provide payment finality.
 
 External return, focus, visibility, redirect contents, and successful handoff are navigation signals only. They may trigger one coalesced payment-result GET. `PENDING`, `FAILED`, and `PAID_PROCESSING` never render “Order Confirmed.” That reserved state appears only for `PAID` with a strict backend-projected Order identity matching the payment’s checkout reference. Logout/session loss clears all payment memory and invalidates late asynchronous completions.
+
+## CUST03B order history, tracking and after-order actions
+
+Source authority is the read-only CKS Go backend at `9f5b779e38eea447e0bf425e0489e70107231356`. The browser reads only `GET /api/v1/customer/orders` and `GET /api/v1/customer/orders/:orderId`, cancels only through `POST /api/v1/customer/orders/:orderId/cancel`, and downloads a receipt only through the exact backend-returned customer-safe path `GET /api/v1/orders/:orderId/receipt/download`. All responses are parsed as closed contracts; unknown, malformed, internal or newly added fields fail closed rather than entering presentation state.
+
+History and detail display only backend-projected customer stages and milestones. The UI never derives a stage from timestamps, delivery records or payment state, and does not expose raw operational state, internal identifiers, rider data, SKU snapshots or provider details. Order identity may appear in the hash route only as the UUID required by the backend route; customer copy uses the order number.
+
+Cancellation is offered only when the backend returns `canCancel`. The hint is not treated as authority: the backend rechecks eligibility. The empty request uses in-memory CSRF and one stable UUIDv4 idempotency key across uncertain retries. Success is rendered only from the returned cancellation projection; conflict and other safe backend failures remain non-confirming. The app-owned native dialog names the irreversible request, initially focuses “Keep order,” supports Escape, and does not optimistically change status.
+
+Receipt download is visible only when the strict detail projection declares it available and returns paths matching the current order. The response must be a PDF. No receipt, order response, CSRF value, cancellation key or delivery address is persisted in browser storage. Logout/session loss clears order state and fences late requests. The CUST03A PAID-plus-valid-Order finality rule is unchanged; its “View order” action only navigates to the backend-backed detail route.

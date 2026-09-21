@@ -1,8 +1,10 @@
 import { useState } from "react";
 import {
   paymentResultScenarios,
+  orderScenarios,
   scenarios,
   type DevelopmentCatalogueAdapter,
+  type OrderScenario,
   type PaymentResultScenario,
 } from "./development";
 import type { CustomerDataController } from "../customer/state";
@@ -19,6 +21,7 @@ export function DevelopmentControls({
   const [value, setValue] = useState("success");
   const [paymentResult, setPaymentResult] =
     useState<PaymentResultScenario>("pending");
+  const [orderResult, setOrderResult] = useState<OrderScenario>("active");
   const metrics = adapter.paymentMetrics();
   return (
     <details className="catalogue-dev">
@@ -30,12 +33,27 @@ export function DevelopmentControls({
         onChange={(e) => {
           setValue(e.target.value);
           setPaymentResult("pending");
+          setOrderResult("active");
           adapter.reset(e.target.value);
           void customer.load();
         }}
       >
         {scenarios.map((s) => (
           <option key={s}>{s}</option>
+        ))}
+      </select>
+      <label htmlFor="order-result">Customer orders</label>
+      <select
+        id="order-result"
+        value={orderResult}
+        onChange={(event) => {
+          const result = event.target.value as OrderScenario;
+          setOrderResult(result);
+          adapter.setOrderScenario(result);
+        }}
+      >
+        {orderScenarios.map((result) => (
+          <option key={result}>{result}</option>
         ))}
       </select>
       <label htmlFor="payment-result">Backend payment result</label>

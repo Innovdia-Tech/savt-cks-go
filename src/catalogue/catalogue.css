@@ -252,7 +252,15 @@
   background: #fff4dc;
   border-radius: 12px;
 }
+.catalogue-dev[open] {
+  display: grid;
+  gap: 8px;
+}
+.catalogue-dev summary {
+  cursor: pointer;
+}
 .catalogue-dev select {
+  width: 100%;
   max-width: 100%;
   min-height: 44px;
 }

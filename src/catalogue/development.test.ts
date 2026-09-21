@@ -6,6 +6,7 @@ import { DevelopmentCustomerApi } from "../api/development";
 import { DevelopmentBridgeAdapter } from "../webview/bridge";
 import { QuoteApi } from "../checkout/api";
 import { PaymentApi } from "../payment/api";
+import { OrdersApi } from "../orders/api";
 const address = { id: "22222222-2222-4222-8222-222222222222", rowVersion: 1 };
 async function setup(scenario = "success") {
   const adapter = new DevelopmentCatalogueAdapter(false);
@@ -20,6 +21,7 @@ async function setup(scenario = "success") {
     api: new CatalogueApi("", session, adapter.fetch, 10),
     quote: new QuoteApi("", session, adapter.fetch, 10),
     payment: new PaymentApi("", session, adapter.fetch, 10),
+    orders: new OrdersApi("", session, adapter.fetch, 10),
   };
 }
 it("cannot construct a production fixture adapter", () =>
@@ -231,4 +233,52 @@ it("provides a malformed paid-without-order fixture for fail-closed acceptance",
   ).rejects.toMatchObject({
     code: "INVALID_RESPONSE",
   });
+});
+
+it("provides strict customer order history and detail fixtures", async () => {
+  const { orders } = await setup();
+  const history = await orders.list();
+  expect(history.data[0]).toMatchObject({
+    orderNumber: "SYNTH-ORDER-0001",
+    customerStage: "ORDER_RECEIVED",
+    paymentStatus: "PAID",
+  });
+  const order = await orders.detail(history.data[0].orderId);
+  expect(order).toMatchObject({
+    orderNumber: "SYNTH-ORDER-0001",
+    customerStage: "ORDER_RECEIVED",
+    canCancel: true,
+  });
+  expect(JSON.stringify(order)).not.toContain("riderPhone");
+});
+
+it("provides empty, delivered, and receipt-ready order acceptance states", async () => {
+  const { adapter, orders } = await setup();
+  adapter.setOrderScenario("empty");
+  expect((await orders.list()).data).toEqual([]);
+  adapter.setOrderScenario("delivered");
+  expect((await orders.list()).data[0].customerStage).toBe("DELIVERED");
+  adapter.setOrderScenario("receipt-ready");
+  const history = await orders.list();
+  const order = await orders.detail(history.data[0].orderId);
+  expect(order.receipt.receiptAvailable).toBe(true);
+  const pdf = await orders.downloadReceipt(
+    order.orderId,
+    order.receipt.downloadPath!,
+  );
+  expect(pdf.type).toBe("application/pdf");
+  expect(pdf.size).toBeGreaterThan(0);
+});
+
+it("cancels through only the customer cancel command and retains zero browser Order creation", async () => {
+  const { adapter, orders } = await setup();
+  const order = (await orders.list()).data[0];
+  await expect(
+    orders.cancel(order.orderId, crypto.randomUUID()),
+  ).resolves.toMatchObject({
+    customerStage: "CANCELLED",
+    refundRequired: true,
+  });
+  expect((await orders.detail(order.orderId)).customerStage).toBe("CANCELLED");
+  expect(adapter.paymentMetrics().browserOrderPosts).toBe(0);
 });

@@ -2,16 +2,16 @@
 
 ## Canonical UI Map
 
-| Capability     | Canonical owner                                | Source of truth           | Allowed variants                                             | Verification                           |
-| -------------- | ---------------------------------------------- | ------------------------- | ------------------------------------------------------------ | -------------------------------------- |
-| Form           | src/addresses/AddressForm.tsx                  | Customer DTOs             | Add/edit, memory-only drafts                                 | Validation and browser create/edit     |
-| Select/Listbox | CheckoutAddress in src/customer/components.tsx | Active saved-address list | Native platform popup                                        | Checkout selection and keyboard        |
-| CRUD           | src/customer/state.ts                          | Customer address service  | Pessimistic writes, explicit conflict reload, stable retries | API/state tests and browser full flow  |
-| Toast          | DataFeedback in src/customer/components.tsx    | Customer error contracts  | Persistent inline status/error                               | Render and browser failure tests       |
-| Navigation     | src/customer/context.tsx                       | Memory-only form state    | Discard dialog; native beforeunload                          | Escape, cancel, discard browser checks |
-| Scrollbar      | Existing src/styles.css and Layout.tsx         | Existing prototype shell  | Existing scroll ownership preserved                          | Narrow and desktop browser review      |
+| Capability     | Canonical owner                                | Source of truth           | Allowed variants                                               | Verification                           |
+| -------------- | ---------------------------------------------- | ------------------------- | -------------------------------------------------------------- | -------------------------------------- |
+| Form           | src/addresses/AddressForm.tsx                  | Customer DTOs             | Add/edit, memory-only drafts                                   | Validation and browser create/edit     |
+| Select/Listbox | CheckoutAddress in src/customer/components.tsx | Active saved-address list | Native platform popup                                          | Checkout selection and keyboard        |
+| CRUD           | src/customer/state.ts                          | Customer address service  | Pessimistic writes, explicit conflict reload, stable retries   | API/state tests and browser full flow  |
+| Toast          | DataFeedback in src/customer/components.tsx    | Customer error contracts  | Persistent inline status/error                                 | Render and browser failure tests       |
+| Navigation     | src/customer/context.tsx                       | Memory-only form state    | Discard dialog; native beforeunload                            | Escape, cancel, discard browser checks |
+| Scrollbar      | Existing src/styles.css and Layout.tsx         | Existing prototype shell  | Global tokenized baseline; existing scroll ownership preserved | Narrow and desktop browser review      |
 
-Source authority: current CKS Go customer DTOs, controller, address service and session guards. Tests: customer/contracts, API, state and rendered presentation suites; local browser acceptance at the requested narrow sizes. No sensitive values in URLs, storage, logs or presentation session snapshots. Legacy mocked affordances and scrollbar design are explicitly outside this bounded package.
+Source authority: current CKS Go customer DTOs, controller, address service and session guards. Tests: customer/contracts, API, state and rendered presentation suites; local browser acceptance at the requested narrow sizes. No sensitive values in URLs, storage, logs or presentation session snapshots. Legacy mocked affordances remain outside this bounded package.
 
 ## CUST02B catalogue UI consequences
 
@@ -45,7 +45,7 @@ Source: approved CUST02C package, existing trusted checkout quote API and frozen
 
 The assignment-context handle and all credentials remain memory-only and never enter URLs, storage, logs or visible error copy. Browser Back may restore catalogue navigation only; refresh reconstructs an empty cart and requests a fresh assignment context. The native address select remains platform-owned. The clear-cart confirmation is app-owned, Escape-cancelable, viewport-bounded and initially focuses Cancel.
 
-The CUST02C downstream-boundary row is historical and is superseded only by the bounded CUST03A rows below. Receipt, history, tracking, and frontend Order creation remain disconnected.
+The CUST02C downstream-boundary row is historical. Payment is superseded by the bounded CUST03A rows below; customer order reads and supported after-order actions are superseded by CUST03B. Frontend Order creation remains disconnected.
 
 ## CUST03A payment initiation and result UI consequences
 
@@ -62,3 +62,19 @@ Source: pinned CKS Go backend payment contract at `ab1e6b90c4b5b324ce463a8b08f40
 | Session boundary   | `payment/state.ts`                        | Clear token, URL, intent, Order, retry key, and fence late work on logout/session loss                         | generation-race tests                  |
 
 The payment panel reuses the existing rounded white card, green primary action, native button semantics, focus ring, and narrow-shell behavior. It does not display checkout URLs, quote tokens, PaymentIntent IDs, raw backend/provider codes, or provider redirect parameters. A restart after terminal failure clears cart and payment state and requires a fresh quote.
+
+## CUST03B customer orders UI consequences
+
+Source: pinned CKS Go backend customer-order and receipt contracts at `9f5b779e38eea447e0bf425e0489e70107231356`. Backend projections remain the sole authority for customer stage, milestones, cancellation eligibility and receipt availability.
+
+| Capability       | Canonical owner                         | Allowed variant                                                                                              | Verification                                       |
+| ---------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------- |
+| History          | `orders/state.ts` and `OrdersScreen`    | Credentialed, paginated backend list; explicit loading, empty, error, session and refresh states             | contract/API/state/render/browser tests            |
+| Order detail     | `orders/contracts.ts` and detail screen | Closed customer-safe projection; order number in copy; no raw operational fields or inferred values          | strict parser and rendered redaction tests         |
+| Tracking         | `OrderDetailScreen`                     | Exact backend `customerStage` and returned milestones only; no browser-derived fulfilment authority          | stage matrix, malformed-contract and browser tests |
+| Back navigation  | `CatalogueApp`                          | Order UUID only in hash route; returns to in-memory history without leaking address or credentials           | navigation and browser Back checks                 |
+| Cancellation     | `orders/api.ts`, state and dialog       | `canCancel` hint; empty POST; in-memory CSRF; stable retry key; backend result only; least-destructive focus | API/state/dialog/browser checks                    |
+| Receipt download | `orders/api.ts` and detail screen       | Exact returned download path for current order; PDF content type; browser-owned file save                    | contract/API and receipt-ready browser checks      |
+| Session boundary | `orders/state.ts`                       | Clear history/detail/retry state and fence late work on logout or 401                                        | state races and session browser scenario           |
+
+History and detail reuse the existing shell, rounded cards, green action hierarchy, focus ring and MYR formatting. Destructive confirmation is app-owned; file saving remains browser-owned. Customer order data, receipt blobs, cancellation keys and CSRF are memory-only. Cancellation failure never fabricates a new status, and receipt visibility never comes from a payment assumption.

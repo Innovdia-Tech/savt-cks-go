@@ -80,6 +80,38 @@ describe("customer payment presentation", () => {
     expect(html).toContain("CONFIRMED");
   });
 
+  it("links to history only after paid plus valid backend Order evidence", () => {
+    const paid = renderToStaticMarkup(
+      createElement(PaymentPanel, {
+        state: {
+          ...base,
+          phase: "paid",
+          paymentIntentId: "intent-redacted",
+          order: {
+            orderId: "40000000-0000-4000-8000-000000000004",
+            orderNumber: "ORD-2026-0001",
+            status: "CONFIRMED",
+          },
+        },
+        controller,
+        onViewOrder: () => {},
+      } as never),
+    );
+    expect(paid).toContain("View order");
+    const processing = renderToStaticMarkup(
+      createElement(PaymentPanel, {
+        state: {
+          ...base,
+          phase: "paid-processing",
+          paymentIntentId: "intent-redacted",
+        },
+        controller,
+        onViewOrder: () => {},
+      } as never),
+    );
+    expect(processing).not.toContain("View order");
+  });
+
   it("never renders internal codes, payment URL, quote token, or intent ID", () => {
     const html = render({
       ...base,
