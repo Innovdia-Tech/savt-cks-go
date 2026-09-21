@@ -18,7 +18,8 @@ export class CustomerDataApi implements CustomerDataPort {
   constructor(
     private readonly origin: string,
     private readonly session: CustomerSessionController,
-    private readonly fetcher: typeof fetch = fetch,
+    private readonly fetcher: typeof fetch = (input, init) =>
+      globalThis.fetch(input, init),
     private readonly timeoutMs = 15_000,
   ) {}
   profile() {

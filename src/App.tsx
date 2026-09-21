@@ -1,3 +1,4 @@
+export { CatalogueApp as default } from "./catalogue/components";
 import { CustomerProfileScreen, CheckoutAddress } from "./customer/components";
 import { useCustomer } from "./customer/context";
 import { type ReactNode, useMemo, useState } from "react";
@@ -72,7 +73,8 @@ function findProducts(query: string) {
   return filterProducts(products, query);
 }
 
-export default function App({ onLogout }: { onLogout?: () => void }) {
+// Prototype commerce remains isolated and has no route from the real catalogue.
+function PrototypeApp({ onLogout }: { onLogout?: () => void }) {
   const { guardNavigation } = useCustomer();
   const [screen, setScreen] = useState<Screen>("home");
   const [selectedCategory, setSelectedCategory] = useState("fresh");
