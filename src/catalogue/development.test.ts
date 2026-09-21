@@ -4,6 +4,7 @@ import { CatalogueApi } from "./api";
 import { CustomerSessionController } from "../session/controller";
 import { DevelopmentCustomerApi } from "../api/development";
 import { DevelopmentBridgeAdapter } from "../webview/bridge";
+import { QuoteApi } from "../checkout/api";
 const address = { id: "22222222-2222-4222-8222-222222222222", rowVersion: 1 };
 async function setup(scenario = "success") {
   const adapter = new DevelopmentCatalogueAdapter(false);
@@ -13,7 +14,11 @@ async function setup(scenario = "success") {
     new DevelopmentBridgeAdapter(true, false),
   );
   await session.start();
-  return { adapter, api: new CatalogueApi("", session, adapter.fetch, 10) };
+  return {
+    adapter,
+    api: new CatalogueApi("", session, adapter.fetch, 10),
+    quote: new QuoteApi("", session, adapter.fetch, 10),
+  };
 }
 it("cannot construct a production fixture adapter", () =>
   expect(() => new DevelopmentCatalogueAdapter(true)).toThrow());
@@ -72,4 +77,84 @@ it("keeps the empty-assortment fixture consistent across categories and products
   const a = await api.assign(address);
   expect((await api.categories(a)).data).toEqual([]);
   expect((await api.products(a, { page: 1 })).data).toEqual([]);
+});
+
+it("assigns deterministic same and different outlets for address-transition acceptance", async () => {
+  const { api } = await setup();
+  const home = await api.assign(address);
+  const same = await api.assign({
+    id: "44444444-4444-4444-8444-444444444444",
+    rowVersion: 1,
+  });
+  const other = await api.assign({
+    id: "55555555-5555-4555-8555-555555555555",
+    rowVersion: 1,
+  });
+  expect(same.outlet.id).toBe(home.outlet.id);
+  expect(other.outlet.id).not.toBe(home.outlet.id);
+});
+
+it("creates a strict trusted quote from authoritative fixture prices", async () => {
+  const { api, quote } = await setup();
+  const a = await api.assign(address);
+  const item = (await api.products(a, { page: 1 })).data[0];
+  const result = await quote.create(
+    {
+      outletId: a.outlet.id,
+      customerAddressId: address.id,
+      deliveryType: "NOW",
+      items: [{ outletProductId: item.outletProductId, quantity: 2 }],
+    },
+    crypto.randomUUID(),
+  );
+  expect(result.items[0]).toMatchObject({
+    outletProductId: item.outletProductId,
+    quantity: 2,
+    unitPriceMinor: item.sellingPriceMinor,
+  });
+  expect(result.grandTotalMinor).toBe(
+    result.itemsSubtotalMinor +
+      result.finalDeliveryChargeMinor +
+      result.processingFeeMinor,
+  );
+});
+
+it.each([
+  ["quote-stock-changed", "CHECKOUT_INSUFFICIENT_STOCK"],
+  ["quote-unavailable", "CHECKOUT_OUTLET_PRODUCT_UNAVAILABLE"],
+  ["quote-assignment-mismatch", "CHECKOUT_OUTLET_ASSIGNMENT_MISMATCH"],
+  ["quote-address-changed", "CUSTOMER_ADDRESS_CHANGED"],
+])("provides deterministic %s quote failure", async (scenario, code) => {
+  const { api, quote } = await setup(scenario);
+  const a = await api.assign(address);
+  const item = (await api.products(a, { page: 1 })).data[0];
+  await expect(
+    quote.create(
+      {
+        outletId: a.outlet.id,
+        customerAddressId: address.id,
+        deliveryType: "NOW",
+        items: [{ outletProductId: item.outletProductId, quantity: 2 }],
+      },
+      crypto.randomUUID(),
+    ),
+  ).rejects.toMatchObject({ code });
+});
+
+it("returns a higher authoritative price in the price-change scenario", async () => {
+  const { api, quote } = await setup("quote-price-changed");
+  const a = await api.assign(address);
+  const item = (await api.products(a, { page: 1 })).data[0];
+  const result = await quote.create(
+    {
+      outletId: a.outlet.id,
+      customerAddressId: address.id,
+      deliveryType: "NOW",
+      items: [{ outletProductId: item.outletProductId, quantity: 1 }],
+    },
+    crypto.randomUUID(),
+  );
+  expect(result.items[0].unitPriceMinor).toBeGreaterThan(
+    item.sellingPriceMinor,
+  );
 });

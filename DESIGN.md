@@ -1,6 +1,6 @@
-# Customer profile and saved addresses
+# CKS GO customer catalogue, cart and trusted quote
 
-CUST01B extends the existing English-language, Malaysia-focused mobile grocery prototype. Preserve the existing green palette, Inter/system typography, rounded white cards, 430px shell, and mocked commerce. No redesign or backend changes.
+CUST01B through CUST02C extend the existing English-language, Malaysia-focused mobile grocery prototype. Preserve the existing green palette, Inter/system typography, rounded white cards and 430px shell. CUST02C connects real catalogue items to an in-memory cart and trusted quote, while payment, order creation, receipts and tracking remain disconnected. No redesign or backend changes.
 
 ## Runtime owners
 
@@ -12,7 +12,7 @@ CUST01B extends the existing English-language, Malaysia-focused mobile grocery p
 
 Use native buttons, labels and a native checkout select (platform popup is intentional). The app-owned unsaved-change dialog uses native dialog focus and Escape behavior. Inline deactivation confirmation names its reversible effect. Customer data and drafts remain in memory. Never persist identity, address PII or CSRF.
 
-Profile and address requests follow the CKS integration checkout DTOs and routes at `bac1f2f`. Mutations wait for the server. Reload all addresses after success because default changes update other versions. A conflict requires explicit reload; uncertain submissions retain the same immutable operation for retry. Catalogue, prices, payment, tracking and receipts remain mocked.
+Profile and address requests follow the CKS integration checkout DTOs and routes at `bac1f2f`. Mutations wait for the server. Reload all addresses after success because default changes update other versions. A conflict requires explicit reload; uncertain submissions retain the same immutable operation for retry. Payment, order creation, tracking and receipts remain disconnected.
 
 ## CUST02B catalogue binding
 
@@ -27,3 +27,15 @@ Real catalogue navigation cannot reach the retained prototype commerce implement
 Search is debounced 300ms with composition protection, explicit Enter and immediate clear. The search/category/page state and assignment context stay in memory, since they are session/address-specific. Hash navigation contains only screen names and product UUIDs. Address/context/filter changes reset pages. No assignment handle or address identifier enters a URL, browser storage, logs or analytics.
 
 Development catalogue fixtures are dynamically imported only under the existing explicit DEV + development-API flags. A constructor production guard is an additional boundary. The development composition supplies synthetic coordinates on fixture address reads; production address data and mutation authority are unchanged. Fixtures reset on refresh.
+
+## CUST02C cart and trusted quote
+
+Runtime owners: `src/checkout/contracts.ts` (closed authoritative quote projection), `api.ts` (exact credentialed POST and stable attempt key), `state.ts` (cart, assignment transitions and quote lifecycle), `context.tsx` (customer/catalogue coordination), and `components.tsx` / `checkout.css` (presentation). Existing customer and catalogue owners remain canonical for saved addresses and assigned catalogue products.
+
+The cart stores one assigned outlet and exact outlet-product identities with display snapshots, current displayed MYR price and bounded quantity. It merges only identical `outletProductId` values. It never searches for or remaps a replacement by product ID, SKU, barcode or name.
+
+Changing to the same assigned outlet preserves lines and invalidates a quote. A different outlet commits immediately only for an empty cart. A nonempty cart uses an app-owned confirmation whose least destructive action receives initial focus; cancel preserves the committed address/outlet/cart, while confirm clears cart and quote before adopting the new assignment.
+
+`POST /api/v1/checkout/quote` occurs only from an explicit cart action. The request contains outlet/address/outlet-product identities, quantities, delivery type, in-memory CSRF and one UUIDv4 key per attempt; it contains no client totals, fees, distance, ETA or prices. The response is parsed as a closed contract and displayed as server-authoritative. Price changes require explicit review, and expiry disables the quote until an explicit requote. Assignment context, CSRF, quote token and session credentials stay out of URLs, browser storage, logs and visible UI.
+
+The cart deliberately ends after quote review. No payment, order, receipt, mock confirmation or tracking transition is reachable from the real catalogue/cart.

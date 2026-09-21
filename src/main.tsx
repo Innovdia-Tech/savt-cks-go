@@ -19,6 +19,10 @@ import "./customer/customer.css";
 import { CustomerDataApi } from "./customer/api";
 import { CustomerDataController } from "./customer/state";
 import { CustomerDataProvider } from "./customer/context";
+import { QuoteApi } from "./checkout/api";
+import { CartController } from "./checkout/state";
+import { CheckoutProvider } from "./checkout/context";
+import "./checkout/checkout.css";
 
 const root = createRoot(document.getElementById("root")!);
 
@@ -60,10 +64,17 @@ async function start() {
       ),
       session,
     );
-    const catalogue = new CatalogueController(
-      new CatalogueApi(config.apiOrigin, session, catalogueDevelopment?.fetch),
-      Date.now,
-      () => customer.load(),
+    const catalogueApi = new CatalogueApi(
+      config.apiOrigin,
+      session,
+      catalogueDevelopment?.fetch,
+    );
+    const catalogue = new CatalogueController(catalogueApi, Date.now, () =>
+      customer.load(),
+    );
+    const checkout = new CartController(
+      new QuoteApi(config.apiOrigin, session, catalogueDevelopment?.fetch),
+      catalogueApi,
     );
     root.render(
       <React.StrictMode>
@@ -83,7 +94,9 @@ async function start() {
                 ) : undefined
               }
             >
-              <App onLogout={() => void session.logout()} />
+              <CheckoutProvider controller={checkout} customer={customer}>
+                <App onLogout={() => void session.logout()} />
+              </CheckoutProvider>
             </CatalogueProvider>
           </CustomerDataProvider>
         </CustomerSessionBoundary>

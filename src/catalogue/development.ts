@@ -35,6 +35,12 @@ export const scenarios = [
   "outlet-unavailable",
   "coordinates",
   "no-address",
+  "quote-price-changed",
+  "quote-stock-changed",
+  "quote-unavailable",
+  "quote-assignment-mismatch",
+  "quote-address-changed",
+  "quote-expiry",
 ] as const;
 export class DevelopmentCatalogueAdapter {
   private scenario = "success";
@@ -56,11 +62,12 @@ export class DevelopmentCatalogueAdapter {
   expire() {
     this.assignment = null;
   }
-  private outlet(): Outlet {
+  private outlet(outletId = id(1)): Outlet {
     return {
-      id: id(1),
-      displayReference: "DEMO-01",
-      displayName: "Demo neighbourhood outlet",
+      id: outletId,
+      displayReference: outletId === id(2) ? "DEMO-02" : "DEMO-01",
+      displayName:
+        outletId === id(2) ? "Demo suburb outlet" : "Demo neighbourhood outlet",
       status: "ACTIVE",
       operatingState: "ONLINE",
       availability: this.scenario === "blocked" ? "UNAVAILABLE" : "AVAILABLE",
@@ -159,13 +166,17 @@ export class DevelopmentCatalogueAdapter {
         return failure(409, "CUSTOMER_ADDRESS_CHANGED");
       const body = JSON.parse(String(init.body));
       const t = this.now();
+      const outletId =
+        body.customerAddressId === "55555555-5555-4555-8555-555555555555"
+          ? id(2)
+          : id(1);
       // Synthetic opaque handles are deterministic; production never imports this module.
       const handle = String(++this.serial).padStart(42, "A") + "A";
       this.assignment = {
         assignmentContextId: handle,
         customerAddressId: body.customerAddressId,
         addressRowVersion: body.addressRowVersion,
-        outlet: this.outlet(),
+        outlet: this.outlet(outletId),
         resolvedAt: new Date(t).toISOString(),
         expiresAt: new Date(
           t + (this.scenario === "expiry" ? 3000 : 300000),
@@ -174,6 +185,118 @@ export class DevelopmentCatalogueAdapter {
       return Response.json({
         data: this.assignment,
         meta: { asOf: new Date(t).toISOString() },
+      });
+    }
+    if (u.pathname === "/api/v1/checkout/quote" && init?.method === "POST") {
+      if (!h.get("x-cks-csrf")) return failure(403, "CUSTOMER_CSRF_INVALID");
+      if (!h.get("Idempotency-Key")) return failure(400, "VALIDATION_FAILED");
+      if (h.has("X-CKS-Assignment-Context"))
+        return failure(400, "VALIDATION_FAILED");
+      if (this.scenario === "quote-stock-changed")
+        return failure(409, "CHECKOUT_INSUFFICIENT_STOCK");
+      if (this.scenario === "quote-unavailable")
+        return failure(409, "CHECKOUT_OUTLET_PRODUCT_UNAVAILABLE");
+      if (this.scenario === "quote-assignment-mismatch")
+        return failure(409, "CHECKOUT_OUTLET_ASSIGNMENT_MISMATCH");
+      if (this.scenario === "quote-address-changed")
+        return failure(409, "CUSTOMER_ADDRESS_CHANGED");
+      const body = JSON.parse(String(init.body)) as {
+        outletId: string;
+        customerAddressId: string;
+        deliveryType: string;
+        items: Array<{ outletProductId: string; quantity: number }>;
+      };
+      const assignment = this.assignment;
+      if (
+        !assignment ||
+        body.outletId !== assignment.outlet.id ||
+        body.customerAddressId !== assignment.customerAddressId
+      )
+        return failure(409, "CHECKOUT_OUTLET_ASSIGNMENT_MISMATCH");
+      const products = new Map(
+        this.products().map((product) => [product.outletProductId, product]),
+      );
+      const lines = body.items.map((requested, index) => {
+        const product = products.get(requested.outletProductId);
+        if (!product) return null;
+        const unitPriceMinor =
+          product.sellingPriceMinor +
+          (this.scenario === "quote-price-changed" ? 100 : 0);
+        return {
+          outletProductId: product.outletProductId,
+          productId: product.productId,
+          skuCode: `SYNTH-${index + 1}`,
+          productNameSnapshot: product.name,
+          uomCodeSnapshot: product.uom.code,
+          uomNameSnapshot: product.uom.name,
+          quantity: requested.quantity,
+          unitPriceMinor,
+          lineSubtotalMinor: unitPriceMinor * requested.quantity,
+        };
+      });
+      if (lines.some((line) => line === null))
+        return failure(404, "CHECKOUT_OUTLET_PRODUCT_NOT_FOUND");
+      const authoritative = lines as Array<NonNullable<(typeof lines)[number]>>;
+      const itemsSubtotalMinor = authoritative.reduce(
+        (sum, line) => sum + line.lineSubtotalMinor,
+        0,
+      );
+      const baseDeliveryFeeMinor = 490;
+      const processingFeeMinor = 50;
+      const processingFeeBasisMinor = itemsSubtotalMinor + baseDeliveryFeeMinor;
+      const issued = this.now();
+      return Response.json({
+        data: {
+          quoteId: id(900 + ++this.serial),
+          quoteToken: `synthetic-quote-token-${this.serial}`,
+          currency: "MYR",
+          items: authoritative,
+          itemsSubtotalMinor,
+          discountAmountMinor: 0,
+          netItemsTotalMinor: itemsSubtotalMinor,
+          routeDistanceMeters: 3500,
+          distanceKm: 3.5,
+          routeDurationSeconds: 840,
+          distanceProvider: "SYNTHETIC_ROUTES",
+          deliveryBandId: id(800),
+          deliverySlaMinutes: 25,
+          preparationTargetMinutes: 30,
+          minimumTravelSlaMinutes: 20,
+          operationalAllowanceMinutes: 10,
+          roundingIntervalMinutes: 5,
+          googleEstimatedTravelMinutes: 14,
+          committedTravelSlaMinutes: 25,
+          estimatedTotalOrderMinutes: 55,
+          baseDeliveryFeeMinor,
+          deliveryDiscountMinor: 0,
+          finalDeliveryChargeMinor: baseDeliveryFeeMinor,
+          processingFeeBasisMinor,
+          processingFee: {
+            enabled: true,
+            feeType: "FIXED",
+            rate: null,
+            fixedAmountMinor: processingFeeMinor,
+          },
+          processingFeeMinor,
+          grandTotalMinor: processingFeeBasisMinor + processingFeeMinor,
+          ruleReferences: {
+            scheduling: { ruleId: id(801), version: 1 },
+            deliveryPricing: { ruleId: id(802), version: 1 },
+            deliveryTiming: { ruleId: id(803), version: 1 },
+            freeDelivery: null,
+            processingFee: { ruleId: id(804), version: 1 },
+            refundPolicy: { ruleId: id(805), version: 1 },
+          },
+          deliveryPromotion: null,
+          savtVoucher: null,
+          quoteIssuedAt: new Date(issued).toISOString(),
+          quoteExpiresAt: new Date(
+            issued + (this.scenario === "quote-expiry" ? 3000 : 600000),
+          ).toISOString(),
+          outletId: assignment.outlet.id,
+          customerAddressId: assignment.customerAddressId,
+          addressRowVersion: assignment.addressRowVersion,
+        },
       });
     }
     if (!h.get("X-CKS-Assignment-Context"))
@@ -194,7 +317,7 @@ export class DevelopmentCatalogueAdapter {
     if (!u.pathname.startsWith(`/api/v1/customer/outlets/${a.outlet.id}/`))
       return failure(409, "CUSTOMER_OUTLET_ASSIGNMENT_MISMATCH");
     const meta = {
-      outlet: this.outlet(),
+      outlet: this.outlet(a.outlet.id),
       asOf: new Date(this.now()).toISOString(),
       assignmentContextExpiresAt: a.expiresAt,
     };

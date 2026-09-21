@@ -7,6 +7,8 @@ import { useCatalogue } from "./context";
 import type { Product } from "./contracts";
 import type { CatalogueState } from "./state";
 import type { Screen } from "../types";
+import { useCheckout } from "../checkout/context";
+import { AddressTransitionError, CartScreen } from "../checkout/components";
 export const money = (minor: number) =>
   new Intl.NumberFormat("en-MY", { style: "currency", currency: "MYR" }).format(
     minor / 100,
@@ -44,10 +46,16 @@ export function ProductImage({
 export function ProductTile({
   product,
   onOpen,
+  onAdd,
+  orderingDisabled = false,
 }: {
   product: Product;
   onOpen: () => void;
+  onAdd?: () => void;
+  orderingDisabled?: boolean;
 }) {
+  const canAdd =
+    product.availability === "AVAILABLE" && !orderingDisabled && !!onAdd;
   return (
     <article className="catalogue-tile">
       <button
@@ -69,8 +77,13 @@ export function ProductTile({
       </span>
       <button
         className="catalogue-add"
-        disabled
-        aria-label={`Add ${product.name} — ordering unavailable`}
+        disabled={!canAdd}
+        onClick={onAdd}
+        aria-label={
+          canAdd
+            ? `Add ${product.name} to cart`
+            : `Add ${product.name} — unavailable`
+        }
       >
         Add
       </button>
@@ -216,6 +229,7 @@ function readRoute() {
 }
 export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
   const { state, controller, controls } = useCatalogue();
+  const checkout = useCheckout();
   const { guardNavigation } = useCustomer();
   const [route, setRoute] = useState(readRoute);
   const [query, setQuery] = useState(state.q);
@@ -280,7 +294,10 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
               ? "Orders"
               : "Home"
       }
-      cartCount={0}
+      cartCount={checkout.state.lines.reduce(
+        (sum, line) => sum + line.quantity,
+        0,
+      )}
       onNavigate={nav}
       onLogout={onLogout}
       screenKey={route}
@@ -290,7 +307,15 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
         {controls}
         {route === "profile" ? (
           <>
-            <CheckoutAddress catalogue onManage={() => {}} />
+            <CheckoutAddress
+              catalogue
+              onManage={() => {}}
+              selecting={checkout.state.transitionPhase === "checking"}
+              onSelect={(addressId) => void checkout.selectAddress(addressId)}
+            />
+            {checkout.state.transitionPhase === "error" && (
+              <AddressTransitionError error={checkout.state.transitionError} />
+            )}
             <CustomerProfileScreen />
           </>
         ) : (
@@ -321,16 +346,18 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                 Your account is read-only. Products cannot be ordered.
               </p>
             )}
-            {route === "cart" || route === "orders" ? (
+            {route === "cart" ? (
+              <CartScreen
+                state={checkout.state}
+                controller={checkout.controller}
+                onBrowse={() => navigate("home")}
+              />
+            ) : route === "orders" ? (
               <section className="catalogue-state">
-                <h2>
-                  {route === "cart"
-                    ? "Ordering is not available yet"
-                    : "Orders are not connected yet"}
-                </h2>
+                <h2>Orders are not connected yet</h2>
                 <p>
-                  You can browse the catalogue. Cart, checkout and order
-                  tracking are unavailable.
+                  Trusted quotes stop before payment, order creation and
+                  tracking.
                 </p>
                 <button
                   className="customer-button"
@@ -466,10 +493,27 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                         <dt>Storage</dt>
                         <dd>{p.storageType.toLowerCase()}</dd>
                       </dl>
-                      <button className="catalogue-add" disabled>
+                      <button
+                        className="catalogue-add"
+                        disabled={
+                          state.readOnly ||
+                          p.availability !== "AVAILABLE" ||
+                          !state.assignment ||
+                          checkout.state.assignment?.outletId !==
+                            state.assignment.outlet.id
+                        }
+                        onClick={() => {
+                          if (!state.assignment) return;
+                          checkout.controller.add(p, state.assignment);
+                          navigate("cart");
+                        }}
+                      >
                         Add to cart
                       </button>
-                      <p>Ordering is not available yet.</p>
+                      <p>
+                        Prices and stock are confirmed when you request a
+                        trusted quote.
+                      </p>
                     </article>
                   )
                 ) : (
@@ -480,7 +524,9 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                       </p>
                     )}
                     <p className="catalogue-caption">
-                      Ordering is not available yet. Prices are shown in MYR.
+                      Add available products from this assigned outlet.
+                      Displayed prices are shown in MYR and confirmed by a
+                      trusted quote.
                     </p>
                     {state.products?.data.length ? (
                       <div className="catalogue-grid">
@@ -491,6 +537,19 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                             onOpen={() =>
                               navigate("detail/" + product.outletProductId)
                             }
+                            orderingDisabled={
+                              state.readOnly ||
+                              !state.assignment ||
+                              checkout.state.assignment?.outletId !==
+                                state.assignment.outlet.id
+                            }
+                            onAdd={() => {
+                              if (state.assignment)
+                                checkout.controller.add(
+                                  product,
+                                  state.assignment,
+                                );
+                            }}
                           />
                         ))}
                       </div>

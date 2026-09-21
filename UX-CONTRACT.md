@@ -25,6 +25,22 @@ Source: frozen CUST02A-CP0-R2, assignment lifecycle, strict envelopes and CUST02
 | Status              | CatalogueStatus                                   | Inline loading, empty, error, expiry and read-only copy                     | rendered tests and deterministic browser scenarios              |
 | Images              | ProductImage                                      | Fixed placeholder, lazy returned image, load-error fallback                 | component test and browser null-image geometry                  |
 | Navigation          | Existing guardNavigation + screen/product hash    | Existing unsaved-form guard; no context/address in URL                      | keyboard search, detail/back/refresh, profile and logout checks |
-| Commerce            | CatalogueApp                                      | Disabled Add; unavailable Cart/Orders; prototype not routed                 | component/browser checks and source review                      |
+| Commerce            | CatalogueApp                                      | Historical CUST02B boundary; superseded by the CUST02C map below            | component/browser checks and source review                      |
 
 Keep the existing profile/address forms, mutation outcomes, confirmations and session boundary intact. Browser Back restores screen/product navigation; query/filter/page state is intentionally ephemeral and never persisted. A full refresh performs fresh session/address loading and assignment. Catalogue GETs cannot renew or resolve outlets by themselves; the controller uses a separate bounded assignment POST when needed.
+
+## CUST02C cart and trusted quote UI consequences
+
+Source: approved CUST02C package, existing trusted checkout quote API and frozen assignment-context contract. These rows describe UI behavior; backend policy remains authoritative.
+
+| Capability          | Canonical owner                                  | Allowed variant                                                                                                           | Verification                                |
+| ------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| Cart identity       | `checkout/state.ts`                              | One outlet; exact `outletProductId` merge; bounded line/quantity; memory-only display snapshots                           | state and rendered cart tests               |
+| Address transition  | `checkout/context.tsx` and `AddressChangeDialog` | Same outlet preserves cart; different nonempty cart requires app-owned clear confirmation                                 | transition tests and browser cancel/confirm |
+| Quote action        | `CartScreen` and `checkout/api.ts`               | Explicit customer action only; stable UUIDv4 per attempt; no client-calculated commercial fields                          | API/state tests and request inspection      |
+| Quote evidence      | `QuoteSummary`                                   | Closed authoritative lines, totals, currency, timing, expiry and returned assignment evidence                             | parser/render tests and browser success     |
+| Price review        | `checkout/state.ts`                              | Changed server prices block reviewed state until explicit acceptance                                                      | state/render tests and browser scenario     |
+| Expiry/recovery     | `checkout/state.ts` and `QuoteSummary`           | Expired quote is not actionable; explicit requote; bounded same-attempt retry only for uncertain transport/parse failures | timer, API and browser failure scenarios    |
+| Downstream boundary | `CatalogueApp`                                   | No payment, order creation, mock confirmation, receipt or tracking action from the real cart                              | component tests and source/browser review   |
+
+The assignment-context handle and all credentials remain memory-only and never enter URLs, storage, logs or visible error copy. Browser Back may restore catalogue navigation only; refresh reconstructs an empty cart and requests a fresh assignment context. The native address select remains platform-owned. The clear-cart confirmation is app-owned, Escape-cancelable, viewport-bounded and initially focuses Cancel.

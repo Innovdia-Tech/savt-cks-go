@@ -71,6 +71,8 @@ describe("customer presentation", () => {
   it("checkout displays only active saved addresses", async () => {
     const html = await render("mixed", CheckoutAddress);
     expect(html).toContain("Demo home");
+    expect(html).toContain("Demo flat");
+    expect(html).toContain("Demo suburb");
     expect(html).not.toContain("Demo office");
     expect(html).toContain("1 Example Street");
   });
