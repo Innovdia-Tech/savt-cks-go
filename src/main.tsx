@@ -26,6 +26,10 @@ import { PaymentApi } from "./payment/api";
 import { PaymentProvider } from "./payment/context";
 import { PaymentController } from "./payment/state";
 import "./checkout/checkout.css";
+import { OrdersApi } from "./orders/api";
+import { OrdersController } from "./orders/state";
+import { OrdersProvider } from "./orders/context";
+import "./orders/orders.css";
 
 const root = createRoot(document.getElementById("root")!);
 
@@ -86,6 +90,10 @@ async function start() {
       (quoteId) => checkout.freezeForPayment(quoteId),
       () => checkout.clear(),
     );
+    const orders = new OrdersController(
+      new OrdersApi(config.apiOrigin, session, catalogueDevelopment?.fetch),
+      session,
+    );
     root.render(
       <React.StrictMode>
         <CustomerSessionBoundary controller={session}>
@@ -106,7 +114,9 @@ async function start() {
             >
               <CheckoutProvider controller={checkout} customer={customer}>
                 <PaymentProvider controller={payment}>
-                  <App onLogout={() => void session.logout()} />
+                  <OrdersProvider controller={orders}>
+                    <App onLogout={() => void session.logout()} />
+                  </OrdersProvider>
                 </PaymentProvider>
               </CheckoutProvider>
             </CatalogueProvider>

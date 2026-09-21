@@ -10,6 +10,8 @@ import type { Screen } from "../types";
 import { useCheckout } from "../checkout/context";
 import { AddressTransitionError, CartScreen } from "../checkout/components";
 import { usePayment } from "../payment/context";
+import { useOrders } from "../orders/context";
+import { OrderDetailScreen, OrdersScreen } from "../orders/components";
 export const money = (minor: number) =>
   new Intl.NumberFormat("en-MY", { style: "currency", currency: "MYR" }).format(
     minor / 100,
@@ -222,7 +224,7 @@ export function CatalogueStatus({
 }
 function readRoute() {
   const value = window.location.hash.slice(1);
-  return /^(home|categories|profile|cart|orders|detail\/[0-9a-f-]{36})$/.test(
+  return /^(home|categories|profile|cart|orders|detail\/[0-9a-f-]{36}|order\/[0-9a-f-]{36})$/.test(
     value,
   )
     ? value
@@ -232,6 +234,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
   const { state, controller, controls } = useCatalogue();
   const checkout = useCheckout();
   const payment = usePayment();
+  const orders = useOrders();
   const { guardNavigation } = useCustomer();
   const [route, setRoute] = useState(readRoute);
   const [query, setQuery] = useState(state.q);
@@ -265,11 +268,16 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
     state.assignment?.addressRowVersion,
   ]);
   const detailId = route.startsWith("detail/") ? route.slice(7) : undefined;
+  const orderDetailId = route.startsWith("order/") ? route.slice(6) : undefined;
   useEffect(() => {
     if (detailId && state.assignment && state.detailId !== detailId)
       void controller.open(detailId);
     else if (!detailId && state.detailId) void controller.closeDetail();
   }, [detailId, state.assignment, state.detailId, controller]);
+  useEffect(() => {
+    if (orderDetailId) void orders.controller.open(orderDetailId);
+    else orders.controller.closeDetail();
+  }, [orderDetailId, orders.controller]);
   const navigate = (next: string) =>
     guardNavigation(() => {
       window.location.hash = next;
@@ -292,7 +300,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
           ? "Categories"
           : route === "cart"
             ? "Cart"
-            : route === "orders"
+            : route === "orders" || orderDetailId
               ? "Orders"
               : "Home"
       }
@@ -335,7 +343,9 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                       ? "Product details"
                       : route === "cart"
                         ? "Cart"
-                        : "Orders"}
+                        : orderDetailId
+                          ? "Order details"
+                          : "Orders"}
               </h1>
               {detailId && (
                 <button
@@ -343,6 +353,14 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                   onClick={() => navigate("home")}
                 >
                   Back to products
+                </button>
+              )}
+              {orderDetailId && (
+                <button
+                  className="catalogue-link"
+                  onClick={() => navigate("orders")}
+                >
+                  Back to orders
                 </button>
               )}
             </div>
@@ -355,23 +373,25 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
               <CartScreen
                 state={checkout.state}
                 controller={checkout.controller}
-                payment={payment}
+                payment={{
+                  ...payment,
+                  onViewOrder: (orderId) => navigate(`order/${orderId}`),
+                }}
                 onBrowse={() => navigate("home")}
               />
             ) : route === "orders" ? (
-              <section className="catalogue-state">
-                <h2>Orders are not connected yet</h2>
-                <p>
-                  Trusted quotes stop before payment, order creation and
-                  tracking.
-                </p>
-                <button
-                  className="customer-button"
-                  onClick={() => navigate("home")}
-                >
-                  Browse products
-                </button>
-              </section>
+              <OrdersScreen
+                state={orders.state}
+                controller={orders.controller}
+                onOpen={(orderId) => navigate(`order/${orderId}`)}
+                onBrowse={() => navigate("home")}
+              />
+            ) : orderDetailId ? (
+              <OrderDetailScreen
+                state={orders.state}
+                controller={orders.controller}
+                onBack={() => navigate("orders")}
+              />
             ) : (
               <>
                 {browse && (

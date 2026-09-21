@@ -50,6 +50,15 @@ export const paymentResultScenarios = [
   "paid-no-order",
 ] as const;
 export type PaymentResultScenario = (typeof paymentResultScenarios)[number];
+export const orderScenarios = [
+  "active",
+  "empty",
+  "delivered",
+  "receipt-ready",
+  "error",
+  "malformed",
+] as const;
+export type OrderScenario = (typeof orderScenarios)[number];
 export class DevelopmentCatalogueAdapter {
   private scenario = "success";
   private serial = 0;
@@ -65,6 +74,8 @@ export class DevelopmentCatalogueAdapter {
   private paymentResult: PaymentResultScenario = "pending";
   private paymentCreates = 0;
   private paymentResults = 0;
+  private orderScenario: OrderScenario = "active";
+  private orderCancelled = false;
   constructor(
     production: boolean,
     private readonly now = Date.now,
@@ -81,12 +92,18 @@ export class DevelopmentCatalogueAdapter {
     this.paymentResult = "pending";
     this.paymentCreates = 0;
     this.paymentResults = 0;
+    this.orderScenario = "active";
+    this.orderCancelled = false;
   }
   expire() {
     this.assignment = null;
   }
   setPaymentResult(result: PaymentResultScenario) {
     this.paymentResult = result;
+  }
+  setOrderScenario(result: OrderScenario) {
+    this.orderScenario = result;
+    this.orderCancelled = false;
   }
   paymentMetrics() {
     return {
@@ -130,6 +147,130 @@ export class DevelopmentCatalogueAdapter {
         "Synthetic catalogue item for local acceptance. Store as directed.",
       storageType: "AMBIENT",
     })).sort((a, b) => a.name.localeCompare(b.name));
+  }
+  private syntheticOrder() {
+    const orderId = id(990);
+    const at = new Date(this.now() - 45 * 60_000).toISOString();
+    const delivered =
+      this.orderScenario === "delivered" ||
+      this.orderScenario === "receipt-ready";
+    const cancelled = this.orderCancelled;
+    const stage = cancelled
+      ? "CANCELLED"
+      : delivered
+        ? "DELIVERED"
+        : "ORDER_RECEIVED";
+    const receiptAvailable = this.orderScenario === "receipt-ready";
+    return {
+      orderId,
+      orderNumber: "SYNTH-ORDER-0001",
+      createdAt: at,
+      updatedAt: new Date(this.now()).toISOString(),
+      customerStage: stage,
+      paymentStatus: "PAID" as const,
+      outletId: id(1),
+      outletName: "Demo neighbourhood outlet",
+      currency: "MYR" as const,
+      grandTotalMinor: 4590,
+      deliveryType: "NOW" as const,
+      tracking: {
+        currentState: delivered ? "DELIVERED" : null,
+        assignedAt: delivered ? at : null,
+        pickedUpAt: delivered ? at : null,
+        deliveredAt: delivered
+          ? new Date(this.now() - 5 * 60_000).toISOString()
+          : null,
+      },
+      receiptAvailable,
+      canCancel: !delivered && !cancelled,
+    };
+  }
+  private syntheticOrderDetail() {
+    const summary = this.syntheticOrder();
+    const delivered = summary.customerStage === "DELIVERED";
+    const cancelled = summary.customerStage === "CANCELLED";
+    const confirmedAt = delivered ? summary.updatedAt : null;
+    return {
+      orderId: summary.orderId,
+      orderNumber: summary.orderNumber,
+      createdAt: summary.createdAt,
+      updatedAt: summary.updatedAt,
+      customerStage: summary.customerStage,
+      paymentStatus: summary.paymentStatus,
+      cancellationKind: cancelled ? "CUSTOMER_REQUEST" : null,
+      operationalFailure: null,
+      outletId: summary.outletId,
+      outletName: summary.outletName,
+      canCancel: summary.canCancel,
+      items: [
+        {
+          orderItemId: id(991),
+          skuCode: "SYNTH-SAFE-1",
+          productName: "Synthetic apples",
+          uomCode: "PACK",
+          uomName: "Pack",
+          orderedQuantity: 2,
+          fulfilledQuantity: delivered ? 2 : null,
+          unavailableQuantity: delivered ? 0 : null,
+          unitPriceMinor: 1800,
+          discountMinor: 100,
+          lineTotalMinor: 3500,
+        },
+      ],
+      fulfilment: { fulfilmentConfirmed: delivered, confirmedAt },
+      money: {
+        itemsSubtotalMinor: 3600,
+        discountAmountMinor: 100,
+        netItemsTotalMinor: 3500,
+        finalDeliveryChargeMinor: 990,
+        processingFeeMinor: 100,
+        grandTotalMinor: 4590,
+        currency: "MYR",
+      },
+      destination: {
+        recipientName: "Synthetic customer",
+        recipientPhoneE164: "+60123456789",
+        addressLine1: "1 Synthetic Street",
+        addressLine2: null,
+        city: "Kota Kinabalu",
+        state: "Sabah",
+        postcode: "88000",
+        instructions: "Leave at reception",
+      },
+      delivery: { deliveryType: summary.deliveryType, ...summary.tracking },
+      milestones: {
+        paymentConfirmedAt: summary.createdAt,
+        acceptedAt: delivered ? summary.createdAt : null,
+        pickingStartedAt: null,
+        pickingConfirmedAt: delivered ? summary.createdAt : null,
+        pandaConfirmedAt: null,
+        packingCompletedAt: delivered ? summary.createdAt : null,
+        cancelledAt: cancelled ? summary.updatedAt : null,
+        deliveredAt: summary.tracking.deliveredAt,
+        completedAt: delivered ? summary.updatedAt : null,
+      },
+      refund: {
+        refundRequired: cancelled,
+        requiredAmountMinor: cancelled ? 4590 : 0,
+        totalRequiredAmountMinor: cancelled ? 4590 : 0,
+        requirementStatus: cancelled ? "REQUIRED" : null,
+      },
+      receipt: summary.receiptAvailable
+        ? {
+            receiptAvailable: true,
+            receiptReference: summary.orderNumber,
+            issuedAt: summary.updatedAt,
+            metadataPath: `/api/v1/orders/${summary.orderId}/receipt`,
+            downloadPath: `/api/v1/orders/${summary.orderId}/receipt/download`,
+          }
+        : {
+            receiptAvailable: false,
+            receiptReference: null,
+            issuedAt: null,
+            metadataPath: null,
+            downloadPath: null,
+          },
+    };
   }
   customerFetch(fetcher: typeof fetch): typeof fetch {
     return async (input, init) => {
@@ -414,6 +555,77 @@ export class DevelopmentCatalogueAdapter {
                   status: "CONFIRMED",
                 }
               : null,
+        },
+      });
+    }
+    const syntheticOrder = this.syntheticOrder();
+    if (u.pathname === "/api/v1/customer/orders" && init?.method === "GET") {
+      if (this.orderScenario === "error")
+        return failure(503, "CUSTOMER_ORDER_UNAVAILABLE");
+      if (this.orderScenario === "malformed")
+        return Response.json({
+          data: [{ ...syntheticOrder, riderPhone: "+6011" }],
+          meta: { page: 1, pageSize: 25, total: 1, totalPages: 1 },
+        });
+      const page = Number(u.searchParams.get("page") ?? 1);
+      const pageSize = Number(u.searchParams.get("pageSize") ?? 25);
+      const data = this.orderScenario === "empty" ? [] : [syntheticOrder];
+      return Response.json({
+        data: page === 1 ? data : [],
+        meta: {
+          page,
+          pageSize,
+          total: data.length,
+          totalPages: data.length ? 1 : 0,
+        },
+      });
+    }
+    if (
+      u.pathname === `/api/v1/customer/orders/${syntheticOrder.orderId}` &&
+      init?.method === "GET"
+    ) {
+      if (this.orderScenario === "error")
+        return failure(503, "CUSTOMER_ORDER_UNAVAILABLE");
+      return Response.json({ data: this.syntheticOrderDetail() });
+    }
+    if (
+      u.pathname ===
+        `/api/v1/customer/orders/${syntheticOrder.orderId}/cancel` &&
+      init?.method === "POST"
+    ) {
+      if (!h.get("x-cks-csrf")) return failure(403, "CUSTOMER_CSRF_INVALID");
+      if (!h.get("Idempotency-Key"))
+        return failure(428, "MUTATION_PRECONDITION_REQUIRED");
+      if (String(init.body) !== "{}")
+        return failure(400, "CUSTOMER_ORDER_CANCEL_BODY_INVALID");
+      if (!syntheticOrder.canCancel)
+        return failure(409, "CUSTOMER_ORDER_NOT_CANCELLABLE");
+      this.orderCancelled = true;
+      return Response.json({
+        data: {
+          orderId: syntheticOrder.orderId,
+          customerStage: "CANCELLED",
+          paymentStatus: "PAID",
+          cancelledAt: new Date(this.now()).toISOString(),
+          canCancel: false,
+          refundRequired: true,
+          requiredAmountMinor: syntheticOrder.grandTotalMinor,
+          requirementStatus: "REQUIRED",
+          currency: "MYR",
+        },
+      });
+    }
+    if (
+      u.pathname ===
+        `/api/v1/orders/${syntheticOrder.orderId}/receipt/download` &&
+      init?.method === "GET"
+    ) {
+      if (!syntheticOrder.receiptAvailable)
+        return failure(409, "FINAL_RECEIPT_NOT_READY");
+      return new Response(new Uint8Array([37, 80, 68, 70, 45, 49, 46, 55]), {
+        headers: {
+          "content-type": "application/pdf",
+          "content-disposition": `attachment; filename="CKS-Go-Receipt-${syntheticOrder.orderNumber}.pdf"`,
         },
       });
     }

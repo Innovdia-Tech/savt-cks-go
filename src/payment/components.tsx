@@ -10,9 +10,11 @@ const action = "customer-button customer-primary payment-action";
 export function PaymentPanel({
   state,
   controller,
+  onViewOrder,
 }: {
   state: PaymentState;
   controller: PaymentActions;
+  onViewOrder?: (orderId: string) => void;
 }) {
   if (state.phase === "idle") return null;
   if (state.phase === "paid" && state.order)
@@ -30,6 +32,14 @@ export function PaymentPanel({
           <dt>Order status</dt>
           <dd>{state.order.status}</dd>
         </dl>
+        {onViewOrder && (
+          <button
+            className={action}
+            onClick={() => onViewOrder(state.order!.orderId)}
+          >
+            View order
+          </button>
+        )}
       </section>
     );
   if (state.phase === "paid")
