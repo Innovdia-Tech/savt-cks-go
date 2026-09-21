@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ComponentProps } from "react";
+import { PaymentPanel } from "../payment/components";
 import { MAX_LINE_QUANTITY } from "./contracts";
 import type { CartController, CartState } from "./state";
 
@@ -230,8 +231,7 @@ function QuoteSummary({
       )}
       {state.quotePhase === "ready" && (
         <p className="quote-safe-note">
-          Quote reviewed. Payment and order creation are not available in this
-          package.
+          Quote reviewed. Payment begins only after the explicit action below.
         </p>
       )}
     </section>
@@ -241,10 +241,12 @@ function QuoteSummary({
 export function CartScreen({
   state,
   controller,
+  payment,
   onBrowse,
 }: {
   state: CartState;
   controller: CartController;
+  payment?: ComponentProps<typeof PaymentPanel>;
   onBrowse: () => void;
 }) {
   if (!state.lines.length)
@@ -290,6 +292,7 @@ export function CartScreen({
             >
               <button
                 aria-label={`Decrease ${line.product.name}`}
+                disabled={state.paymentFrozen}
                 onClick={() =>
                   controller.setQuantity(
                     line.outletProductId,
@@ -302,7 +305,9 @@ export function CartScreen({
               <span aria-live="polite">{line.quantity}</span>
               <button
                 aria-label={`Increase ${line.product.name}`}
-                disabled={line.quantity >= MAX_LINE_QUANTITY}
+                disabled={
+                  state.paymentFrozen || line.quantity >= MAX_LINE_QUANTITY
+                }
                 onClick={() =>
                   controller.setQuantity(
                     line.outletProductId,
@@ -316,6 +321,7 @@ export function CartScreen({
             <button
               className="cart-remove"
               aria-label={`Remove ${line.product.name}`}
+              disabled={state.paymentFrozen}
               onClick={() => controller.remove(line.outletProductId)}
             >
               Remove
@@ -367,6 +373,7 @@ export function CartScreen({
         </section>
       )}
       <QuoteSummary state={state} controller={controller} />
+      {payment && <PaymentPanel {...payment} />}
     </div>
   );
 }

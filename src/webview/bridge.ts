@@ -1,4 +1,5 @@
 import type { BootstrapData } from "../api/contracts";
+import { isSafeCheckoutUrl } from "../payment/contracts";
 
 export type BootstrapMessage = Pick<
   BootstrapData,
@@ -27,6 +28,7 @@ export class BridgeError extends Error {
 
 export interface NativeBridgePort {
   requestLaunchCode(bootstrap: BootstrapMessage): Promise<HandoffDetail>;
+  requestPaymentHandoff(checkoutUrl: string): Promise<void>;
   notifyLoaded(): void;
   notifyError(code: string): void;
 }
@@ -144,6 +146,21 @@ export class FlutterBridgeAdapter implements NativeBridgePort {
     });
   }
 
+  async requestPaymentHandoff(checkoutUrl: string): Promise<void> {
+    if (!isSafeCheckoutUrl(checkoutUrl)) throw new BridgeError("invalid");
+    if (!this.environment.channel) throw new BridgeError("unavailable");
+    try {
+      this.environment.channel.postMessage(
+        JSON.stringify({
+          type: "payment-handoff",
+          payload: { checkoutUrl },
+        }),
+      );
+    } catch {
+      throw new BridgeError("unavailable");
+    }
+  }
+
   notifyLoaded(): void {
     this.post({ type: "loaded" });
   }
@@ -168,6 +185,7 @@ export class FlutterBridgeAdapter implements NativeBridgePort {
 
 export class DevelopmentBridgeAdapter implements NativeBridgePort {
   private readonly attemptedRequestIds = new Set<string>();
+  private readonly paymentHandoffs: string[] = [];
 
   constructor(
     private readonly enabled: boolean,
@@ -185,6 +203,16 @@ export class DevelopmentBridgeAdapter implements NativeBridgePort {
       state: bootstrap.state,
       code: "D".repeat(43),
     };
+  }
+
+  async requestPaymentHandoff(checkoutUrl: string): Promise<void> {
+    if (!isSafeCheckoutUrl(checkoutUrl)) throw new BridgeError("invalid");
+    if (!this.enabled || this.production) throw new BridgeError("unavailable");
+    this.paymentHandoffs.push(checkoutUrl);
+  }
+
+  getPaymentHandoffs(): readonly string[] {
+    return [...this.paymentHandoffs];
   }
 
   notifyLoaded(): void {}

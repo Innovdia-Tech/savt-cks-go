@@ -41,6 +41,7 @@ const base = {
   error: null,
   canRetry: false,
   priceChanged: false,
+  paymentFrozen: false,
 };
 const controller = {
   setQuantity() {},
@@ -98,6 +99,53 @@ describe("real cart and trusted quote presentation", () => {
     expect(html).not.toMatch(
       /<(?:button|a)[^>]*>[^<]*(?:pay|confirm order|tracking)/i,
     );
+  });
+
+  it("adds payment only after a ready quote and locks cart controls once frozen", () => {
+    const quote = parseQuote(quoteEnvelope());
+    const payment = {
+      state: {
+        phase: "ready",
+        paymentIntentId: null,
+        order: null,
+        error: null,
+        canRetryInitiation: false,
+      },
+      controller: {
+        initiate: async () => {},
+        reopen: async () => {},
+        checkStatus: async () => {},
+        restart: () => {},
+      },
+    };
+    const ready = renderToStaticMarkup(
+      createElement(CartScreen, {
+        state: { ...base, quote, quotePhase: "ready" },
+        controller,
+        payment,
+        onBrowse: () => {},
+      } as never),
+    );
+    expect(ready).toContain("Proceed to payment");
+    expect(ready).not.toContain("memory-only-quote-token");
+
+    const frozen = renderToStaticMarkup(
+      createElement(CartScreen, {
+        state: { ...base, quote, quotePhase: "ready", paymentFrozen: true },
+        controller,
+        payment: {
+          ...payment,
+          state: {
+            ...payment.state,
+            phase: "pending",
+            paymentIntentId: "redacted",
+          },
+        },
+        onBrowse: () => {},
+      } as never),
+    );
+    expect(frozen).toContain("Payment pending");
+    expect(frozen.match(/disabled=""/g)?.length).toBeGreaterThanOrEqual(3);
   });
 
   it("requires explicit acceptance of changed prices", () => {

@@ -126,6 +126,59 @@ describe("FlutterBridgeAdapter", () => {
       { type: "error", code: "CUSTOMER_SESSION_INVALID" },
     ]);
   });
+
+  it("requests only an explicit external payment handoff over the native channel", async () => {
+    const host = fixture();
+    const bridge = new FlutterBridgeAdapter(host.environment);
+
+    await expect(
+      bridge.requestPaymentHandoff(
+        "https://payments.example.test/checkout/approved",
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(host.postMessage).toHaveBeenCalledOnce();
+    expect(JSON.parse(host.postMessage.mock.calls[0]![0])).toEqual({
+      type: "payment-handoff",
+      payload: {
+        checkoutUrl: "https://payments.example.test/checkout/approved",
+      },
+    });
+  });
+
+  it.each([
+    "http://payments.example.test/checkout",
+    "https://user:secret@payments.example.test/checkout",
+    "javascript:alert(1)",
+    "not-a-url",
+  ])("rejects unsafe payment handoff URL %s before posting", async (url) => {
+    const host = fixture();
+    const bridge = new FlutterBridgeAdapter(host.environment);
+    await expect(bridge.requestPaymentHandoff(url)).rejects.toEqual(
+      new BridgeError("invalid"),
+    );
+    expect(host.postMessage).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when payment handoff is unavailable or throws", async () => {
+    const unavailable = new FlutterBridgeAdapter({
+      addHandoffListener: () => undefined,
+      removeHandoffListener: () => undefined,
+    });
+    await expect(
+      unavailable.requestPaymentHandoff("https://payments.example.test/pay"),
+    ).rejects.toEqual(new BridgeError("unavailable"));
+
+    const host = fixture();
+    host.postMessage.mockImplementation(() => {
+      throw new Error("native unavailable");
+    });
+    await expect(
+      new FlutterBridgeAdapter(host.environment).requestPaymentHandoff(
+        "https://payments.example.test/pay",
+      ),
+    ).rejects.toEqual(new BridgeError("unavailable"));
+  });
 });
 
 describe("DevelopmentBridgeAdapter", () => {
@@ -143,5 +196,24 @@ describe("DevelopmentBridgeAdapter", () => {
     ).rejects.toMatchObject({
       kind: "unavailable",
     });
+  });
+
+  it("records a safe payment handoff without asserting payment finality", async () => {
+    const bridge = new DevelopmentBridgeAdapter(true, false);
+    await bridge.requestPaymentHandoff(
+      "https://payments.example.test/checkout/approved",
+    );
+    expect(bridge.getPaymentHandoffs()).toEqual([
+      "https://payments.example.test/checkout/approved",
+    ]);
+    await expect(
+      bridge.requestPaymentHandoff("http://payments.example.test/checkout"),
+    ).rejects.toEqual(new BridgeError("invalid"));
+
+    await expect(
+      new DevelopmentBridgeAdapter(false, false).requestPaymentHandoff(
+        "https://payments.example.test/checkout",
+      ),
+    ).rejects.toEqual(new BridgeError("unavailable"));
   });
 });

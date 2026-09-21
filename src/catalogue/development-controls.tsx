@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { scenarios, type DevelopmentCatalogueAdapter } from "./development";
+import {
+  paymentResultScenarios,
+  scenarios,
+  type DevelopmentCatalogueAdapter,
+  type PaymentResultScenario,
+} from "./development";
 import type { CustomerDataController } from "../customer/state";
 import type { CatalogueController } from "./state";
 export function DevelopmentControls({
@@ -12,6 +17,9 @@ export function DevelopmentControls({
   catalogue: CatalogueController;
 }) {
   const [value, setValue] = useState("success");
+  const [paymentResult, setPaymentResult] =
+    useState<PaymentResultScenario>("pending");
+  const metrics = adapter.paymentMetrics();
   return (
     <details className="catalogue-dev">
       <summary>Synthetic development fixtures</summary>
@@ -21,12 +29,27 @@ export function DevelopmentControls({
         value={value}
         onChange={(e) => {
           setValue(e.target.value);
+          setPaymentResult("pending");
           adapter.reset(e.target.value);
           void customer.load();
         }}
       >
         {scenarios.map((s) => (
           <option key={s}>{s}</option>
+        ))}
+      </select>
+      <label htmlFor="payment-result">Backend payment result</label>
+      <select
+        id="payment-result"
+        value={paymentResult}
+        onChange={(event) => {
+          const result = event.target.value as PaymentResultScenario;
+          setPaymentResult(result);
+          adapter.setPaymentResult(result);
+        }}
+      >
+        {paymentResultScenarios.map((result) => (
+          <option key={result}>{result}</option>
         ))}
       </select>
       <button
@@ -38,8 +61,10 @@ export function DevelopmentControls({
         Expire context and renew
       </button>
       <p>
-        Local fixtures only. No live catalogue, quote, payment or order
-        requests.
+        Local fixtures only. Payment create POSTs: {metrics.creates}; result
+        GETs: {metrics.results}; direct provider calls:{" "}
+        {metrics.directProviderCalls}; browser Order POSTs:{" "}
+        {metrics.browserOrderPosts}.
       </p>
     </details>
   );

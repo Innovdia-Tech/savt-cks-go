@@ -22,6 +22,9 @@ import { CustomerDataProvider } from "./customer/context";
 import { QuoteApi } from "./checkout/api";
 import { CartController } from "./checkout/state";
 import { CheckoutProvider } from "./checkout/context";
+import { PaymentApi } from "./payment/api";
+import { PaymentProvider } from "./payment/context";
+import { PaymentController } from "./payment/state";
 import "./checkout/checkout.css";
 
 const root = createRoot(document.getElementById("root")!);
@@ -76,6 +79,13 @@ async function start() {
       new QuoteApi(config.apiOrigin, session, catalogueDevelopment?.fetch),
       catalogueApi,
     );
+    const payment = new PaymentController(
+      new PaymentApi(config.apiOrigin, session, catalogueDevelopment?.fetch),
+      bridge,
+      session,
+      (quoteId) => checkout.freezeForPayment(quoteId),
+      () => checkout.clear(),
+    );
     root.render(
       <React.StrictMode>
         <CustomerSessionBoundary controller={session}>
@@ -95,7 +105,9 @@ async function start() {
               }
             >
               <CheckoutProvider controller={checkout} customer={customer}>
-                <App onLogout={() => void session.logout()} />
+                <PaymentProvider controller={payment}>
+                  <App onLogout={() => void session.logout()} />
+                </PaymentProvider>
               </CheckoutProvider>
             </CatalogueProvider>
           </CustomerDataProvider>

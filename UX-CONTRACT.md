@@ -44,3 +44,21 @@ Source: approved CUST02C package, existing trusted checkout quote API and frozen
 | Downstream boundary | `CatalogueApp`                                   | No payment, order creation, mock confirmation, receipt or tracking action from the real cart                              | component tests and source/browser review   |
 
 The assignment-context handle and all credentials remain memory-only and never enter URLs, storage, logs or visible error copy. Browser Back may restore catalogue navigation only; refresh reconstructs an empty cart and requests a fresh assignment context. The native address select remains platform-owned. The clear-cart confirmation is app-owned, Escape-cancelable, viewport-bounded and initially focuses Cancel.
+
+The CUST02C downstream-boundary row is historical and is superseded only by the bounded CUST03A rows below. Receipt, history, tracking, and frontend Order creation remain disconnected.
+
+## CUST03A payment initiation and result UI consequences
+
+Source: pinned CKS Go backend payment contract at `ab1e6b90c4b5b324ce463a8b08f40bc8fd78e3ec`. The backend remains the sole authority for provider communication, payment finality, and Order materialization.
+
+| Capability         | Canonical owner                           | Allowed variant                                                                                                | Verification                           |
+| ------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| Payment start      | `PaymentPanel` and `payment/state.ts`     | Explicit action on accepted quote; cart/address freeze before one POST; stable key on uncertain retry          | state, API, and rendered tests         |
+| External handoff   | `webview/bridge.ts`                       | Explicit native external-browser request; HTTPS without URL credentials; fail closed; no same-WebView redirect | bridge tests and browser fixture       |
+| Pending recovery   | `payment/state.ts`                        | Existing intent may reopen its checkout URL; no second create POST                                             | state tests and local counters         |
+| Return observation | `payment/context.tsx`                     | Visible focus/visibility or explicit button performs coalesced result GET only                                 | observer and controller tests          |
+| Finality states    | `PaymentPanel`                            | PENDING, FAILED, PAID_PROCESSING, and safe error copy remain non-confirming                                    | rendered state matrix                  |
+| Order confirmation | `payment/contracts.ts` and `PaymentPanel` | “Order Confirmed” only for PAID plus strict backend Order identity and matching checkout reference             | parser, controller, and rendered tests |
+| Session boundary   | `payment/state.ts`                        | Clear token, URL, intent, Order, retry key, and fence late work on logout/session loss                         | generation-race tests                  |
+
+The payment panel reuses the existing rounded white card, green primary action, native button semantics, focus ring, and narrow-shell behavior. It does not display checkout URLs, quote tokens, PaymentIntent IDs, raw backend/provider codes, or provider redirect parameters. A restart after terminal failure clears cart and payment state and requires a fresh quote.
