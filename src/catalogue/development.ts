@@ -42,11 +42,29 @@ export const scenarios = [
   "quote-address-changed",
   "quote-expiry",
 ] as const;
+export const paymentResultScenarios = [
+  "pending",
+  "processing",
+  "paid",
+  "failed",
+  "paid-no-order",
+] as const;
+export type PaymentResultScenario = (typeof paymentResultScenarios)[number];
 export class DevelopmentCatalogueAdapter {
   private scenario = "success";
   private serial = 0;
   private assignment: Assignment | null = null;
   private expiryUsed = false;
+  private latestQuote: { quoteId: string; quoteToken: string } | null = null;
+  private paymentIntent: {
+    quoteId: string;
+    paymentIntentId: string;
+    checkoutUrl: string;
+    idempotencyKey: string;
+  } | null = null;
+  private paymentResult: PaymentResultScenario = "pending";
+  private paymentCreates = 0;
+  private paymentResults = 0;
   constructor(
     production: boolean,
     private readonly now = Date.now,
@@ -58,9 +76,25 @@ export class DevelopmentCatalogueAdapter {
     this.scenario = scenario;
     this.assignment = null;
     this.expiryUsed = false;
+    this.latestQuote = null;
+    this.paymentIntent = null;
+    this.paymentResult = "pending";
+    this.paymentCreates = 0;
+    this.paymentResults = 0;
   }
   expire() {
     this.assignment = null;
+  }
+  setPaymentResult(result: PaymentResultScenario) {
+    this.paymentResult = result;
+  }
+  paymentMetrics() {
+    return {
+      creates: this.paymentCreates,
+      results: this.paymentResults,
+      directProviderCalls: 0,
+      browserOrderPosts: 0,
+    };
   }
   private outlet(outletId = id(1)): Outlet {
     return {
@@ -245,10 +279,13 @@ export class DevelopmentCatalogueAdapter {
       const processingFeeMinor = 50;
       const processingFeeBasisMinor = itemsSubtotalMinor + baseDeliveryFeeMinor;
       const issued = this.now();
+      const quoteId = id(900 + ++this.serial);
+      const quoteToken = "Q".repeat(42) + String(this.serial % 10);
+      this.latestQuote = { quoteId, quoteToken };
       return Response.json({
         data: {
-          quoteId: id(900 + ++this.serial),
-          quoteToken: `synthetic-quote-token-${this.serial}`,
+          quoteId,
+          quoteToken,
           currency: "MYR",
           items: authoritative,
           itemsSubtotalMinor,
@@ -296,6 +333,87 @@ export class DevelopmentCatalogueAdapter {
           outletId: assignment.outlet.id,
           customerAddressId: assignment.customerAddressId,
           addressRowVersion: assignment.addressRowVersion,
+        },
+      });
+    }
+    if (
+      u.pathname === "/api/v1/customer/checkout/payments" &&
+      init?.method === "POST"
+    ) {
+      if (!h.get("x-cks-csrf")) return failure(403, "CUSTOMER_CSRF_INVALID");
+      const idempotencyKey = h.get("Idempotency-Key");
+      if (!idempotencyKey) return failure(400, "IDEMPOTENCY_KEY_INVALID");
+      const body = JSON.parse(String(init.body)) as {
+        quoteId?: string;
+        quoteToken?: string;
+      };
+      if (
+        !this.latestQuote ||
+        body.quoteId !== this.latestQuote.quoteId ||
+        body.quoteToken !== this.latestQuote.quoteToken
+      )
+        return failure(409, "QUOTE_TOKEN_INVALID");
+      if (
+        this.paymentIntent &&
+        this.paymentIntent.idempotencyKey !== idempotencyKey
+      )
+        return failure(409, "CHECKOUT_QUOTE_PAYMENT_ALREADY_ATTEMPTED");
+      if (!this.paymentIntent) {
+        const paymentIntentId = id(950 + ++this.serial);
+        this.paymentIntent = {
+          quoteId: body.quoteId,
+          paymentIntentId,
+          checkoutUrl: `https://payments.example.test/checkout/${paymentIntentId}`,
+          idempotencyKey,
+        };
+        ++this.paymentCreates;
+      }
+      return Response.json(
+        {
+          data: {
+            checkoutReference: this.paymentIntent.quoteId,
+            payment: {
+              paymentIntentId: this.paymentIntent.paymentIntentId,
+              status: "PENDING",
+              checkoutUrl: this.paymentIntent.checkoutUrl,
+            },
+          },
+        },
+        { status: 201 },
+      );
+    }
+    if (
+      u.pathname.startsWith("/api/v1/customer/checkout/payments/") &&
+      init?.method === "GET"
+    ) {
+      const paymentIntent = this.paymentIntent;
+      if (
+        !paymentIntent ||
+        u.pathname.split("/").at(-1) !== paymentIntent.paymentIntentId
+      )
+        return failure(404, "CHECKOUT_PAYMENT_NOT_FOUND");
+      ++this.paymentResults;
+      const status =
+        this.paymentResult === "processing"
+          ? "PAID_PROCESSING"
+          : this.paymentResult === "paid" ||
+              this.paymentResult === "paid-no-order"
+            ? "PAID"
+            : this.paymentResult === "failed"
+              ? "FAILED"
+              : "PENDING";
+      return Response.json({
+        data: {
+          checkoutReference: paymentIntent.quoteId,
+          status,
+          order:
+            this.paymentResult === "paid"
+              ? {
+                  orderId: id(990),
+                  orderNumber: "SYNTH-ORDER-0001",
+                  status: "CONFIRMED",
+                }
+              : null,
         },
       });
     }

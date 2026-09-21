@@ -36,6 +36,7 @@ const apiFixture = (): CustomerApi => ({
 });
 const bridgeFixture = (): NativeBridgePort => ({
   requestLaunchCode: vi.fn().mockResolvedValue(handoff),
+  requestPaymentHandoff: vi.fn().mockResolvedValue(undefined),
   notifyLoaded: vi.fn(),
   notifyError: vi.fn(),
 });

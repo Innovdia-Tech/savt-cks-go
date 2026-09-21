@@ -4,7 +4,8 @@
     "src/customer",
     "src/addresses",
     "src/catalogue",
-    "src/checkout"
+    "src/checkout",
+    "src/payment"
   ],
   "locale": "en-MY",
   "canonicalMap": "UX-CONTRACT.md",

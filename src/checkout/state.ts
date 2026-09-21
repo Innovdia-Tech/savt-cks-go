@@ -66,6 +66,7 @@ export type CartState = {
   error: string | null;
   canRetry: boolean;
   priceChanged: boolean;
+  paymentFrozen: boolean;
 };
 
 const empty = (): CartState => ({
@@ -79,6 +80,7 @@ const empty = (): CartState => ({
   error: null,
   canRetry: false,
   priceChanged: false,
+  paymentFrozen: false,
 });
 const safeAssignment = (
   address: Pick<Address, "id" | "label" | "rowVersion">,
@@ -154,7 +156,12 @@ export class CartController {
       throw new QuoteError("INVALID_RESPONSE");
   }
 
+  private assertMutable() {
+    if (this.state.paymentFrozen) throw new Error("CART_PAYMENT_FROZEN");
+  }
+
   syncAssignment(address: Address, assignment: Assignment) {
+    if (this.state.paymentFrozen) return;
     this.validateAssignment(address, assignment);
     const next = safeAssignment(address, assignment);
     const current = this.state.assignment;
@@ -185,6 +192,7 @@ export class CartController {
   }
 
   add(product: Product, assignment: Assignment) {
+    this.assertMutable();
     const committed = this.state.assignment;
     if (!committed) throw new Error("CART_ASSIGNMENT_REQUIRED");
     if (assignment.outlet.id !== committed.outletId)
@@ -224,6 +232,7 @@ export class CartController {
   }
 
   setQuantity(outletProductId: string, quantity: number) {
+    this.assertMutable();
     const line = this.state.lines.find(
       (item) => item.outletProductId === outletProductId,
     );
@@ -239,6 +248,7 @@ export class CartController {
   }
 
   remove(outletProductId: string) {
+    this.assertMutable();
     if (
       !this.state.lines.some((line) => line.outletProductId === outletProductId)
     )
@@ -264,6 +274,7 @@ export class CartController {
   async requestAddress(
     address: Address,
   ): Promise<"committed" | "confirmation" | "error"> {
+    this.assertMutable();
     const generation = ++this.transitionGeneration;
     this.transitionAbort?.abort();
     const controller = new AbortController();
@@ -318,6 +329,7 @@ export class CartController {
   }
 
   cancelAddressChange() {
+    this.assertMutable();
     ++this.transitionGeneration;
     this.transitionAbort?.abort();
     this.update({
@@ -328,6 +340,7 @@ export class CartController {
   }
 
   confirmAddressChange(): string | null {
+    this.assertMutable();
     const pending = this.state.pendingAddress;
     if (!pending) return null;
     this.cancelQuoteWork();
@@ -350,6 +363,7 @@ export class CartController {
   }
 
   async requestQuote(): Promise<void> {
+    if (this.state.paymentFrozen) return;
     const assignment = this.state.assignment;
     if (
       !assignment ||
@@ -371,6 +385,7 @@ export class CartController {
   }
 
   async retryQuote(): Promise<void> {
+    if (this.state.paymentFrozen) return;
     if (
       !this.attempt ||
       !this.state.canRetry ||
@@ -462,7 +477,11 @@ export class CartController {
   private armExpiry(quote: CheckoutQuote) {
     clearTimeout(this.quoteTimer);
     const expire = () => {
-      if (this.state.quote?.quoteId !== quote.quoteId) return;
+      if (
+        this.state.paymentFrozen ||
+        this.state.quote?.quoteId !== quote.quoteId
+      )
+        return;
       this.attempt = null;
       this.update({
         quotePhase: "expired",
@@ -476,6 +495,7 @@ export class CartController {
   }
 
   acceptPriceChanges() {
+    if (this.state.paymentFrozen) return;
     const quote = this.state.quote;
     if (
       !quote ||
@@ -495,6 +515,22 @@ export class CartController {
       quotePhase: "ready",
       priceChanged: false,
     });
+  }
+
+  freezeForPayment(quoteId: string): boolean {
+    const quote = this.state.quote;
+    if (
+      !quote ||
+      quote.quoteId !== quoteId ||
+      this.state.quotePhase !== "ready" ||
+      Date.parse(quote.quoteExpiresAt) <= this.now()
+    )
+      return false;
+    if (this.state.paymentFrozen) return true;
+    clearTimeout(this.quoteTimer);
+    this.quoteTimer = undefined;
+    this.update({ paymentFrozen: true });
+    return true;
   }
 
   clear() {

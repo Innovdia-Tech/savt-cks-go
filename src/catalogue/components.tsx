@@ -9,6 +9,7 @@ import type { CatalogueState } from "./state";
 import type { Screen } from "../types";
 import { useCheckout } from "../checkout/context";
 import { AddressTransitionError, CartScreen } from "../checkout/components";
+import { usePayment } from "../payment/context";
 export const money = (minor: number) =>
   new Intl.NumberFormat("en-MY", { style: "currency", currency: "MYR" }).format(
     minor / 100,
@@ -230,6 +231,7 @@ function readRoute() {
 export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
   const { state, controller, controls } = useCatalogue();
   const checkout = useCheckout();
+  const payment = usePayment();
   const { guardNavigation } = useCustomer();
   const [route, setRoute] = useState(readRoute);
   const [query, setQuery] = useState(state.q);
@@ -310,7 +312,10 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
             <CheckoutAddress
               catalogue
               onManage={() => {}}
-              selecting={checkout.state.transitionPhase === "checking"}
+              selecting={
+                checkout.state.transitionPhase === "checking" ||
+                checkout.state.paymentFrozen
+              }
               onSelect={(addressId) => void checkout.selectAddress(addressId)}
             />
             {checkout.state.transitionPhase === "error" && (
@@ -350,6 +355,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
               <CartScreen
                 state={checkout.state}
                 controller={checkout.controller}
+                payment={payment}
                 onBrowse={() => navigate("home")}
               />
             ) : route === "orders" ? (
@@ -497,6 +503,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                         className="catalogue-add"
                         disabled={
                           state.readOnly ||
+                          checkout.state.paymentFrozen ||
                           p.availability !== "AVAILABLE" ||
                           !state.assignment ||
                           checkout.state.assignment?.outletId !==
@@ -539,6 +546,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                             }
                             orderingDisabled={
                               state.readOnly ||
+                              checkout.state.paymentFrozen ||
                               !state.assignment ||
                               checkout.state.assignment?.outletId !==
                                 state.assignment.outlet.id

@@ -9,10 +9,11 @@ React + TypeScript + TailwindCSS customer-web foundation for the CKS GO grocery 
 - Product Detail
 - Assigned-outlet cart backed by real catalogue product identities
 - Server-authoritative trusted checkout quotes
+- Backend-owned payment initiation and observational payment results
 - Strict customer-session bootstrap, native handoff, exchange, restoration and logout
 - Explicit loading, offline, expired-session, bridge-unavailable and error states
 
-Catalogue, saved addresses, cart and trusted checkout quotes use their real customer-web contracts. Payment, order creation, order history, tracking and receipts are intentionally not connected. The retained mock prototype cannot be reached from the exported real catalogue/cart flow.
+Catalogue, saved addresses, cart, trusted checkout quotes and customer payment/result calls use their real customer-web contracts. Provider communication and paid Order materialization remain backend-owned; order history, tracking and receipts are intentionally not connected. The retained mock prototype cannot be reached from the exported real catalogue/cart flow.
 
 ## Business rules represented
 
@@ -21,6 +22,7 @@ Catalogue, saved addresses, cart and trusted checkout quotes use their real cust
 - One assigned outlet owns a cart; products are never remapped across outlets.
 - A different-outlet address change clears a nonempty cart only after explicit confirmation.
 - Prices, stock, fees and timing become authoritative only after an explicit trusted-quote request.
+- Returning from external payment is navigation only; only backend `PAID` plus Order evidence confirms an order.
 
 ## Run locally
 
@@ -60,7 +62,7 @@ The delivery-address header opens **Profile & addresses**. Profile and saved-add
 
 The contract authority reviewed locally was the CKS integration checkout at `bac1f2f`: `customer.dtos.ts`, `customer.controller.ts`, `customer-address.service.ts` and the customer session/identity guards. No backend contracts were changed.
 
-The same explicit development API/bridge flags also enable synthetic customer data. On the profile screen, **Synthetic development scenarios** supplies empty/default/mixed, stale/failed sync and read-only fixtures, plus next-request conflict, offline, retryable, lost-response, expiry and CSRF failures. These controls and fixtures cannot activate in a production build. Refresh resets synthetic fixtures; logout clears application profile/address/selection/draft/operation state. All fixture values are invented.
+The same explicit development API/bridge flags also enable synthetic customer data and backend-observational payment states. On the profile screen, **Synthetic development scenarios** supplies empty/default/mixed, stale/failed sync and read-only fixtures, plus next-request conflict, offline, retryable, lost-response, expiry and CSRF failures. The catalogue fixture panel supplies payment PENDING, PAID_PROCESSING, PAID, FAILED and malformed paid-without-Order states. These controls and fixtures cannot activate in a production build. Refresh resets synthetic fixtures; logout clears application profile/address/selection/draft/operation state. All fixture values are invented.
 
 Mutations use in-memory CSRF through a session infrastructure callback. Create/transition operations hold an immutable request body, original quoted row version and UUIDv4 idempotency key for retries. Changed requests create new operations. Edits use PATCH with quoted If-Match and no idempotency header, as the backend specifies. After successful mutation, the client reloads the full address list to obtain versions changed by default reassignment. A failed list refresh never repeats a successful mutation. Conflicts require explicit reload and discard of the open form. An uncertain submission is locked to retrying its original operation.
 
@@ -72,4 +74,12 @@ The memory-only cart stores its assigned outlet, exact outlet-product identity, 
 
 The only commercial request is an explicit `POST /api/v1/checkout/quote`. Its body contains authoritative identifiers, quantities and delivery type; CSRF and a stable UUIDv4 idempotency key are headers. No displayed prices or client-calculated totals, distance, fees or ETA are sent. Returned lines, totals, currency, timing and expiry are parsed strictly. Changed prices require customer review and expired quotes require deliberate requote.
 
-Assignment context, CSRF, quote token and credentials stay in memory and out of URLs, browser storage, logs and visible UI. There is no payment or order API call and no real-cart route to the retained mock success/tracking implementation.
+Assignment context, CSRF, quote token and credentials stay in memory and out of URLs, browser storage, logs and visible UI. The real-cart route cannot reach the retained mock success/tracking implementation.
+
+## Payment initiation and result (CUST03A)
+
+The customer web calls only CKS Go's `POST /api/v1/customer/checkout/payments` and `GET /api/v1/customer/checkout/payments/:paymentIntentId`. It never calls Savt Payment, GKash or another gateway and never creates an Order. The backend owns provider communication, authenticated finality and paid Order materialization.
+
+An accepted quote is frozen before the explicit payment action. Uncertain initiation retries retain the same UUIDv4 idempotency key; successful initiation stores one PaymentIntent and a strictly validated HTTPS checkout URL in memory. Production requests external navigation through the small native `payment-handoff` bridge message and fails closed when that capability is absent.
+
+External return, focus and visibility trigger backend observation only. PENDING, FAILED and PAID_PROCESSING remain non-confirming. The customer sees “Order Confirmed” only for PAID with strict backend-projected Order identity. Logout/session loss clears payment memory and fences late asynchronous completion. Receipt, history and tracking remain out of scope.

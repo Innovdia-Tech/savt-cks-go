@@ -147,6 +147,7 @@ describe("customer API operation deadlines", () => {
       .mockResolvedValueOnce(successResponse());
     const bridge = {
       requestLaunchCode: vi.fn(),
+      requestPaymentHandoff: vi.fn(),
       notifyLoaded: vi.fn(),
       notifyError: vi.fn(),
     };

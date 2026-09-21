@@ -1,6 +1,6 @@
-# CKS GO customer catalogue, cart and trusted quote
+# CKS GO customer catalogue, cart, quote and payment result
 
-CUST01B through CUST02C extend the existing English-language, Malaysia-focused mobile grocery prototype. Preserve the existing green palette, Inter/system typography, rounded white cards and 430px shell. CUST02C connects real catalogue items to an in-memory cart and trusted quote, while payment, order creation, receipts and tracking remain disconnected. No redesign or backend changes.
+CUST01B through CUST03A extend the existing English-language, Malaysia-focused mobile grocery prototype. Preserve the existing green palette, Inter/system typography, rounded white cards and 430px shell. CUST03A connects payment initiation and backend-observational payment results without adding receipt, history, tracking, or frontend Order creation. No redesign or backend changes.
 
 ## Runtime owners
 
@@ -38,4 +38,16 @@ Changing to the same assigned outlet preserves lines and invalidates a quote. A 
 
 `POST /api/v1/checkout/quote` occurs only from an explicit cart action. The request contains outlet/address/outlet-product identities, quantities, delivery type, in-memory CSRF and one UUIDv4 key per attempt; it contains no client totals, fees, distance, ETA or prices. The response is parsed as a closed contract and displayed as server-authoritative. Price changes require explicit review, and expiry disables the quote until an explicit requote. Assignment context, CSRF, quote token and session credentials stay out of URLs, browser storage, logs and visible UI.
 
-The cart deliberately ends after quote review. No payment, order, receipt, mock confirmation or tracking transition is reachable from the real catalogue/cart.
+The historical CUST02C boundary ended after quote review. It is superseded only by the bounded CUST03A payment/result behavior below.
+
+## CUST03A payment initiation and result
+
+Runtime owners: `src/payment/contracts.ts` (closed payment projections and HTTPS checkout URL validation), `api.ts` (exact CKS Go payment routes), `state.ts` (payment lifecycle, retry identity, finality and session fencing), `context.tsx` (quote and visible-return observation), and `components.tsx` (customer-visible status). `src/webview/bridge.ts` owns the small native `payment-handoff` message; `src/checkout/state.ts` owns quote/cart freezing.
+
+The customer web calls only `POST /api/v1/customer/checkout/payments` and `GET /api/v1/customer/checkout/payments/:paymentIntentId` on the configured CKS Go backend. Provider communication remains server-to-server. The web never calls Savt Payment, GKash, or another gateway and never creates an Order. The quote token is used only in the credentialed POST body and remains absent from URLs, storage, logs, bridge messages, and visible UI.
+
+Payment starts only from “Proceed to payment” on an accepted, unexpired quote. The cart and address become immutable before POST. An uncertain create retry reuses the same UUIDv4 idempotency key. A successful create stores one PaymentIntent and the strictly validated HTTPS checkout URL in memory; reopening uses that existing intent and never issues another POST.
+
+Production WebView navigation is not changed directly. The native bridge receives exactly `{ type: "payment-handoff", payload: { checkoutUrl } }` and production fails closed when the channel is absent or throws. The development bridge records this navigation request only; it cannot provide payment finality.
+
+External return, focus, visibility, redirect contents, and successful handoff are navigation signals only. They may trigger one coalesced payment-result GET. `PENDING`, `FAILED`, and `PAID_PROCESSING` never render “Order Confirmed.” That reserved state appears only for `PAID` with a strict backend-projected Order identity matching the payment’s checkout reference. Logout/session loss clears all payment memory and invalidates late asynchronous completions.

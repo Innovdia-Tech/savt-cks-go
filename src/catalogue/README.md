@@ -19,4 +19,4 @@ Fixtures are dynamically imported behind `import.meta.env.DEV` and the existing 
 Focused: `npm test -- src/catalogue`.
 Final: fresh `npm ci`, changed-file Prettier, `npm run typecheck`, `npm test`, `npm run build`, `git diff --check`, complete diff review. The repository format script compares committed HEAD; before the sole final commit use an explicit changed/untracked-file list with Prettier to cover the working tree.
 
-Browser acceptance: 390×844, 430×932 and desktop. In addition to catalogue checks, exercise add/update/remove, same- and different-outlet address changes, quote success/review/expiry/requote, error recovery, refresh and Back. Confirm there is no reachable payment, order creation, mock success or tracking action.
+Historical CUST02C browser acceptance covered 390×844, 430×932 and desktop through trusted quote. CUST03A supersedes only its downstream boundary with the explicit CKS Go payment/result flow; frontend Order creation, mock success, receipt and tracking remain unreachable.

@@ -349,3 +349,90 @@ describe("trusted quote lifecycle", () => {
     controller.dispose();
   });
 });
+
+describe("payment quote freeze", () => {
+  it("freezes only the current accepted and unexpired quote", async () => {
+    const { controller } = fixture();
+    controller.add(product(), assignmentA);
+    expect(controller.freezeForPayment(id("9"))).toBe(false);
+    controller.setQuantity(id("2"), 2);
+    await controller.requestQuote();
+    const quoteId = controller.getSnapshot().quote!.quoteId;
+    expect(controller.freezeForPayment(id("9"))).toBe(false);
+    expect(controller.freezeForPayment(quoteId)).toBe(true);
+    expect(controller.getSnapshot()).toMatchObject({
+      quotePhase: "ready",
+      paymentFrozen: true,
+      quote: { quoteId },
+    });
+  });
+
+  it("blocks cart, address and quote mutation while payment is active", async () => {
+    const { controller, create, assign } = fixture();
+    controller.add(product(), assignmentA);
+    controller.setQuantity(id("2"), 2);
+    await controller.requestQuote();
+    const before = controller.getSnapshot();
+    expect(controller.freezeForPayment(before.quote!.quoteId)).toBe(true);
+
+    expect(() => controller.add(product(uuid(2)), assignmentA)).toThrow(
+      "CART_PAYMENT_FROZEN",
+    );
+    expect(() => controller.setQuantity(id("2"), 2)).toThrow(
+      "CART_PAYMENT_FROZEN",
+    );
+    expect(() => controller.remove(id("2"))).toThrow("CART_PAYMENT_FROZEN");
+    await expect(controller.requestAddress(addressSame)).rejects.toThrow(
+      "CART_PAYMENT_FROZEN",
+    );
+    controller.syncAssignment(addressSame, assignmentSame);
+    await controller.requestQuote();
+    await controller.retryQuote();
+    controller.acceptPriceChanges();
+
+    expect(create).toHaveBeenCalledOnce();
+    expect(assign).not.toHaveBeenCalled();
+    expect(controller.getSnapshot()).toEqual({
+      ...before,
+      paymentFrozen: true,
+    });
+  });
+
+  it("stops quote expiry while payment owns the accepted quote", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-20T04:00:00.000Z"));
+    const create = vi.fn(async () => parseQuote(quoteEnvelope()));
+    const controller = new CartController({ create }, { assign: vi.fn() });
+    controller.syncAssignment(addressA, assignmentA);
+    controller.add(product(), assignmentA);
+    controller.setQuantity(id("2"), 2);
+    await controller.requestQuote();
+    expect(
+      controller.freezeForPayment(controller.getSnapshot().quote!.quoteId),
+    ).toBe(true);
+    await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
+    expect(controller.getSnapshot()).toMatchObject({
+      quotePhase: "ready",
+      paymentFrozen: true,
+    });
+    controller.dispose();
+    vi.useRealTimers();
+  });
+
+  it("clears the payment freeze only when restarting the cart journey", async () => {
+    const { controller } = fixture();
+    controller.add(product(), assignmentA);
+    controller.setQuantity(id("2"), 2);
+    await controller.requestQuote();
+    controller.freezeForPayment(controller.getSnapshot().quote!.quoteId);
+    const assignment = controller.getSnapshot().assignment;
+    controller.clear();
+    expect(controller.getSnapshot()).toMatchObject({
+      lines: [],
+      quote: null,
+      quotePhase: "idle",
+      paymentFrozen: false,
+      assignment,
+    });
+  });
+});

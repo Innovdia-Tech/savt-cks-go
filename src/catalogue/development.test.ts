@@ -5,6 +5,7 @@ import { CustomerSessionController } from "../session/controller";
 import { DevelopmentCustomerApi } from "../api/development";
 import { DevelopmentBridgeAdapter } from "../webview/bridge";
 import { QuoteApi } from "../checkout/api";
+import { PaymentApi } from "../payment/api";
 const address = { id: "22222222-2222-4222-8222-222222222222", rowVersion: 1 };
 async function setup(scenario = "success") {
   const adapter = new DevelopmentCatalogueAdapter(false);
@@ -18,6 +19,7 @@ async function setup(scenario = "success") {
     adapter,
     api: new CatalogueApi("", session, adapter.fetch, 10),
     quote: new QuoteApi("", session, adapter.fetch, 10),
+    payment: new PaymentApi("", session, adapter.fetch, 10),
   };
 }
 it("cannot construct a production fixture adapter", () =>
@@ -157,4 +159,76 @@ it("returns a higher authoritative price in the price-change scenario", async ()
   expect(result.items[0].unitPriceMinor).toBeGreaterThan(
     item.sellingPriceMinor,
   );
+});
+
+it("simulates payment only through the CKS Go endpoints and keeps finality observational", async () => {
+  const { adapter, api, quote, payment } = await setup();
+  const assignment = await api.assign(address);
+  const item = (await api.products(assignment, { page: 1 })).data[0];
+  const trusted = await quote.create(
+    {
+      outletId: assignment.outlet.id,
+      customerAddressId: address.id,
+      deliveryType: "NOW",
+      items: [{ outletProductId: item.outletProductId, quantity: 1 }],
+    },
+    crypto.randomUUID(),
+  );
+  const created = await payment.create(
+    trusted.quoteId,
+    trusted.quoteToken,
+    crypto.randomUUID(),
+  );
+  expect(created).toMatchObject({
+    checkoutReference: trusted.quoteId,
+    payment: { status: "PENDING" },
+  });
+  expect(created.payment.checkoutUrl).toMatch(/^https:\/\//);
+
+  adapter.setPaymentResult("processing");
+  await expect(
+    payment.result(created.payment.paymentIntentId),
+  ).resolves.toMatchObject({
+    status: "PAID_PROCESSING",
+    order: null,
+  });
+  adapter.setPaymentResult("paid");
+  await expect(
+    payment.result(created.payment.paymentIntentId),
+  ).resolves.toMatchObject({
+    status: "PAID",
+    order: { orderNumber: "SYNTH-ORDER-0001" },
+  });
+  expect(adapter.paymentMetrics()).toEqual({
+    creates: 1,
+    results: 2,
+    directProviderCalls: 0,
+    browserOrderPosts: 0,
+  });
+});
+
+it("provides a malformed paid-without-order fixture for fail-closed acceptance", async () => {
+  const { adapter, api, quote, payment } = await setup();
+  const assignment = await api.assign(address);
+  const item = (await api.products(assignment, { page: 1 })).data[0];
+  const trusted = await quote.create(
+    {
+      outletId: assignment.outlet.id,
+      customerAddressId: address.id,
+      deliveryType: "NOW",
+      items: [{ outletProductId: item.outletProductId, quantity: 1 }],
+    },
+    crypto.randomUUID(),
+  );
+  const created = await payment.create(
+    trusted.quoteId,
+    trusted.quoteToken,
+    crypto.randomUUID(),
+  );
+  adapter.setPaymentResult("paid-no-order");
+  await expect(
+    payment.result(created.payment.paymentIntentId),
+  ).rejects.toMatchObject({
+    code: "INVALID_RESPONSE",
+  });
 });
