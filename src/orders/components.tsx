@@ -380,7 +380,7 @@ export function OrderDetailScreen({
                 : "Download receipt"}
             </button>
           )}
-          {order.canCancel && (
+          {order.canCancel && !state.canRetryCancellation && (
             <button
               className="customer-button order-cancel"
               disabled={state.cancelPhase === "cancelling"}

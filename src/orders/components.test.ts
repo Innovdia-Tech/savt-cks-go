@@ -265,6 +265,9 @@ describe("customer orders presentation", () => {
       } as never),
     );
     expect(retry).toContain("Retry cancellation");
+    expect(retry).not.toContain(
+      '<button class="customer-button order-cancel">Cancel order</button>',
+    );
   });
 
   it("uses an app-owned cancellation dialog with least-destructive initial focus", () => {

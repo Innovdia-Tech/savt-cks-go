@@ -141,9 +141,17 @@ class SessionStub {
 const api = (
   overrides: Partial<{
     list(page?: number, pageSize?: number): Promise<OrderPage>;
-    detail(orderId: string): Promise<OrderDetail>;
-    cancel(orderId: string, key: string): Promise<CancellationResult>;
-    downloadReceipt(orderId: string, path: string): Promise<Blob>;
+    detail(orderId: string, signal?: AbortSignal): Promise<OrderDetail>;
+    cancel(
+      orderId: string,
+      key: string,
+      signal?: AbortSignal,
+    ): Promise<CancellationResult>;
+    downloadReceipt(
+      orderId: string,
+      path: string,
+      signal?: AbortSignal,
+    ): Promise<Blob>;
   }> = {},
 ) => ({
   list: async () => page(),
@@ -280,6 +288,11 @@ describe("OrdersController", () => {
 
   it("reuses the same cancellation key after an uncertain failure", async () => {
     const keys: string[] = [];
+    const generatedKeys: string[] = [];
+    const candidateKeys = [
+      "44444444-4444-4444-8444-444444444444",
+      "55555555-5555-4555-8555-555555555555",
+    ] as const;
     let call = 0;
     const controller = new OrdersController(
       api({
@@ -290,7 +303,11 @@ describe("OrdersController", () => {
         },
       }),
       new SessionStub(),
-      () => "44444444-4444-4444-8444-444444444444",
+      () => {
+        const key = candidateKeys[generatedKeys.length];
+        generatedKeys.push(key);
+        return key;
+      },
     );
     await controller.open(orderId);
     await controller.cancel();
@@ -298,11 +315,17 @@ describe("OrdersController", () => {
       cancelPhase: "error",
       canRetryCancellation: true,
     });
+    await controller.cancel();
+    expect(generatedKeys).toEqual([candidateKeys[0]]);
+    expect(keys).toEqual([candidateKeys[0]]);
+    expect(controller.getSnapshot()).toMatchObject({
+      cancelPhase: "error",
+      canRetryCancellation: true,
+      detail: { customerStage: "ORDER_RECEIVED" },
+    });
     await controller.retryCancellation();
-    expect(keys).toEqual([
-      "44444444-4444-4444-8444-444444444444",
-      "44444444-4444-4444-8444-444444444444",
-    ]);
+    expect(generatedKeys).toEqual([candidateKeys[0]]);
+    expect(keys).toEqual([candidateKeys[0], candidateKeys[0]]);
     expect(controller.getSnapshot()).toMatchObject({
       cancelPhase: "succeeded",
       detail: {
@@ -371,6 +394,235 @@ describe("OrdersController", () => {
     });
     expect(result?.blob.type).toBe("application/pdf");
     expect(controller.getSnapshot().receiptPhase).toBe("ready");
+  });
+
+  it("keeps an in-flight cancellation independent from receipt download", async () => {
+    const withReceipt = detail();
+    withReceipt.receipt = {
+      receiptAvailable: true,
+      receiptReference: "CKS-20260921-0001",
+      issuedAt: at,
+      metadataPath: `/api/v1/orders/${orderId}/receipt`,
+      downloadPath: `/api/v1/orders/${orderId}/receipt/download`,
+    };
+    let resolveCancellation!: (value: CancellationResult) => void;
+    const cancellation = new Promise<CancellationResult>((resolve) => {
+      resolveCancellation = resolve;
+    });
+    let cancellationSignal: AbortSignal | undefined;
+    const controller = new OrdersController(
+      api({
+        detail: async () => withReceipt,
+        cancel: async (_id, _key, signal) => {
+          cancellationSignal = signal;
+          return cancellation;
+        },
+      }),
+      new SessionStub(),
+    );
+    await controller.open(orderId);
+    const cancellationWork = controller.cancel();
+    const receipt = await controller.downloadReceipt();
+    expect(receipt?.blob.type).toBe("application/pdf");
+    expect(cancellationSignal?.aborted).toBe(false);
+    resolveCancellation(cancelled());
+    await cancellationWork;
+    expect(controller.getSnapshot()).toMatchObject({
+      cancelPhase: "succeeded",
+      receiptPhase: "ready",
+      detail: { customerStage: "CANCELLED" },
+    });
+  });
+
+  it("keeps an in-flight receipt download independent from cancellation", async () => {
+    const withReceipt = detail();
+    withReceipt.receipt = {
+      receiptAvailable: true,
+      receiptReference: "CKS-20260921-0001",
+      issuedAt: at,
+      metadataPath: `/api/v1/orders/${orderId}/receipt`,
+      downloadPath: `/api/v1/orders/${orderId}/receipt/download`,
+    };
+    let resolveReceipt!: (value: Blob) => void;
+    const pendingReceipt = new Promise<Blob>((resolve) => {
+      resolveReceipt = resolve;
+    });
+    let receiptSignal: AbortSignal | undefined;
+    const controller = new OrdersController(
+      api({
+        detail: async () => withReceipt,
+        downloadReceipt: async (_id, _path, signal) => {
+          receiptSignal = signal;
+          return pendingReceipt;
+        },
+      }),
+      new SessionStub(),
+    );
+    await controller.open(orderId);
+    const receiptWork = controller.downloadReceipt();
+    await controller.cancel();
+    expect(receiptSignal?.aborted).toBe(false);
+    resolveReceipt(new Blob(["pdf"], { type: "application/pdf" }));
+    const receipt = await receiptWork;
+    expect(receipt?.blob.type).toBe("application/pdf");
+    expect(controller.getSnapshot()).toMatchObject({
+      cancelPhase: "succeeded",
+      receiptPhase: "ready",
+      detail: { customerStage: "CANCELLED" },
+    });
+  });
+
+  it("fences stale cancellation and receipt completions from a newly opened order", async () => {
+    const nextOrderId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const withReceipt = detail();
+    withReceipt.receipt = {
+      receiptAvailable: true,
+      receiptReference: "CKS-20260921-0001",
+      issuedAt: at,
+      metadataPath: `/api/v1/orders/${orderId}/receipt`,
+      downloadPath: `/api/v1/orders/${orderId}/receipt/download`,
+    };
+    let resolveCancellation!: (value: CancellationResult) => void;
+    const cancellation = new Promise<CancellationResult>((resolve) => {
+      resolveCancellation = resolve;
+    });
+    let resolveReceipt!: (value: Blob) => void;
+    const pendingReceipt = new Promise<Blob>((resolve) => {
+      resolveReceipt = resolve;
+    });
+    const controller = new OrdersController(
+      api({
+        detail: async (requestedOrderId) =>
+          requestedOrderId === orderId
+            ? withReceipt
+            : {
+                ...detail(),
+                orderId: nextOrderId,
+                orderNumber: "CKS-20260921-0002",
+                receipt: {
+                  receiptAvailable: false,
+                  receiptReference: null,
+                  issuedAt: null,
+                  metadataPath: null,
+                  downloadPath: null,
+                },
+              },
+        cancel: async () => cancellation,
+        downloadReceipt: async () => pendingReceipt,
+      }),
+      new SessionStub(),
+    );
+    await controller.open(orderId);
+    const cancellationWork = controller.cancel();
+    const receiptWork = controller.downloadReceipt();
+    await controller.open(nextOrderId);
+    resolveCancellation(cancelled());
+    resolveReceipt(new Blob(["pdf"], { type: "application/pdf" }));
+    await Promise.all([cancellationWork, receiptWork]);
+    expect(controller.getSnapshot()).toMatchObject({
+      detail: {
+        orderId: nextOrderId,
+        customerStage: "ORDER_RECEIVED",
+        canCancel: true,
+      },
+      cancelPhase: "idle",
+      receiptPhase: "idle",
+    });
+  });
+
+  it("aborts cancellation and receipt safely when detail closes", async () => {
+    const withReceipt = detail();
+    withReceipt.receipt = {
+      receiptAvailable: true,
+      receiptReference: "CKS-20260921-0001",
+      issuedAt: at,
+      metadataPath: `/api/v1/orders/${orderId}/receipt`,
+      downloadPath: `/api/v1/orders/${orderId}/receipt/download`,
+    };
+    let cancellationSignal: AbortSignal | undefined;
+    let receiptSignal: AbortSignal | undefined;
+    const abortable = (signal?: AbortSignal) =>
+      new Promise<never>((_resolve, reject) => {
+        signal?.addEventListener("abort", () =>
+          reject(new OrdersError("CANCELLED")),
+        );
+      });
+    const controller = new OrdersController(
+      api({
+        detail: async () => withReceipt,
+        cancel: async (_id, _key, signal) => {
+          cancellationSignal = signal;
+          return abortable(signal);
+        },
+        downloadReceipt: async (_id, _path, signal) => {
+          receiptSignal = signal;
+          return abortable(signal);
+        },
+      }),
+      new SessionStub(),
+    );
+    await controller.open(orderId);
+    const cancellationWork = controller.cancel();
+    const receiptWork = controller.downloadReceipt();
+    controller.closeDetail();
+    await Promise.all([cancellationWork, receiptWork]);
+    expect(cancellationSignal?.aborted).toBe(true);
+    expect(receiptSignal?.aborted).toBe(true);
+    expect(controller.getSnapshot()).toMatchObject({
+      detail: null,
+      detailPhase: "idle",
+      cancelPhase: "idle",
+      receiptPhase: "idle",
+    });
+  });
+
+  it("aborts cancellation and receipt safely on session loss", async () => {
+    const withReceipt = detail();
+    withReceipt.receipt = {
+      receiptAvailable: true,
+      receiptReference: "CKS-20260921-0001",
+      issuedAt: at,
+      metadataPath: `/api/v1/orders/${orderId}/receipt`,
+      downloadPath: `/api/v1/orders/${orderId}/receipt/download`,
+    };
+    const session = new SessionStub();
+    let cancellationSignal: AbortSignal | undefined;
+    let receiptSignal: AbortSignal | undefined;
+    const abortable = (signal?: AbortSignal) =>
+      new Promise<never>((_resolve, reject) => {
+        signal?.addEventListener("abort", () =>
+          reject(new OrdersError("CANCELLED")),
+        );
+      });
+    const controller = new OrdersController(
+      api({
+        detail: async () => withReceipt,
+        cancel: async (_id, _key, signal) => {
+          cancellationSignal = signal;
+          return abortable(signal);
+        },
+        downloadReceipt: async (_id, _path, signal) => {
+          receiptSignal = signal;
+          return abortable(signal);
+        },
+      }),
+      session,
+    );
+    await controller.open(orderId);
+    const cancellationWork = controller.cancel();
+    const receiptWork = controller.downloadReceipt();
+    session.set("expired");
+    await Promise.all([cancellationWork, receiptWork]);
+    expect(cancellationSignal?.aborted).toBe(true);
+    expect(receiptSignal?.aborted).toBe(true);
+    expect(controller.getSnapshot()).toMatchObject({
+      listPhase: "session-expired",
+      detailPhase: "session-expired",
+      page: null,
+      detail: null,
+      cancelPhase: "idle",
+      receiptPhase: "idle",
+    });
   });
 
   it("disposes subscriptions and resets state", async () => {

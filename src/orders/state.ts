@@ -66,10 +66,12 @@ export class OrdersController {
   private readonly listeners = new Set<() => void>();
   private listGeneration = 0;
   private detailGeneration = 0;
-  private actionGeneration = 0;
+  private cancellationGeneration = 0;
+  private receiptGeneration = 0;
   private listAbort?: AbortController;
   private detailAbort?: AbortController;
-  private actionAbort?: AbortController;
+  private cancellationAbort?: AbortController;
+  private receiptAbort?: AbortController;
   private cancellation?: CancellationAttempt;
   private readonly unsubscribeSession: () => void;
   private sessionPhase: string;
@@ -137,7 +139,10 @@ export class OrdersController {
 
   async open(orderId: string): Promise<void> {
     this.detailAbort?.abort();
-    this.actionAbort?.abort();
+    this.cancellationAbort?.abort();
+    this.receiptAbort?.abort();
+    ++this.cancellationGeneration;
+    ++this.receiptGeneration;
     this.cancellation = undefined;
     const abort = new AbortController();
     this.detailAbort = abort;
@@ -171,9 +176,11 @@ export class OrdersController {
 
   closeDetail(): void {
     this.detailAbort?.abort();
-    this.actionAbort?.abort();
+    this.cancellationAbort?.abort();
+    this.receiptAbort?.abort();
     ++this.detailGeneration;
-    ++this.actionGeneration;
+    ++this.cancellationGeneration;
+    ++this.receiptGeneration;
     this.cancellation = undefined;
     this.update({
       detailPhase: "idle",
@@ -189,7 +196,12 @@ export class OrdersController {
 
   cancel(): Promise<void> {
     const detail = this.state.detail;
-    if (!detail || !detail.canCancel || this.state.cancelPhase === "cancelling")
+    if (
+      !detail ||
+      !detail.canCancel ||
+      this.cancellation ||
+      this.state.cancelPhase === "cancelling"
+    )
       return Promise.resolve();
     this.cancellation = { orderId: detail.orderId, key: this.newId() };
     return this.executeCancellation(this.cancellation);
@@ -202,10 +214,10 @@ export class OrdersController {
   private async executeCancellation(
     attempt: CancellationAttempt,
   ): Promise<void> {
-    this.actionAbort?.abort();
+    this.cancellationAbort?.abort();
     const abort = new AbortController();
-    this.actionAbort = abort;
-    const generation = ++this.actionGeneration;
+    this.cancellationAbort = abort;
+    const generation = ++this.cancellationGeneration;
     this.update({
       cancelPhase: "cancelling",
       cancelError: null,
@@ -217,7 +229,7 @@ export class OrdersController {
         attempt.key,
         abort.signal,
       );
-      if (generation !== this.actionGeneration) return;
+      if (generation !== this.cancellationGeneration) return;
       if (
         result.orderId !== attempt.orderId ||
         this.state.detail?.orderId !== attempt.orderId
@@ -260,7 +272,7 @@ export class OrdersController {
         canRetryCancellation: false,
       });
     } catch (error) {
-      if (generation !== this.actionGeneration) return;
+      if (generation !== this.cancellationGeneration) return;
       const code = codeOf(error);
       const retry = uncertainCancellation.has(code);
       if (!retry) this.cancellation = undefined;
@@ -284,10 +296,10 @@ export class OrdersController {
       this.state.receiptPhase === "downloading"
     )
       return null;
-    this.actionAbort?.abort();
+    this.receiptAbort?.abort();
     const abort = new AbortController();
-    this.actionAbort = abort;
-    const generation = ++this.actionGeneration;
+    this.receiptAbort = abort;
+    const generation = ++this.receiptGeneration;
     this.update({ receiptPhase: "downloading", receiptError: null });
     try {
       const blob = await this.api.downloadReceipt(
@@ -296,7 +308,7 @@ export class OrdersController {
         abort.signal,
       );
       if (
-        generation !== this.actionGeneration ||
+        generation !== this.receiptGeneration ||
         this.state.detail?.orderId !== detail.orderId
       )
         return null;
@@ -306,7 +318,7 @@ export class OrdersController {
         filename: `CKS-Go-Receipt-${reference.replace(/[^A-Za-z0-9_-]/g, "-")}.pdf`,
       };
     } catch (error) {
-      if (generation !== this.actionGeneration) return null;
+      if (generation !== this.receiptGeneration) return null;
       const code = codeOf(error);
       this.update({ receiptPhase: "error", receiptError: code });
       return null;
@@ -329,10 +341,12 @@ export class OrdersController {
   private abortAll(): void {
     ++this.listGeneration;
     ++this.detailGeneration;
-    ++this.actionGeneration;
+    ++this.cancellationGeneration;
+    ++this.receiptGeneration;
     this.listAbort?.abort();
     this.detailAbort?.abort();
-    this.actionAbort?.abort();
+    this.cancellationAbort?.abort();
+    this.receiptAbort?.abort();
   }
   private update(patch: Partial<OrdersState>): void {
     this.state = { ...this.state, ...patch };
