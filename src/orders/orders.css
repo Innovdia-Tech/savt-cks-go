@@ -20,7 +20,7 @@
 .order-refresh,
 .order-card-open {
   min-height: 44px;
-  color: #166534;
+  color: var(--color-cks-primary);
   font-size: 13px;
   font-weight: 800;
 }
@@ -54,7 +54,7 @@
 .order-pages button:focus-visible,
 .order-actions button:focus-visible,
 .order-dialog button:focus-visible {
-  outline: 3px solid #166534;
+  outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
 .order-card-top > span:first-child {
@@ -159,13 +159,17 @@
 }
 .order-detail-hero {
   border-radius: 26px;
-  background: linear-gradient(145deg, #14532d, #166534);
+  background: linear-gradient(
+    145deg,
+    var(--color-cks-primary-pressed),
+    var(--color-cks-primary)
+  );
   padding: 20px;
   color: white;
 }
 .order-detail-hero .order-eyebrow,
 .order-detail-hero p {
-  color: #dcfce7;
+  color: #ffe8ea;
 }
 .order-detail-hero > div {
   display: flex;
@@ -220,7 +224,7 @@
   height: 24px;
   place-items: center;
   border-radius: 50%;
-  background: #166534;
+  background: var(--color-cks-primary);
   color: white;
   font-size: 11px;
   font-weight: 900;
@@ -269,7 +273,7 @@
 .order-grand {
   border-top: 1px solid #dbe5de;
   padding-top: 11px;
-  color: #14532d;
+  color: var(--color-cks-primary);
   font-size: 15px;
   font-weight: 900;
 }

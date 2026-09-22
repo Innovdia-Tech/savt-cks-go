@@ -1,5 +1,5 @@
 .catalogue-root {
-  padding: 0 20px 20px;
+  padding: 0 14px 24px 24px;
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -10,6 +10,10 @@
   gap: 12px;
   margin: 24px 0 18px;
 }
+.catalogue-heading--hidden {
+  height: 0;
+  margin: 0;
+}
 .catalogue-heading h1 {
   font-size: 25px;
   font-weight: 900;
@@ -19,10 +23,84 @@
   outline: none;
 }
 .catalogue-link {
-  color: #17613f;
+  color: var(--color-cks-primary);
   font-size: 13px;
   font-weight: 700;
   min-height: 44px;
+}
+.catalogue-trust-banner {
+  display: grid;
+  min-height: 64px;
+  align-content: center;
+  gap: 2px;
+  margin: 16px 0 22px;
+  border-radius: 18px;
+  color: var(--color-on-primary);
+  background: linear-gradient(
+    135deg,
+    var(--color-cks-primary),
+    var(--color-cks-primary-hover)
+  );
+  padding: 12px 20px;
+  box-shadow: var(--shadow-button);
+}
+.catalogue-trust-banner strong {
+  font-size: 16px;
+  line-height: 20px;
+}
+.catalogue-trust-banner span {
+  font-size: 11px;
+  line-height: 16px;
+}
+.catalogue-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.catalogue-section-heading h2 {
+  font-size: 15px;
+  font-weight: 800;
+}
+.catalogue-home-categories {
+  margin-bottom: 24px;
+}
+.catalogue-category-tiles {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.catalogue-category-tiles button {
+  display: grid;
+  min-width: 0;
+  min-height: 82px;
+  grid-template-rows: 52px auto;
+  justify-items: center;
+  gap: 6px;
+  border: 0;
+  color: var(--color-text);
+  background: transparent;
+  font-size: 10px;
+  font-weight: 600;
+}
+.catalogue-category-tiles button > span:first-child {
+  display: grid;
+  width: 56px;
+  max-width: 100%;
+  height: 64px;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  color: var(--color-savt-reward-dark);
+  background: var(--color-surface);
+  font-size: 18px;
+}
+.catalogue-category-tiles button > span:last-child {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .catalogue-search label {
   display: block;
@@ -49,7 +127,7 @@
   padding: 8px;
   min-width: 44px;
   min-height: 44px;
-  color: #17613f;
+  color: var(--color-cks-primary);
   font-weight: 700;
 }
 .catalogue-categories {
@@ -64,29 +142,41 @@
   flex-shrink: 0;
   max-width: 240px;
   padding: 10px 14px;
-  border: 1px solid #d7e5da;
-  border-radius: 16px;
-  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-surface);
   font-size: 13px;
   font-weight: 700;
 }
 .catalogue-categories button[aria-pressed="true"] {
-  background: #17613f;
-  color: white;
+  border-color: var(--color-cks-primary);
+  background: var(--color-cks-primary);
+  color: var(--color-on-primary);
 }
 .catalogue-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
+.catalogue-list {
+  display: grid;
+  gap: 12px;
+}
 .catalogue-tile {
   min-width: 0;
-  background: white;
-  border: 1px solid #e2e8e5;
-  border-radius: 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
   padding: 10px;
   display: flex;
   flex-direction: column;
+  box-shadow: var(--shadow-card);
+}
+.catalogue-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
 }
 .catalogue-open {
   text-align: left;
@@ -95,7 +185,7 @@
 .catalogue-image {
   height: 132px;
   border-radius: 15px;
-  background: #eff3f0;
+  background: var(--color-surface-muted);
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -131,7 +221,7 @@
   margin: 4px 0 10px;
 }
 .catalogue-price {
-  color: #17613f;
+  color: var(--color-cks-primary);
   font-size: 20px;
   font-weight: 900;
 }
@@ -141,13 +231,95 @@
   margin: 5px 0 12px;
 }
 .catalogue-add {
-  min-height: 44px;
+  min-height: 48px;
   width: 100%;
-  border-radius: 12px;
-  background: #e5eae7;
-  color: #556159;
+  border-radius: var(--radius-button);
   font-weight: 700;
-  margin-top: auto;
+  margin-top: var(--space-3);
+}
+.catalogue-products-heading {
+  align-items: flex-start;
+  margin: 4px 0 12px;
+}
+.catalogue-products-heading .catalogue-caption {
+  margin: 2px 0 0;
+}
+.catalogue-tile--list {
+  position: relative;
+  display: grid;
+  min-height: 82px;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-rows: 56px;
+  gap: 12px;
+  padding: 12px;
+}
+.catalogue-tile--list .catalogue-open {
+  display: grid;
+  min-width: 0;
+  grid-column: 1;
+  grid-row: 1;
+  grid-template-columns: 56px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+}
+.catalogue-tile--list .catalogue-image {
+  width: 54px;
+  height: 54px;
+  grid-column: 1;
+  grid-row: 1 / 3;
+  border-radius: 12px;
+}
+.catalogue-tile--list .catalogue-image > span {
+  font-size: 0;
+}
+.catalogue-tile--list .catalogue-image-symbol {
+  font-size: 20px;
+}
+.catalogue-tile--list .catalogue-name {
+  min-height: auto;
+  grid-column: 2;
+  margin: 1px 0 0;
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.catalogue-tile--list .catalogue-unit {
+  display: none;
+}
+.catalogue-tile--list .catalogue-price-row {
+  position: absolute;
+  right: 68px;
+  bottom: 12px;
+  left: 82px;
+  justify-content: flex-start;
+}
+.catalogue-tile--list .catalogue-price {
+  flex: 0 0 auto;
+  font-size: 14px;
+}
+.catalogue-tile--list .ui-status {
+  min-height: 22px;
+  overflow: hidden;
+  padding: 2px 7px;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.catalogue-tile--list .catalogue-add {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  align-self: center;
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+  border-radius: var(--radius-chip);
+  padding: 0;
+  font-size: 22px;
+}
+.catalogue-dev-tools {
+  margin-top: 24px;
 }
 .catalogue-state {
   min-height: 220px;
@@ -219,7 +391,7 @@
   white-space: pre-wrap;
 }
 .catalogue-detail strong {
-  color: #17613f;
+  color: var(--color-cks-primary);
   font-size: 28px;
 }
 .catalogue-detail dl {
@@ -242,7 +414,7 @@
   cursor: not-allowed;
 }
 .catalogue-root :is(button, input, select):focus-visible {
-  outline: 3px solid #17613f;
+  outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .catalogue-dev {

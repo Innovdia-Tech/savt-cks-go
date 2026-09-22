@@ -67,6 +67,8 @@ describe("real cart and trusted quote presentation", () => {
     expect(html).toMatch(/(?:RM|MYR).*9\.00/);
     expect(html).toContain("Get trusted quote");
     expect(html).toContain("Remove Rice");
+    expect(html).toContain('role="group"');
+    expect(html).toContain('aria-label="Quantity for Rice"');
     expect(html).not.toMatch(
       /<(?:button|a)[^>]*>[^<]*(?:pay|confirm order|tracking)/i,
     );

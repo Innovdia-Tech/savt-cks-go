@@ -1,39 +1,65 @@
 .customer-surface {
   overflow-wrap: anywhere;
 }
+.delivery-address-link {
+  display: grid;
+  min-height: 44px;
+  max-width: 100%;
+  align-content: center;
+  border: 0;
+  color: var(--color-text);
+  background: transparent;
+  padding: var(--space-1) 0;
+  text-align: left;
+}
+.delivery-address-link > span {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 500;
+}
+.delivery-address-link > strong {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .customer-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 26px;
-  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
   padding: 1rem;
-  box-shadow: 0 12px 34px rgb(15 23 42 / 7%);
+  box-shadow: var(--shadow-card);
 }
 .customer-button {
-  min-height: 44px;
-  border-radius: 16px;
-  border: 1px solid #cbd5e1;
-  background: white;
+  min-height: 48px;
+  border-radius: var(--radius-button);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
   padding: 0.5rem 0.9rem;
-  color: #14532d;
+  color: var(--color-text);
   font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
 }
 .customer-button:hover:not(:disabled) {
-  background: #f0fdf4;
-  border-color: #166534;
+  background: var(--color-surface-muted);
+  border-color: var(--color-text-muted);
 }
 .customer-button:active:not(:disabled) {
-  background: #dcfce7;
+  background: var(--color-border);
 }
 .customer-primary {
-  background: #166534;
-  border-color: #166534;
-  color: white;
+  background: var(--color-cks-primary);
+  border-color: var(--color-cks-primary);
+  color: var(--color-on-primary);
+  box-shadow: var(--shadow-button);
 }
 .customer-primary:hover:not(:disabled) {
-  background: #14532d;
-  color: white;
+  background: var(--color-cks-primary-hover);
+  border-color: var(--color-cks-primary-hover);
+  color: var(--color-on-primary);
 }
 .customer-button:disabled {
   opacity: 0.5;
@@ -43,10 +69,10 @@
   display: block;
   width: 100%;
   min-width: 0;
-  min-height: 44px;
+  min-height: 48px;
   margin-top: 0.375rem;
-  border: 1px solid #94a3b8;
-  border-radius: 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-button);
   padding: 0.625rem 0.75rem;
   background: white;
   font-size: 16px;
@@ -61,7 +87,7 @@
 .customer-button:focus-visible,
 .customer-input:focus-visible,
 .customer-surface summary:focus-visible {
-  outline: 3px solid #166534;
+  outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
 .customer-dialog {
@@ -74,4 +100,5 @@
 .customer-input:is(textarea) {
   field-sizing: content;
   min-height: 6rem;
+  resize: none;
 }

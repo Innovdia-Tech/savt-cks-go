@@ -190,6 +190,7 @@ describe("customer orders presentation", () => {
     );
     expect(html).toContain("CKS-20260921-0001");
     expect(html).toContain("Out for delivery");
+    expect(html).toContain("ui-status--info");
     expect(html).toContain("Next page");
     expect(html).not.toContain("RIDER_INTERNAL_STATE");
     expect(html).not.toContain(orderId);

@@ -12,6 +12,12 @@ import { AddressTransitionError, CartScreen } from "../checkout/components";
 import { usePayment } from "../payment/context";
 import { useOrders } from "../orders/context";
 import { OrderDetailScreen, OrdersScreen } from "../orders/components";
+import {
+  Button,
+  SearchField,
+  StatusBadge,
+  SystemState,
+} from "../components/ui";
 export const money = (minor: number) =>
   new Intl.NumberFormat("en-MY", { style: "currency", currency: "MYR" }).format(
     minor / 100,
@@ -51,16 +57,18 @@ export function ProductTile({
   onOpen,
   onAdd,
   orderingDisabled = false,
+  variant = "grid",
 }: {
   product: Product;
   onOpen: () => void;
   onAdd?: () => void;
   orderingDisabled?: boolean;
+  variant?: "grid" | "list";
 }) {
   const canAdd =
     product.availability === "AVAILABLE" && !orderingDisabled && !!onAdd;
   return (
-    <article className="catalogue-tile">
+    <article className={`catalogue-tile catalogue-tile--${variant}`}>
       <button
         className="catalogue-open"
         onClick={onOpen}
@@ -72,13 +80,13 @@ export function ProductTile({
           {product.packSize || product.uom.name}
         </span>
       </button>
-      <strong className="catalogue-price">
-        {money(product.sellingPriceMinor)}
-      </strong>
-      <span className="catalogue-availability">
-        {product.availability === "AVAILABLE" ? "Available" : "Unavailable"}
-      </span>
-      <button
+      <div className="catalogue-price-row">
+        <strong className="catalogue-price">
+          {money(product.sellingPriceMinor)}
+        </strong>
+        <StatusBadge status={product.availability} />
+      </div>
+      <Button
         className="catalogue-add"
         disabled={!canAdd}
         onClick={onAdd}
@@ -88,8 +96,15 @@ export function ProductTile({
             : `Add ${product.name} — unavailable`
         }
       >
-        Add
-      </button>
+        {variant === "list" ? (
+          <>
+            <span aria-hidden="true">+</span>
+            <span className="sr-only">Add to cart</span>
+          </>
+        ) : (
+          "Add to cart"
+        )}
+      </Button>
     </article>
   );
 }
@@ -208,18 +223,26 @@ export function CatalogueStatus({
     ["no-address", "coordinates", "address-error"].includes(phase) ||
     error?.startsWith("CUSTOMER_ADDRESS_");
   return (
-    <section className="catalogue-state" role="status" aria-live="polite">
-      <h2>{title}</h2>
-      <p>{description}</p>
-      {!busy && phase !== "session-expired" && (
-        <button
-          className="customer-button"
-          onClick={addressAction ? onManage : onRetry}
-        >
-          {addressAction ? "Manage addresses" : "Try again"}
-        </button>
-      )}
-    </section>
+    <SystemState
+      tone={busy ? "loading" : "error"}
+      title={title}
+      description={description}
+      busy={busy}
+      actionLabel={
+        !busy && phase !== "session-expired"
+          ? addressAction
+            ? "Manage addresses"
+            : "Try again"
+          : undefined
+      }
+      onAction={
+        !busy && phase !== "session-expired"
+          ? addressAction
+            ? onManage
+            : onRetry
+          : undefined
+      }
+    />
   );
 }
 function readRoute() {
@@ -230,6 +253,24 @@ function readRoute() {
     ? value
     : "home";
 }
+
+export function routeTitle(route: string) {
+  const page = route.startsWith("detail/")
+    ? "Product details"
+    : route.startsWith("order/")
+      ? "Order details"
+      : route === "categories"
+        ? "Categories"
+        : route === "cart"
+          ? "Cart"
+          : route === "orders"
+            ? "Orders"
+            : route === "profile"
+              ? "Profile and addresses"
+              : "Browse products";
+  return `${page} | CKS Go`;
+}
+
 export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
   const { state, controller, controls } = useCatalogue();
   const checkout = useCheckout();
@@ -241,6 +282,9 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
   const [composing, setComposing] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null),
     search = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    document.title = routeTitle(route);
+  }, [route]);
   useEffect(() => {
     const change = () =>
       guardHistoryNavigation(
@@ -267,6 +311,11 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
     state.assignment?.customerAddressId,
     state.assignment?.addressRowVersion,
   ]);
+  useEffect(() => {
+    if (route !== "home" || (!state.q && !state.categoryId)) return;
+    setQuery("");
+    void controller.resetFilters();
+  }, [route, state.q, state.categoryId, controller]);
   const detailId = route.startsWith("detail/") ? route.slice(7) : undefined;
   const orderDetailId = route.startsWith("order/") ? route.slice(6) : undefined;
   useEffect(() => {
@@ -314,7 +363,6 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
       outlet={state.assignment?.outlet}
     >
       <div className="catalogue-root">
-        {controls}
         {route === "profile" ? (
           <>
             <CheckoutAddress
@@ -333,10 +381,16 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
           </>
         ) : (
           <>
-            <div className="catalogue-heading">
-              <h1 ref={heading} tabIndex={-1}>
+            <div
+              className={`catalogue-heading ${route === "home" ? "catalogue-heading--hidden" : ""}`}
+            >
+              <h1
+                ref={heading}
+                tabIndex={-1}
+                className={route === "home" ? "sr-only" : undefined}
+              >
                 {route === "home"
-                  ? "Browse products"
+                  ? "CKS Go home"
                   : route === "categories"
                     ? "Categories"
                     : detailId
@@ -369,6 +423,12 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                 Your account is read-only. Products cannot be ordered.
               </p>
             )}
+            {route === "home" && state.phase === "ready" && (
+              <section className="catalogue-trust-banner">
+                <strong>Shop with trusted totals</strong>
+                <span>Prices and stock are confirmed before payment.</span>
+              </section>
+            )}
             {route === "cart" ? (
               <CartScreen
                 state={checkout.state}
@@ -394,46 +454,72 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
               />
             ) : (
               <>
-                {browse && (
-                  <form
-                    noValidate
+                {route === "categories" && (
+                  <SearchField
                     className="catalogue-search"
+                    id="catalogue-search"
+                    ref={search}
+                    label="Search products"
+                    maxLength={200}
+                    value={query}
+                    placeholder="Search this outlet"
+                    onCompositionStart={() => setComposing(true)}
+                    onCompositionEnd={() => setComposing(false)}
+                    onChange={(e) => setQuery(e.target.value)}
                     onSubmit={(e) => {
                       e.preventDefault();
                       if (!composing) void controller.search(query);
                     }}
+                    onClear={() => {
+                      setQuery("");
+                      void controller.search("");
+                      search.current?.focus();
+                    }}
+                  />
+                )}
+                {route === "home" && state.categories.length > 0 && (
+                  <section
+                    className="catalogue-home-categories"
+                    aria-labelledby="home-categories-title"
                   >
-                    <label htmlFor="catalogue-search">Search products</label>
-                    <div>
-                      <input
-                        id="catalogue-search"
-                        ref={search}
-                        type="search"
-                        maxLength={200}
-                        value={query}
-                        onCompositionStart={() => setComposing(true)}
-                        onCompositionEnd={() => setComposing(false)}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search this outlet"
-                      />
-                      {query && (
+                    <div className="catalogue-section-heading">
+                      <h2 id="home-categories-title">Categories</h2>
+                      <button
+                        type="button"
+                        className="catalogue-link"
+                        onClick={() => navigate("categories")}
+                      >
+                        View all
+                      </button>
+                    </div>
+                    <div className="catalogue-category-tiles">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void controller.category();
+                          navigate("categories");
+                        }}
+                      >
+                        <span aria-hidden="true">⌂</span>
+                        <span>All</span>
+                      </button>
+                      {state.categories.slice(0, 4).map((category) => (
                         <button
                           type="button"
-                          aria-label="Clear search"
+                          key={category.id}
                           onClick={() => {
-                            setQuery("");
-                            void controller.search("");
-                            search.current?.focus();
+                            void controller.category(category.id);
+                            navigate("categories");
                           }}
                         >
-                          ×
+                          <span aria-hidden="true">◇</span>
+                          <span>{category.name}</span>
                         </button>
-                      )}
-                      <button type="submit">Search</button>
+                      ))}
                     </div>
-                  </form>
+                  </section>
                 )}
-                {browse &&
+                {route === "categories" &&
                   (state.categories.length > 0 || state.categoryPage > 1) && (
                     <section aria-label="Product categories">
                       <div className="catalogue-categories">
@@ -519,7 +605,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                         <dt>Storage</dt>
                         <dd>{p.storageType.toLowerCase()}</dd>
                       </dl>
-                      <button
+                      <Button
                         className="catalogue-add"
                         disabled={
                           state.readOnly ||
@@ -536,7 +622,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                         }}
                       >
                         Add to cart
-                      </button>
+                      </Button>
                       <p>
                         Prices and stock are confirmed when you request a
                         trusted quote.
@@ -550,17 +636,41 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                         No categories are available for this outlet.
                       </p>
                     )}
-                    <p className="catalogue-caption">
-                      Add available products from this assigned outlet.
-                      Displayed prices are shown in MYR and confirmed by a
-                      trusted quote.
-                    </p>
+                    <div className="catalogue-section-heading catalogue-products-heading">
+                      <div>
+                        <h2>
+                          {route === "home"
+                            ? "Products from this outlet"
+                            : "Browse products"}
+                        </h2>
+                        <p className="catalogue-caption">
+                          Displayed prices are confirmed by a trusted quote.
+                        </p>
+                      </div>
+                      {route === "home" && (
+                        <button
+                          type="button"
+                          className="catalogue-link"
+                          onClick={() => navigate("categories")}
+                        >
+                          View all
+                        </button>
+                      )}
+                    </div>
                     {state.products?.data.length ? (
-                      <div className="catalogue-grid">
-                        {state.products.data.map((product) => (
+                      <div
+                        className={
+                          route === "home" ? "catalogue-list" : "catalogue-grid"
+                        }
+                      >
+                        {(route === "home"
+                          ? state.products.data.slice(0, 6)
+                          : state.products.data
+                        ).map((product) => (
                           <ProductTile
                             key={product.outletProductId}
                             product={product}
+                            variant={route === "home" ? "list" : "grid"}
                             onOpen={() =>
                               navigate("detail/" + product.outletProductId)
                             }
@@ -582,20 +692,21 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                         ))}
                       </div>
                     ) : (
-                      <section className="catalogue-state" role="status">
-                        <h2>
-                          {state.q
+                      <SystemState
+                        tone="empty"
+                        title={
+                          state.q
                             ? "No search results"
-                            : "No products in this selection"}
-                        </h2>
-                        <p>
-                          {state.q
+                            : "No products in this selection"
+                        }
+                        description={
+                          state.q
                             ? "Try another product name or clear your search."
-                            : "Choose another category or try again later."}
-                        </p>
-                      </section>
+                            : "Choose another category or try again later."
+                        }
+                      />
                     )}
-                    {state.products && (
+                    {state.products && route === "categories" && (
                       <div className="catalogue-pages">
                         <button
                           disabled={state.page <= 1}
@@ -620,6 +731,9 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                       </div>
                     )}
                   </>
+                )}
+                {controls && (
+                  <div className="catalogue-dev-tools">{controls}</div>
                 )}
               </>
             )}

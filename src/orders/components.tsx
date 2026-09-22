@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CustomerOrderStage, OrderDetail } from "./contracts";
 import type { OrdersController, OrdersState } from "./state";
+import { StatusBadge, SystemState } from "../components/ui";
 
 type Actions = Pick<
   OrdersController,
@@ -13,14 +14,6 @@ type Actions = Pick<
   | "downloadReceipt"
 >;
 
-const stageLabels: Record<CustomerOrderStage, string> = {
-  ORDER_RECEIVED: "Order received",
-  PICK_AND_PACK: "Picking and packing",
-  OUT_FOR_DELIVERY: "Out for delivery",
-  DELIVERED: "Delivered",
-  CANCELLED: "Cancelled",
-  REJECTED: "Not fulfilled",
-};
 const money = (minor: number) =>
   new Intl.NumberFormat("en-MY", { style: "currency", currency: "MYR" }).format(
     minor / 100,
@@ -33,13 +26,7 @@ const malaysiaTime = (value: string) =>
   }).format(new Date(value));
 
 function Status({ stage }: { stage: CustomerOrderStage }) {
-  return (
-    <span
-      className={`order-status order-status-${stage.toLowerCase().replaceAll("_", "-")}`}
-    >
-      {stageLabels[stage]}
-    </span>
-  );
+  return <StatusBadge status={stage} />;
 }
 function StateCard({
   title,
@@ -55,22 +42,14 @@ function StateCard({
   busy?: boolean;
 }) {
   return (
-    <section
-      className="order-state"
-      role={busy ? "status" : undefined}
-      aria-live="polite"
-    >
-      <div className="order-state-mark" aria-hidden="true">
-        {busy ? "…" : "○"}
-      </div>
-      <h2>{title}</h2>
-      <p>{message}</p>
-      {action && actionLabel && (
-        <button className="customer-button customer-primary" onClick={action}>
-          {actionLabel}
-        </button>
-      )}
-    </section>
+    <SystemState
+      tone={busy ? "loading" : action ? "error" : "empty"}
+      title={title}
+      description={message}
+      actionLabel={actionLabel}
+      onAction={action}
+      busy={busy}
+    />
   );
 }
 

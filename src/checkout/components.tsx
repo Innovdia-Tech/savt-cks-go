@@ -2,6 +2,7 @@ import { useEffect, useRef, type ComponentProps } from "react";
 import { PaymentPanel } from "../payment/components";
 import { MAX_LINE_QUANTITY } from "./contracts";
 import type { CartController, CartState } from "./state";
+import { QuantitySelector } from "../components/QuantitySelector";
 
 const money = (minor: number) =>
   new Intl.NumberFormat("en-MY", { style: "currency", currency: "MYR" }).format(
@@ -286,38 +287,20 @@ export function CartScreen({
               <p>{line.product.packSize || line.product.uom.name}</p>
               <strong>{money(line.displayedUnitPriceMinor)} displayed</strong>
             </div>
-            <div
+            <QuantitySelector
               className="cart-quantity"
-              aria-label={`Quantity for ${line.product.name}`}
-            >
-              <button
-                aria-label={`Decrease ${line.product.name}`}
-                disabled={state.paymentFrozen}
-                onClick={() =>
-                  controller.setQuantity(
-                    line.outletProductId,
-                    line.quantity - 1,
-                  )
-                }
-              >
-                −
-              </button>
-              <span aria-live="polite">{line.quantity}</span>
-              <button
-                aria-label={`Increase ${line.product.name}`}
-                disabled={
-                  state.paymentFrozen || line.quantity >= MAX_LINE_QUANTITY
-                }
-                onClick={() =>
-                  controller.setQuantity(
-                    line.outletProductId,
-                    line.quantity + 1,
-                  )
-                }
-              >
-                +
-              </button>
-            </div>
+              label={`Quantity for ${line.product.name}`}
+              quantity={line.quantity}
+              minimum={0}
+              maximum={MAX_LINE_QUANTITY}
+              disabled={state.paymentFrozen}
+              onDecrement={() =>
+                controller.setQuantity(line.outletProductId, line.quantity - 1)
+              }
+              onIncrement={() =>
+                controller.setQuantity(line.outletProductId, line.quantity + 1)
+              }
+            />
             <button
               className="cart-remove"
               aria-label={`Remove ${line.product.name}`}

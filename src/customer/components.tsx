@@ -414,17 +414,15 @@ export function DeliveryAddressLink({ onManage }: { onManage: () => void }) {
   const { state, controller } = useCustomer();
   const a = controller.selectedAddress();
   return (
-    <button
-      className="mt-1 flex min-h-11 max-w-full items-center text-left text-[18px] font-black leading-6 text-slate-950"
-      onClick={onManage}
-    >
-      <span className="truncate">
+    <button className="delivery-address-link" onClick={onManage}>
+      <span>Delivering to</span>
+      <strong>
         {state.listPhase === "loading"
           ? "Loading delivery address…"
           : a
-            ? `Deliver to ${a.label}`
+            ? [a.addressLine1, a.city, a.state].filter(Boolean).join(", ")
             : "Profile & saved addresses"}
-      </span>
+      </strong>
     </button>
   );
 }

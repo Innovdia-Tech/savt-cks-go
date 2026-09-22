@@ -1,6 +1,7 @@
 {
   "profile": "product-admin",
   "sourceRoots": [
+    "src/components",
     "src/customer",
     "src/addresses",
     "src/catalogue",
@@ -10,6 +11,12 @@
   ],
   "locale": "en-MY",
   "canonicalMap": "UX-CONTRACT.md",
-  "requiredCapabilities": ["Select/Listbox", "Form", "Toast", "CRUD"],
+  "requiredCapabilities": [
+    "Select/Listbox",
+    "Form",
+    "Toast",
+    "CRUD",
+    "Scrollbar"
+  ],
   "ownership": { "Select/Listbox": "native" }
 }
