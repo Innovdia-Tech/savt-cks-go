@@ -6,31 +6,32 @@ type PaymentActions = Pick<
 >;
 
 const action = "customer-button customer-primary payment-action";
+const money = (minor: number) =>
+  new Intl.NumberFormat("en-MY", { style: "currency", currency: "MYR" }).format(
+    minor / 100,
+  );
 
 export function PaymentPanel({
   state,
   controller,
   onViewOrder,
+  acceptedTotalMinor,
 }: {
   state: PaymentState;
   controller: PaymentActions;
   onViewOrder?: (orderId: string) => void;
+  acceptedTotalMinor?: number;
 }) {
   if (state.phase === "idle") return null;
   if (state.phase === "paid" && state.order)
     return (
       <section className="payment-card payment-success" aria-live="polite">
         <p className="quote-eyebrow">Payment successful</p>
-        <h2>Order Confirmed</h2>
-        <p>
-          CKS Go confirmed payment and created your order from authenticated
-          backend evidence.
-        </p>
+        <h2>Order confirmed</h2>
+        <p>Payment is complete and your CKS Go order is ready to track.</p>
         <dl className="payment-evidence">
           <dt>Order number</dt>
           <dd>{state.order.orderNumber}</dd>
-          <dt>Order status</dt>
-          <dd>{state.order.status}</dd>
         </dl>
         {onViewOrder && (
           <button
@@ -54,12 +55,11 @@ export function PaymentPanel({
       <section className="payment-card" aria-labelledby="payment-title">
         <p className="quote-eyebrow">Secure checkout</p>
         <h2 id="payment-title">Ready for payment</h2>
-        <p>
-          CKS Go securely starts payment with the accepted quote. The external
-          payment page will open through Savt.
-        </p>
+        <p>Your reviewed total will be handed securely to Savt for payment.</p>
         <button className={action} onClick={() => void controller.initiate()}>
-          Proceed to payment
+          {acceptedTotalMinor === undefined
+            ? "Pay securely"
+            : `Pay ${money(acceptedTotalMinor)}`}
         </button>
       </section>
     );
@@ -74,11 +74,11 @@ export function PaymentPanel({
   if (state.phase === "pending")
     return (
       <section className="payment-card" aria-live="polite">
-        <p className="quote-eyebrow">Awaiting backend confirmation</p>
+        <p className="quote-eyebrow">Waiting for confirmation</p>
         <h2>Payment pending</h2>
         <p>
-          Returning from the payment page does not confirm payment. CKS Go will
-          show an order only after the backend reports paid with Order details.
+          Returning from the payment page does not confirm payment. Your order
+          will appear only after payment is confirmed.
         </p>
         <PaymentObservationActions controller={controller} reopen />
       </section>
@@ -87,18 +87,18 @@ export function PaymentPanel({
     return (
       <PaymentNotice
         title="Checking payment status"
-        message="Confirming payment and Order evidence with CKS Go."
+        message="Confirming the latest payment result with CKS Go."
         busy
       />
     );
   if (state.phase === "paid-processing")
     return (
       <section className="payment-card" aria-live="polite">
-        <p className="quote-eyebrow">Backend finality pending</p>
+        <p className="quote-eyebrow">Order confirmation in progress</p>
         <h2>Payment received — finalising your order</h2>
         <p>
-          Payment was received, but the backend has not projected a complete
-          Order yet. Keep this page open and check again shortly.
+          Payment was received, but the order is still being finalised. Keep
+          this page open and check again shortly.
         </p>
         <PaymentObservationActions controller={controller} />
       </section>
@@ -118,7 +118,7 @@ export function PaymentPanel({
   if (state.phase === "failed")
     return (
       <section className="payment-card payment-warning" role="alert">
-        <p className="quote-eyebrow">Backend payment result</p>
+        <p className="quote-eyebrow">Payment result</p>
         <h2>Payment failed</h2>
         <p>
           This payment did not complete. Restart checkout to clear the cart and

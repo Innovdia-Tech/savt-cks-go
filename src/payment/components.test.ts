@@ -21,14 +21,18 @@ const controller = {
 
 const render = (state: PaymentState) =>
   renderToStaticMarkup(
-    createElement(PaymentPanel, { state, controller } as never),
+    createElement(PaymentPanel, {
+      state,
+      controller,
+      acceptedTotalMinor: 2300,
+    } as never),
   );
 
 describe("customer payment presentation", () => {
   it("starts only from the explicit proceed action", () => {
     const html = render(base);
-    expect(html).toContain("Proceed to payment");
-    expect(html).toContain("CKS Go securely starts payment");
+    expect(html).toMatch(/Pay (?:RM|MYR).*23\.00/);
+    expect(html).toContain("handed securely to Savt");
     expect(html).not.toContain("Order Confirmed");
   });
 
@@ -60,7 +64,7 @@ describe("customer payment presentation", () => {
     });
     expect(pending).toContain("Check payment status");
     expect(pending).toContain("Reopen secure payment");
-    expect(pending).not.toContain("Proceed to payment");
+    expect(pending).not.toMatch(/Pay (?:RM|MYR)/);
   });
 
   it("shows Order Confirmed only with a backend-projected Order", () => {
@@ -75,9 +79,9 @@ describe("customer payment presentation", () => {
       },
     });
     expect(html).toContain("Payment successful");
-    expect(html).toContain("Order Confirmed");
+    expect(html).toContain("Order confirmed");
     expect(html).toContain("ORD-2026-0001");
-    expect(html).toContain("CONFIRMED");
+    expect(html).not.toContain("CONFIRMED");
   });
 
   it("links to history only after paid plus valid backend Order evidence", () => {

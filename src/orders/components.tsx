@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import type { CustomerOrderStage, OrderDetail } from "./contracts";
+import type {
+  CustomerOrderStage,
+  OrderDetail,
+  OrderListItem,
+} from "./contracts";
 import type { OrdersController, OrdersState } from "./state";
 import { StatusBadge, SystemState } from "../components/ui";
 
@@ -53,6 +57,111 @@ function StateCard({
   );
 }
 
+const currentOrderStages: CustomerOrderStage[] = [
+  "ORDER_RECEIVED",
+  "PICK_AND_PACK",
+  "OUT_FOR_DELIVERY",
+];
+
+const stagePresentation: Record<
+  CustomerOrderStage,
+  { title: string; explanation: string }
+> = {
+  ORDER_RECEIVED: {
+    title: "Order received",
+    explanation:
+      "We have your order. The outlet will begin preparing your items.",
+  },
+  PICK_AND_PACK: {
+    title: "Pick & Pack",
+    explanation: "The outlet is selecting and packing your groceries.",
+  },
+  OUT_FOR_DELIVERY: {
+    title: "Out for delivery",
+    explanation: "Your packed order is on its way to your delivery address.",
+  },
+  DELIVERED: {
+    title: "Delivered",
+    explanation: "Your order has been delivered.",
+  },
+  CANCELLED: {
+    title: "Cancelled",
+    explanation: "This order was cancelled and will not be delivered.",
+  },
+  REJECTED: {
+    title: "Unable to fulfil",
+    explanation: "The outlet could not fulfil this order.",
+  },
+};
+
+function OrderCard({
+  order,
+  onOpen,
+}: {
+  order: OrderListItem;
+  onOpen: (orderId: string) => void;
+}) {
+  return (
+    <button
+      className="order-card"
+      onClick={() => onOpen(order.orderId)}
+      aria-label={`View order ${order.orderNumber}`}
+    >
+      <span className="order-card-top">
+        <span>
+          <small>Order</small>
+          <strong>{order.orderNumber}</strong>
+        </span>
+        <Status stage={order.customerStage} />
+      </span>
+      <span className="order-card-meta">
+        <span>{malaysiaTime(order.createdAt)}</span>
+        <span>{order.outletName}</span>
+      </span>
+      <span className="order-card-total">
+        <span>
+          {order.deliveryType === "NOW" ? "Delivery" : "Scheduled delivery"}
+        </span>
+        <strong>{money(order.grandTotalMinor)}</strong>
+      </span>
+      <span className="order-card-open">
+        View details <span aria-hidden="true">→</span>
+      </span>
+    </button>
+  );
+}
+
+function OrderGroup({
+  title,
+  orders,
+  empty,
+  onOpen,
+}: {
+  title: string;
+  orders: OrderListItem[];
+  empty: string;
+  onOpen: (orderId: string) => void;
+}) {
+  const headingId = `order-group-${title.toLowerCase().replaceAll(" ", "-")}`;
+  return (
+    <section className="order-group" aria-labelledby={headingId}>
+      <div className="order-group-heading">
+        <h2 id={headingId}>{title}</h2>
+        <span>{orders.length} on this page</span>
+      </div>
+      {orders.length ? (
+        <div className="order-list">
+          {orders.map((order) => (
+            <OrderCard key={order.orderId} order={order} onOpen={onOpen} />
+          ))}
+        </div>
+      ) : (
+        <p className="order-page-empty">{empty}</p>
+      )}
+    </section>
+  );
+}
+
 export function OrdersScreen({
   state,
   controller,
@@ -101,6 +210,12 @@ export function OrdersScreen({
         actionLabel="Browse products"
       />
     );
+  const current = page.data.filter((order) =>
+    currentOrderStages.includes(order.customerStage),
+  );
+  const history = page.data.filter(
+    (order) => !currentOrderStages.includes(order.customerStage),
+  );
   return (
     <div className="orders-stack">
       <div className="orders-toolbar">
@@ -114,40 +229,24 @@ export function OrdersScreen({
           Refresh
         </button>
       </div>
-      <div className="order-list" aria-label="Order history">
-        {page.data.map((order) => (
-          <button
-            key={order.orderId}
-            className="order-card"
-            onClick={() => onOpen(order.orderId)}
-            aria-label={`View order ${order.orderNumber}`}
-          >
-            <span className="order-card-top">
-              <span>
-                <small>Order</small>
-                <strong>{order.orderNumber}</strong>
-              </span>
-              <Status stage={order.customerStage} />
-            </span>
-            <span className="order-card-meta">
-              <span>{malaysiaTime(order.createdAt)}</span>
-              <span>{order.outletName}</span>
-            </span>
-            <span className="order-card-total">
-              <span>
-                {order.deliveryType === "NOW"
-                  ? "Delivery"
-                  : "Scheduled delivery"}
-              </span>
-              <strong>{money(order.grandTotalMinor)}</strong>
-            </span>
-            <span className="order-card-open">
-              View details <span aria-hidden="true">→</span>
-            </span>
-          </button>
-        ))}
-      </div>
-      <nav className="order-pages" aria-label="Order history pages">
+      <p className="orders-page-note">
+        Showing page {page.meta.page} of {Math.max(page.meta.totalPages, 1)}.
+        Current and history groups reflect this page because customer order
+        status filtering isn&apos;t available yet.
+      </p>
+      <OrderGroup
+        title="Current orders"
+        orders={current}
+        empty="No current orders on this page. Other pages may still contain active orders."
+        onOpen={onOpen}
+      />
+      <OrderGroup
+        title="Order history"
+        orders={history}
+        empty="No completed or cancelled orders on this page. Other pages may contain order history."
+        onOpen={onOpen}
+      />
+      <nav className="order-pages" aria-label="Order pages">
         <button
           className="customer-button"
           disabled={page.meta.page <= 1}
@@ -170,18 +269,18 @@ export function OrdersScreen({
   );
 }
 
-const timeline = (
-  detail: OrderDetail,
-): Array<readonly [string, string | null]> => [
-  ["Order received", detail.milestones.paymentConfirmedAt],
-  ["Preparing your order", detail.milestones.acceptedAt],
-  ["Items confirmed", detail.milestones.pickingConfirmedAt],
-  ["Ready for delivery", detail.milestones.packingCompletedAt],
-  ["Delivery arranged", detail.delivery.assignedAt],
-  ["Out for delivery", detail.delivery.pickedUpAt],
-  ["Delivered", detail.milestones.deliveredAt ?? detail.delivery.deliveredAt],
-  ["Order completed", detail.milestones.completedAt],
-  ["Cancelled", detail.milestones.cancelledAt],
+const progressStages = [
+  "ORDER_RECEIVED",
+  "PICK_AND_PACK",
+  "OUT_FOR_DELIVERY",
+  "DELIVERED",
+] as const;
+
+const progressTimes = (detail: OrderDetail) => [
+  detail.milestones.paymentConfirmedAt,
+  detail.milestones.pickingStartedAt ?? detail.milestones.acceptedAt,
+  detail.delivery.pickedUpAt ?? detail.milestones.pandaConfirmedAt,
+  detail.milestones.deliveredAt ?? detail.delivery.deliveredAt,
 ];
 
 async function saveReceipt(controller: Actions) {
@@ -231,9 +330,12 @@ export function OrderDetailScreen({
       />
     );
   const order = state.detail;
-  const events = timeline(order).filter(
-    (event): event is readonly [string, string] => event[1] !== null,
+  const stage = stagePresentation[order.customerStage];
+  const currentStageIndex = progressStages.indexOf(
+    order.customerStage as (typeof progressStages)[number],
   );
+  const times = progressTimes(order);
+  const activeOrder = currentOrderStages.includes(order.customerStage);
   return (
     <div className="order-detail-stack">
       <section className="order-detail-hero">
@@ -243,30 +345,62 @@ export function OrderDetailScreen({
           <Status stage={order.customerStage} />
         </div>
         <p>Placed {malaysiaTime(order.createdAt)}</p>
+        <p className="order-stage-explanation">{stage.explanation}</p>
       </section>
       <section className="order-section" aria-labelledby="order-progress-title">
         <div className="order-section-heading">
           <div>
-            <p className="order-eyebrow">Backend status</p>
-            <h3 id="order-progress-title">Order progress</h3>
+            <p className="order-eyebrow">Latest update</p>
+            <h3 id="order-progress-title">Where your order is</h3>
           </div>
           <Status stage={order.customerStage} />
         </div>
-        <ol className="order-timeline">
-          {events.map(([label, value], index) => (
-            <li key={`${label}-${value}`}>
-              <span aria-hidden="true">{index + 1}</span>
-              <div>
-                <strong>{label}</strong>
-                <time dateTime={value}>{malaysiaTime(value)}</time>
-              </div>
-            </li>
-          ))}
+        <ol className="order-progress" aria-label="Order progress">
+          {progressStages.map((progressStage, index) => {
+            const reached =
+              order.customerStage === "DELIVERED" ||
+              (currentStageIndex >= 0 && index <= currentStageIndex) ||
+              Boolean(times[index]);
+            const current = activeOrder && index === currentStageIndex;
+            const copy = stagePresentation[progressStage];
+            return (
+              <li
+                key={progressStage}
+                className={`${reached ? "is-reached" : ""} ${current ? "is-current" : ""}`}
+                aria-current={current ? "step" : undefined}
+              >
+                <span aria-hidden="true">{reached ? "✓" : index + 1}</span>
+                <div>
+                  <strong>{copy.title}</strong>
+                  {times[index] ? (
+                    <time dateTime={times[index]!}>
+                      {malaysiaTime(times[index]!)}
+                    </time>
+                  ) : (
+                    <small>
+                      {current
+                        ? copy.explanation
+                        : reached
+                          ? "Stage confirmed; update time unavailable."
+                          : "Not reached yet"}
+                    </small>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ol>
-        {!events.length && (
-          <p>CKS Go has not published a customer milestone yet.</p>
-        )}
       </section>
+      {activeOrder && (
+        <section className="order-eta" aria-labelledby="order-eta-title">
+          <p className="order-eyebrow">Estimated delivery</p>
+          <h3 id="order-eta-title">Delivery estimate unavailable</h3>
+          <p>
+            CKS Go does not provide an arrival estimate for this order yet. We
+            will show only confirmed progress.
+          </p>
+        </section>
+      )}
       <section className="order-section" aria-labelledby="order-items-title">
         <h3 id="order-items-title">Items</h3>
         <ul className="order-items">

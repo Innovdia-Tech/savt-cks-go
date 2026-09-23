@@ -52,19 +52,19 @@ it("keeps add disabled for an unavailable outlet product", () => {
   );
   expect(html).toMatch(/<button[^>]+disabled[^>]*>Add/);
 });
-it("supports the compact Figma-derived home list-card composition", () => {
+it("supports the shared image-led product-card composition", () => {
   const html = renderToStaticMarkup(
     createElement(ProductTile, {
       product,
-      variant: "list",
+      variant: "grid",
       onOpen: () => {},
       onAdd: () => {},
     }),
   );
 
-  expect(html).toContain("catalogue-tile--list");
+  expect(html).toContain("catalogue-tile--grid");
   expect(html).toContain('aria-label="Add Rice to cart"');
-  expect(html).toContain('aria-hidden="true">+</span>');
+  expect(html).toContain("Add to cart");
   expect(html).toContain("line-clamp-2");
   expect(html).toContain("1 kg");
   expect(html).not.toMatch(/points|free delivery|popular/i);

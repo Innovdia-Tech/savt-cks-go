@@ -8,6 +8,8 @@ type QuantitySelectorProps = {
   minimum?: number;
   maximum?: number;
   disabled?: boolean;
+  incrementDisabled?: boolean;
+  decrementDisabled?: boolean;
   className?: string;
 };
 
@@ -19,6 +21,8 @@ export function QuantitySelector({
   minimum = 1,
   maximum,
   disabled = false,
+  incrementDisabled = false,
+  decrementDisabled = false,
   className = "",
 }: QuantitySelectorProps) {
   return (
@@ -30,7 +34,7 @@ export function QuantitySelector({
       <button
         type="button"
         aria-label="Decrease quantity"
-        disabled={disabled || quantity <= minimum}
+        disabled={disabled || decrementDisabled || quantity <= minimum}
         onClick={onDecrement}
       >
         <MinusIcon className="h-4 w-4" />
@@ -39,7 +43,11 @@ export function QuantitySelector({
       <button
         type="button"
         aria-label="Increase quantity"
-        disabled={disabled || (maximum !== undefined && quantity >= maximum)}
+        disabled={
+          disabled ||
+          incrementDisabled ||
+          (maximum !== undefined && quantity >= maximum)
+        }
         onClick={onIncrement}
       >
         <PlusIcon className="h-4 w-4" />

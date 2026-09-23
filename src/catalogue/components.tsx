@@ -9,6 +9,8 @@ import type { CatalogueState } from "./state";
 import type { Screen } from "../types";
 import { useCheckout } from "../checkout/context";
 import { AddressTransitionError, CartScreen } from "../checkout/components";
+import { MAX_LINE_QUANTITY } from "../checkout/contracts";
+import { QuantitySelector } from "../components/QuantitySelector";
 import { usePayment } from "../payment/context";
 import { useOrders } from "../orders/context";
 import { OrderDetailScreen, OrdersScreen } from "../orders/components";
@@ -335,6 +337,9 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
   >([]);
   const heading = useRef<HTMLHeadingElement>(null),
     search = useRef<HTMLInputElement>(null);
+  const productOrigin = useRef<"home" | "categories">("home");
+  const browseOrigin = useRef<"home" | "categories">("home");
+  const scrollPositions = useRef(new Map<string, number>());
   useEffect(() => {
     document.title = routeTitle(route);
   }, [route]);
@@ -351,7 +356,10 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
     return () => window.removeEventListener("hashchange", change);
   }, [route, guardNavigation]);
   useEffect(() => {
-    heading.current?.focus();
+    const returningToBrowse =
+      (route === "home" || route === "categories") &&
+      (scrollPositions.current.get(route) ?? 0) > 0;
+    if (!returningToBrowse) heading.current?.focus({ preventScroll: true });
   }, [route]);
   useEffect(() => {
     if (composing || query === state.q) return;
@@ -368,6 +376,18 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
     if (route !== "home" || !state.categoryId) return;
     void controller.category();
   }, [route, state.categoryId, controller]);
+  useEffect(() => {
+    if ((route !== "home" && route !== "categories") || state.phase !== "ready")
+      return;
+    const top = scrollPositions.current.get(route) ?? 0;
+    if (top <= 0) return;
+    const frame = window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>(".app-shell__scroll")
+        ?.scrollTo({ top });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [route, state.phase, state.products]);
   useEffect(() => {
     let current = true;
     if (!import.meta.env.DEV || !controls) {
@@ -395,19 +415,36 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
     if (orderDetailId) void orders.controller.open(orderDetailId);
     else orders.controller.closeDetail();
   }, [orderDetailId, orders.controller]);
-  const navigate = (next: string) =>
+  const navigate = (next: string) => {
+    const currentScroll =
+      document.querySelector<HTMLElement>(".app-shell__scroll")?.scrollTop;
+    if (currentScroll !== undefined)
+      scrollPositions.current.set(route, currentScroll);
     guardNavigation(() => {
       window.location.hash = next;
       setRoute(next);
     });
+  };
+  const openProduct = (productId: string) => {
+    const origin = route === "categories" ? "categories" : "home";
+    productOrigin.current = origin;
+    browseOrigin.current = origin;
+    navigate(`detail/${productId}`);
+  };
   const nav = (screen: Screen) =>
-    navigate(
-      screen === "listing"
-        ? "categories"
-        : screen === "tracking"
-          ? "orders"
-          : screen,
-    );
+    (() => {
+      if (screen === "home" || screen === "listing")
+        browseOrigin.current = screen === "listing" ? "categories" : "home";
+      if (screen === "cart" && browse)
+        browseOrigin.current = route as "home" | "categories";
+      navigate(
+        screen === "listing"
+          ? "categories"
+          : screen === "tracking"
+            ? "orders"
+            : screen,
+      );
+    })();
   const browse = route === "home" || route === "categories";
   const p = state.detail?.data;
   return (
@@ -429,6 +466,15 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
       onLogout={onLogout}
       screenKey={route}
       outlet={state.assignment?.outlet}
+      restoreScrollTop={scrollPositions.current.get(route) ?? 0}
+      onScrollPositionChange={(top) => {
+        if (
+          (route === "home" || route === "categories") &&
+          (state.phase !== "ready" || !state.products)
+        )
+          return;
+        scrollPositions.current.set(route, top);
+      }}
     >
       <div className="catalogue-root">
         {route === "profile" ? (
@@ -472,7 +518,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
               {detailId && (
                 <button
                   className="catalogue-link"
-                  onClick={() => navigate("home")}
+                  onClick={() => navigate(productOrigin.current)}
                 >
                   Back to products
                 </button>
@@ -499,7 +545,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                   ...payment,
                   onViewOrder: (orderId) => navigate(`order/${orderId}`),
                 }}
-                onBrowse={() => navigate("home")}
+                onBrowse={() => navigate(browseOrigin.current)}
               />
             ) : route === "orders" ? (
               <OrdersScreen
@@ -637,6 +683,25 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                       )}
                     </section>
                   )}
+                {route === "categories" && state.phase === "ready" && (
+                  <section
+                    className="catalogue-category-context"
+                    aria-labelledby="category-context-title"
+                  >
+                    <p>Selected category</p>
+                    <h2 id="category-context-title">
+                      {state.categoryId
+                        ? (state.categories.find(
+                            (category) => category.id === state.categoryId,
+                          )?.name ?? "Groceries")
+                        : "All products"}
+                    </h2>
+                    <span>
+                      {state.products?.meta.total ?? 0} products from your
+                      assigned outlet
+                    </span>
+                  </section>
+                )}
                 {state.phase !== "ready" ? (
                   <CatalogueStatus
                     phase={state.phase}
@@ -691,11 +756,51 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                         onClick={() => {
                           if (!state.assignment) return;
                           checkout.controller.add(p, state.assignment);
-                          navigate("cart");
                         }}
                       >
-                        Add to cart
+                        {checkout.state.lines.find(
+                          (line) => line.outletProductId === p.outletProductId,
+                        )
+                          ? "Add another"
+                          : "Add to cart"}
                       </Button>
+                      {(() => {
+                        const line = checkout.state.lines.find(
+                          (candidate) =>
+                            candidate.outletProductId === p.outletProductId,
+                        );
+                        return line ? (
+                          <div className="catalogue-detail-quantity">
+                            <span>In your cart</span>
+                            <QuantitySelector
+                              label={`Quantity for ${p.name}`}
+                              quantity={line.quantity}
+                              minimum={0}
+                              maximum={MAX_LINE_QUANTITY}
+                              disabled={checkout.state.paymentFrozen}
+                              incrementDisabled={
+                                state.readOnly ||
+                                p.availability !== "AVAILABLE" ||
+                                !state.assignment ||
+                                checkout.state.assignment?.outletId !==
+                                  state.assignment.outlet.id
+                              }
+                              onDecrement={() =>
+                                checkout.controller.setQuantity(
+                                  line.outletProductId,
+                                  line.quantity - 1,
+                                )
+                              }
+                              onIncrement={() =>
+                                checkout.controller.setQuantity(
+                                  line.outletProductId,
+                                  line.quantity + 1,
+                                )
+                              }
+                            />
+                          </div>
+                        ) : null;
+                      })()}
                       <p>
                         Prices and stock are confirmed when you request a
                         trusted quote.
@@ -728,11 +833,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                       )}
                     </div>
                     {state.products?.data.length ? (
-                      <div
-                        className={
-                          route === "home" ? "catalogue-list" : "catalogue-grid"
-                        }
-                      >
+                      <div className={"catalogue-grid"}>
                         {(route === "home"
                           ? state.products.data.slice(0, 6)
                           : state.products.data
@@ -740,10 +841,8 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                           <ProductTile
                             key={product.outletProductId}
                             product={product}
-                            variant={route === "home" ? "list" : "grid"}
-                            onOpen={() =>
-                              navigate("detail/" + product.outletProductId)
-                            }
+                            variant="grid"
+                            onOpen={() => openProduct(product.outletProductId)}
                             orderingDisabled={
                               state.readOnly ||
                               checkout.state.paymentFrozen ||

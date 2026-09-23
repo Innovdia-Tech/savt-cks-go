@@ -17,6 +17,45 @@
   font-size: 13px;
   font-weight: 700;
 }
+.orders-page-note {
+  margin: 0;
+  border-radius: var(--radius-button);
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.order-group {
+  display: grid;
+  gap: 10px;
+}
+.order-group-heading {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.order-group-heading h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.order-group-heading span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.order-page-empty {
+  margin: 0;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-card);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  padding: 14px;
+  font-size: 12px;
+  line-height: 18px;
+}
 .order-refresh,
 .order-card-open {
   min-height: 44px;
@@ -178,6 +217,10 @@
   gap: 12px;
   margin: 5px 0 7px;
 }
+.order-stage-explanation {
+  max-width: 34ch;
+  color: rgb(255 255 255 / 88%) !important;
+}
 .order-detail-hero h2 {
   font-size: 20px;
   font-weight: 900;
@@ -200,6 +243,87 @@
   display: grid;
   gap: 0;
   margin-top: 16px;
+}
+.order-progress {
+  display: grid;
+  gap: 0;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.order-progress li {
+  position: relative;
+  display: grid;
+  min-height: 66px;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+  color: var(--color-text-muted);
+}
+.order-progress li:not(:last-child)::after {
+  position: absolute;
+  top: 28px;
+  bottom: 0;
+  left: 13px;
+  width: 2px;
+  background: var(--color-border);
+  content: "";
+}
+.order-progress li.is-reached:not(:last-child)::after {
+  background: var(--color-savt-reward);
+}
+.order-progress li > span {
+  z-index: 1;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: var(--radius-chip);
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+.order-progress li.is-reached > span {
+  color: white;
+  background: var(--color-savt-reward);
+}
+.order-progress li.is-current div {
+  border-radius: var(--radius-button);
+  background: var(--color-savt-reward-soft);
+  padding: 8px 10px;
+}
+.order-progress li div {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  padding-top: 4px;
+}
+.order-progress li strong {
+  color: var(--color-text);
+}
+.order-progress li time,
+.order-progress li small {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+.order-eta {
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-card);
+  background: var(--color-info-soft);
+  padding: 16px;
+}
+.order-eta h3,
+.order-eta p {
+  margin: 0;
+}
+.order-eta h3 {
+  margin-top: 2px;
+  font-size: 16px;
+}
+.order-eta p:last-child {
+  margin-top: 6px;
+  color: var(--color-text-muted);
+  line-height: 20px;
 }
 .order-timeline li {
   position: relative;

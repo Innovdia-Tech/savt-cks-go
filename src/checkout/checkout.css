@@ -4,6 +4,7 @@
   margin: 16px 0 24px;
 }
 .cart-lines,
+.cart-delivery,
 .quote-card,
 .quote-error {
   border: 1px solid #e2e8e5;
@@ -11,6 +12,21 @@
   background: white;
   padding: 18px;
   box-shadow: 0 12px 34px rgb(15 23 42 / 6%);
+}
+.cart-delivery {
+  display: grid;
+  gap: 8px;
+}
+.cart-delivery h2,
+.cart-delivery p {
+  margin: 0;
+}
+.cart-delivery h2 {
+  font-size: 18px;
+}
+.cart-delivery > p {
+  color: var(--color-text-muted);
+  font-size: 13px;
 }
 .cart-section-heading,
 .quote-card-heading,
@@ -46,10 +62,26 @@
 }
 .cart-line {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
   gap: 12px;
   border-top: 1px solid #e5ebe7;
   padding: 16px 0;
+}
+.cart-line-image {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  place-items: center;
+  grid-row: 1 / span 2;
+  overflow: hidden;
+  border-radius: var(--radius-button);
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+}
+.cart-line-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .cart-line:first-of-type {
   margin-top: 12px;
@@ -105,6 +137,22 @@
 .cart-remove:disabled {
   color: #94a3b8;
   cursor: not-allowed;
+}
+.cart-line-subtotal {
+  display: flex;
+  grid-column: 2 / -1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+.cart-line-subtotal strong {
+  color: var(--color-text);
+  font-size: 14px;
 }
 .cart-display-total {
   border-top: 1px solid #d7e5da;
@@ -320,10 +368,21 @@
 }
 @media (max-width: 389px) {
   .cart-line {
-    grid-template-columns: 1fr;
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+  .cart-line-image {
+    width: 64px;
+    height: 64px;
   }
   .cart-quantity {
+    grid-column: 2;
     justify-self: start;
+  }
+  .cart-remove {
+    grid-column: 2;
+  }
+  .cart-line-subtotal {
+    grid-column: 1 / -1;
   }
   .quote-totals,
   .quote-evidence {

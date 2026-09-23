@@ -46,4 +46,23 @@ describe("QuantitySelector", () => {
     );
     expect(frozen.match(/disabled/g)).toHaveLength(2);
   });
+
+  it("can block additions while still allowing a permitted reduction", () => {
+    const html = renderToStaticMarkup(
+      createElement(QuantitySelector, {
+        quantity: 2,
+        minimum: 0,
+        incrementDisabled: true,
+        onIncrement: () => {},
+        onDecrement: () => {},
+      }),
+    );
+
+    expect(html).not.toMatch(
+      /<button[^>]+aria-label="Decrease quantity"[^>]+disabled/,
+    );
+    expect(html).toMatch(
+      /<button[^>]+aria-label="Increase quantity"[^>]+disabled/,
+    );
+  });
 });

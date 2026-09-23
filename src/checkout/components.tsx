@@ -1,8 +1,9 @@
-import { useEffect, useRef, type ComponentProps } from "react";
+import { useEffect, useRef, useState, type ComponentProps } from "react";
 import { PaymentPanel } from "../payment/components";
 import { MAX_LINE_QUANTITY } from "./contracts";
 import type { CartController, CartState } from "./state";
 import { QuantitySelector } from "../components/QuantitySelector";
+import { BagIcon } from "../components/Icons";
 
 const money = (minor: number) =>
   new Intl.NumberFormat("en-MY", { style: "currency", currency: "MYR" }).format(
@@ -130,19 +131,16 @@ function QuoteSummary({
     <section className="quote-card" aria-labelledby="quote-title">
       <div className="quote-card-heading">
         <div>
-          <p className="quote-eyebrow">Server-authoritative</p>
-          <h2 id="quote-title">Trusted quote</h2>
+          <p className="quote-eyebrow">Checkout review</p>
+          <h2 id="quote-title">Review your order</h2>
         </div>
         <span className="quote-currency">{quote.currency}</span>
       </div>
-      <p className="quote-id">
-        <span>Quote ID</span> {quote.quoteId}
-      </p>
       {state.quotePhase === "price-review" && (
         <div className="quote-warning" role="alert">
           <h3>Review price changes</h3>
           <p>
-            One or more server prices differ from the prices displayed when you
+            One or more confirmed prices differ from the prices shown when you
             built the cart.
           </p>
         </div>
@@ -156,7 +154,7 @@ function QuoteSummary({
           </p>
         </div>
       )}
-      <ul className="quote-lines" aria-label="Authoritative quote lines">
+      <ul className="quote-lines" aria-label="Confirmed order lines">
         {quote.items.map((line) => {
           const previous = cartPrices.get(line.outletProductId);
           return (
@@ -168,7 +166,7 @@ function QuoteSummary({
                 </span>
                 {previous !== undefined && previous !== line.unitPriceMinor && (
                   <span className="quote-price-change">
-                    Displayed {money(previous)} → server{" "}
+                    Previously {money(previous)} → confirmed{" "}
                     {money(line.unitPriceMinor)}
                   </span>
                 )}
@@ -189,7 +187,7 @@ function QuoteSummary({
         <dd className="quote-grand">{money(quote.grandTotalMinor)}</dd>
       </dl>
       <dl className="quote-evidence">
-        <dt>Estimated total time</dt>
+        <dt>Estimated delivery</dt>
         <dd>{quote.estimatedTotalOrderMinutes} minutes</dd>
         <dt>Expires</dt>
         <dd>{malaysiaTime(quote.quoteExpiresAt)} (Malaysia time)</dd>
@@ -199,18 +197,6 @@ function QuoteSummary({
             <dd>{state.assignment.addressLabel}</dd>
             <dt>Assigned outlet</dt>
             <dd>{state.assignment.outletDisplayName}</dd>
-          </>
-        )}
-        {quote.customerAddressId && (
-          <>
-            <dt>Address evidence</dt>
-            <dd>{quote.customerAddressId}</dd>
-          </>
-        )}
-        {quote.outletId && (
-          <>
-            <dt>Outlet evidence</dt>
-            <dd>{quote.outletId}</dd>
           </>
         )}
       </dl>
@@ -232,10 +218,33 @@ function QuoteSummary({
       )}
       {state.quotePhase === "ready" && (
         <p className="quote-safe-note">
-          Quote reviewed. Payment begins only after the explicit action below.
+          Prices, stock and delivery are confirmed for this review. Payment
+          begins only when you use the button below.
         </p>
       )}
     </section>
+  );
+}
+
+function CartProductImage({ url, name }: { url: string | null; name: string }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [url]);
+  return (
+    <div className="cart-line-image">
+      {url && !failed ? (
+        <img
+          src={url}
+          alt={name}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <span role="img" aria-label={`Image unavailable for ${name}`}>
+          <BagIcon className="h-6 w-6" />
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -272,20 +281,40 @@ export function CartScreen({
     : null;
   return (
     <div className="cart-stack">
+      {state.assignment && (
+        <section
+          className="cart-delivery"
+          aria-labelledby="cart-delivery-title"
+        >
+          <div>
+            <p className="quote-eyebrow">Delivery address</p>
+            <h2 id="cart-delivery-title">{state.assignment.addressLabel}</h2>
+          </div>
+          <p>
+            Fulfilled by <strong>{state.assignment.outletDisplayName}</strong>
+          </p>
+        </section>
+      )}
       <section className="cart-lines" aria-labelledby="cart-lines-title">
         <div className="cart-section-heading">
           <div>
-            <p className="quote-eyebrow">Assigned outlet cart</p>
-            <h2 id="cart-lines-title">Your items</h2>
+            <p className="quote-eyebrow">Your basket</p>
+            <h2 id="cart-lines-title">Your cart</h2>
           </div>
-          <span>{state.lines.length} / 100 lines</span>
+          <span>
+            {state.lines.length} {state.lines.length === 1 ? "item" : "items"}
+          </span>
         </div>
         {state.lines.map((line) => (
           <article className="cart-line" key={line.outletProductId}>
+            <CartProductImage
+              url={line.product.imageUrl}
+              name={line.product.name}
+            />
             <div className="cart-line-copy">
               <h3>{line.product.name}</h3>
               <p>{line.product.packSize || line.product.uom.name}</p>
-              <strong>{money(line.displayedUnitPriceMinor)} displayed</strong>
+              <strong>{money(line.displayedUnitPriceMinor)} each</strong>
             </div>
             <QuantitySelector
               className="cart-quantity"
@@ -309,27 +338,33 @@ export function CartScreen({
             >
               Remove
             </button>
+            <p className="cart-line-subtotal">
+              <span>Line subtotal</span>
+              <strong>
+                {money(line.displayedUnitPriceMinor * line.quantity)}
+              </strong>
+            </p>
           </article>
         ))}
         <div className="cart-display-total">
-          <span>Displayed subtotal</span>
+          <span>Estimated subtotal</span>
           <strong>{money(subtotal)}</strong>
         </div>
         <p className="catalogue-caption">
-          Displayed prices are a shopping snapshot. Stock, prices, fees and
-          total become authoritative only after you request a trusted quote.
+          Item prices are estimates. Delivery and processing fees are confirmed
+          at review.
         </p>
         {state.quotePhase === "idle" && (
           <button
             className="customer-button customer-primary quote-action"
             onClick={() => void controller.requestQuote()}
           >
-            Get trusted quote
+            Review order
           </button>
         )}
         {state.quotePhase === "quoting" && (
           <p className="quote-loading" role="status">
-            Creating trusted quote…
+            Checking prices and delivery…
           </p>
         )}
       </section>
@@ -356,7 +391,12 @@ export function CartScreen({
         </section>
       )}
       <QuoteSummary state={state} controller={controller} />
-      {payment && <PaymentPanel {...payment} />}
+      {payment && (
+        <PaymentPanel
+          {...payment}
+          acceptedTotalMinor={state.quote?.grandTotalMinor}
+        />
+      )}
     </div>
   );
 }

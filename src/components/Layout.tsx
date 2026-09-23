@@ -20,6 +20,8 @@ type AppShellProps = {
   sticky?: ReactNode;
   screenKey?: string;
   outlet?: Outlet | null;
+  restoreScrollTop?: number;
+  onScrollPositionChange?: (top: number) => void;
 };
 
 export function AppShell({
@@ -31,12 +33,16 @@ export function AppShell({
   sticky,
   screenKey,
   outlet,
+  restoreScrollTop,
+  onScrollPositionChange,
 }: AppShellProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: 0 });
-  }, [screenKey]);
+    const node = scrollRef.current;
+    if (!node) return;
+    node.scrollTo({ top: restoreScrollTop ?? 0 });
+  }, [screenKey, restoreScrollTop]);
 
   return (
     <main className="app-viewport">
@@ -44,6 +50,9 @@ export function AppShell({
         <div
           ref={scrollRef}
           className={`app-shell__scroll ${sticky ? "pb-8" : "pb-6"}`}
+          onScroll={(event) => {
+            onScrollPositionChange?.(event.currentTarget.scrollTop);
+          }}
         >
           <DeliveryHeader
             home={screenKey === "home"}

@@ -190,10 +190,40 @@ describe("customer orders presentation", () => {
     );
     expect(html).toContain("CKS-20260921-0001");
     expect(html).toContain("Out for delivery");
+    expect(html).toContain("Current orders");
+    expect(html).toContain("Order history");
+    expect(html).toContain("this page");
+    expect(html).toContain("status filtering isn&#x27;t available yet");
     expect(html).toContain("ui-status--info");
     expect(html).toContain("Next page");
     expect(html).not.toContain("RIDER_INTERNAL_STATE");
     expect(html).not.toContain(orderId);
+  });
+
+  it("separates current and history entries without dropping either from the loaded page", () => {
+    const delivered = {
+      ...page.data[0],
+      orderId: "44444444-4444-4444-8444-444444444444",
+      orderNumber: "CKS-20260920-0009",
+      customerStage: "DELIVERED" as const,
+      receiptAvailable: true,
+    };
+    const html = renderToStaticMarkup(
+      createElement(OrdersScreen, {
+        state: state({
+          page: {
+            data: [page.data[0], delivered],
+            meta: { ...page.meta, total: 2 },
+          },
+        }),
+        controller,
+        onOpen: () => {},
+        onBrowse: () => {},
+      } as never),
+    );
+    expect(html).toContain("CKS-20260921-0001");
+    expect(html).toContain("CKS-20260920-0009");
+    expect(html).toContain("1 on this page");
   });
 
   it("renders customer-safe detail, milestones, totals, and address without internal fields", () => {
@@ -206,6 +236,10 @@ describe("customer orders presentation", () => {
     );
     for (const copy of [
       "Order received",
+      "Pick &amp; Pack",
+      "Out for delivery",
+      "Delivered",
+      "Delivery estimate unavailable",
       "Apples",
       "Grand total",
       "Demo Customer",
@@ -215,6 +249,7 @@ describe("customer orders presentation", () => {
       expect(html).toContain(copy);
     expect(html).not.toContain("INTERNAL-SKU");
     expect(html).not.toContain("RIDER_INTERNAL_STATE");
+    expect(html).not.toContain("Backend status");
     expect(html).not.toContain(orderId);
   });
 
@@ -239,6 +274,45 @@ describe("customer orders presentation", () => {
     );
     expect(html).toContain("Download receipt");
     expect(html).not.toContain(receipt.receipt.downloadPath!);
+    expect(html).toContain("Delivery estimate unavailable");
+  });
+
+  it("does not invent a live ETA for delivered history", () => {
+    const delivered = {
+      ...detail,
+      customerStage: "DELIVERED" as const,
+      canCancel: false,
+      milestones: { ...detail.milestones, deliveredAt: at },
+      delivery: { ...detail.delivery, deliveredAt: at },
+    };
+    const html = renderToStaticMarkup(
+      createElement(OrderDetailScreen, {
+        state: state({ detail: delivered }),
+        controller,
+        onBack: () => {},
+      } as never),
+    );
+    expect(html).toContain("Delivered");
+    expect(html).not.toContain("Delivery estimate unavailable");
+    expect(html).not.toMatch(/arriv(?:e|ing) in/i);
+  });
+
+  it("does not describe reached stages as unreached when timestamps are absent", () => {
+    const deliveredWithoutTimes = {
+      ...detail,
+      customerStage: "DELIVERED" as const,
+      canCancel: false,
+    };
+    const html = renderToStaticMarkup(
+      createElement(OrderDetailScreen, {
+        state: state({ detail: deliveredWithoutTimes }),
+        controller,
+        onBack: () => {},
+      } as never),
+    );
+
+    expect(html).toContain("Stage confirmed; update time unavailable.");
+    expect(html).not.toContain("Not reached yet");
   });
 
   it("renders authoritative cancellation rejection and stable retry copy", () => {
