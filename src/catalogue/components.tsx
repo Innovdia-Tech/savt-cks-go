@@ -105,12 +105,16 @@ export function ProductTile({
         )}
       </button>
       {variant === "grid" && (
-        <div className="catalogue-price-row">
-          <strong className="catalogue-price">
-            {money(product.sellingPriceMinor)}
-          </strong>
-          <StatusBadge status={product.availability} />
-        </div>
+        <>
+          <div className="catalogue-price-row">
+            <strong className="catalogue-price">
+              {money(product.sellingPriceMinor)}
+            </strong>
+          </div>
+          <div className="catalogue-availability-row">
+            <StatusBadge status={product.availability} />
+          </div>
+        </>
       )}
       <Button
         className="catalogue-add"
@@ -132,6 +136,53 @@ export function ProductTile({
         )}
       </Button>
     </article>
+  );
+}
+
+export function ProductDetailPurchase({
+  product,
+  quantity,
+  orderingDisabled,
+  paymentFrozen,
+  onAdd,
+  onSetQuantity,
+}: {
+  product: Product;
+  quantity: number | null;
+  orderingDisabled: boolean;
+  paymentFrozen: boolean;
+  onAdd: () => void;
+  onSetQuantity: (quantity: number) => void;
+}) {
+  return (
+    <div className="catalogue-detail-purchase">
+      {quantity === null ? (
+        <Button
+          className="catalogue-add"
+          disabled={orderingDisabled || paymentFrozen}
+          onClick={onAdd}
+        >
+          Add to cart
+        </Button>
+      ) : (
+        <div className="catalogue-detail-quantity">
+          <span>In your cart</span>
+          <QuantitySelector
+            label={`Quantity for ${product.name}`}
+            quantity={quantity}
+            minimum={0}
+            maximum={MAX_LINE_QUANTITY}
+            disabled={paymentFrozen}
+            incrementDisabled={orderingDisabled}
+            onDecrement={() => onSetQuantity(quantity - 1)}
+            onIncrement={() => onSetQuantity(quantity + 1)}
+          />
+        </div>
+      )}
+      <p className="catalogue-caption">
+        Final prices and availability are checked when you review your order.
+      </p>
+    </div>
   );
 }
 
@@ -326,7 +377,8 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
   const checkout = useCheckout();
   const payment = usePayment();
   const orders = useOrders();
-  const { guardNavigation } = useCustomer();
+  const customer = useCustomer();
+  const { guardNavigation } = customer;
   const [route, setRoute] = useState(readRoute);
   const [query, setQuery] = useState(state.q);
   const [composing, setComposing] = useState(false);
@@ -447,6 +499,25 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
     })();
   const browse = route === "home" || route === "categories";
   const p = state.detail?.data;
+  const selectedAddress = customer.controller.selectedAddress();
+  const cartDeliveryAddress = selectedAddress
+    ? [
+        selectedAddress.addressLine1,
+        selectedAddress.addressLine2,
+        selectedAddress.city,
+        selectedAddress.state,
+      ]
+        .filter(Boolean)
+        .join(", ")
+    : undefined;
+  const headerContext =
+    route === "home"
+      ? "home"
+      : route === "categories" || detailId
+        ? "browse"
+        : route === "orders" || orderDetailId
+          ? "orders"
+          : "transaction";
   return (
     <AppShell
       active={
@@ -465,6 +536,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
       onNavigate={nav}
       onLogout={onLogout}
       screenKey={route}
+      headerContext={headerContext}
       outlet={state.assignment?.outlet}
       restoreScrollTop={scrollPositions.current.get(route) ?? 0}
       onScrollPositionChange={(top) => {
@@ -546,6 +618,8 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                   onViewOrder: (orderId) => navigate(`order/${orderId}`),
                 }}
                 onBrowse={() => navigate(browseOrigin.current)}
+                deliveryAddress={cartDeliveryAddress}
+                onChangeAddress={() => navigate("profile")}
               />
             ) : route === "orders" ? (
               <OrdersScreen
@@ -683,25 +757,6 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                       )}
                     </section>
                   )}
-                {route === "categories" && state.phase === "ready" && (
-                  <section
-                    className="catalogue-category-context"
-                    aria-labelledby="category-context-title"
-                  >
-                    <p>Selected category</p>
-                    <h2 id="category-context-title">
-                      {state.categoryId
-                        ? (state.categories.find(
-                            (category) => category.id === state.categoryId,
-                          )?.name ?? "Groceries")
-                        : "All products"}
-                    </h2>
-                    <span>
-                      {state.products?.meta.total ?? 0} products from your
-                      assigned outlet
-                    </span>
-                  </section>
-                )}
                 {state.phase !== "ready" ? (
                   <CatalogueStatus
                     phase={state.phase}
@@ -743,68 +798,33 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                         <dt>Storage</dt>
                         <dd>{p.storageType.toLowerCase()}</dd>
                       </dl>
-                      <Button
-                        className="catalogue-add"
-                        disabled={
+                      <ProductDetailPurchase
+                        product={p}
+                        quantity={
+                          checkout.state.lines.find(
+                            (line) =>
+                              line.outletProductId === p.outletProductId,
+                          )?.quantity ?? null
+                        }
+                        orderingDisabled={
                           state.readOnly ||
-                          checkout.state.paymentFrozen ||
                           p.availability !== "AVAILABLE" ||
                           !state.assignment ||
                           checkout.state.assignment?.outletId !==
                             state.assignment.outlet.id
                         }
-                        onClick={() => {
+                        paymentFrozen={checkout.state.paymentFrozen}
+                        onAdd={() => {
                           if (!state.assignment) return;
                           checkout.controller.add(p, state.assignment);
                         }}
-                      >
-                        {checkout.state.lines.find(
-                          (line) => line.outletProductId === p.outletProductId,
-                        )
-                          ? "Add another"
-                          : "Add to cart"}
-                      </Button>
-                      {(() => {
-                        const line = checkout.state.lines.find(
-                          (candidate) =>
-                            candidate.outletProductId === p.outletProductId,
-                        );
-                        return line ? (
-                          <div className="catalogue-detail-quantity">
-                            <span>In your cart</span>
-                            <QuantitySelector
-                              label={`Quantity for ${p.name}`}
-                              quantity={line.quantity}
-                              minimum={0}
-                              maximum={MAX_LINE_QUANTITY}
-                              disabled={checkout.state.paymentFrozen}
-                              incrementDisabled={
-                                state.readOnly ||
-                                p.availability !== "AVAILABLE" ||
-                                !state.assignment ||
-                                checkout.state.assignment?.outletId !==
-                                  state.assignment.outlet.id
-                              }
-                              onDecrement={() =>
-                                checkout.controller.setQuantity(
-                                  line.outletProductId,
-                                  line.quantity - 1,
-                                )
-                              }
-                              onIncrement={() =>
-                                checkout.controller.setQuantity(
-                                  line.outletProductId,
-                                  line.quantity + 1,
-                                )
-                              }
-                            />
-                          </div>
-                        ) : null;
-                      })()}
-                      <p>
-                        Prices and stock are confirmed when you request a
-                        trusted quote.
-                      </p>
+                        onSetQuantity={(quantity) =>
+                          checkout.controller.setQuantity(
+                            p.outletProductId,
+                            quantity,
+                          )
+                        }
+                      />
                     </article>
                   )
                 ) : (
@@ -819,8 +839,19 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                         <h2>
                           {route === "home"
                             ? "Shop groceries"
-                            : "Browse products"}
+                            : state.categoryId
+                              ? (state.categories.find(
+                                  (category) =>
+                                    category.id === state.categoryId,
+                                )?.name ?? "Groceries")
+                              : "All products"}
                         </h2>
+                        {route === "categories" && (
+                          <p className="catalogue-caption">
+                            {state.products?.meta.total ?? 0} products from your
+                            assigned outlet
+                          </p>
+                        )}
                       </div>
                       {route === "home" && (
                         <button

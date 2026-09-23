@@ -60,6 +60,8 @@ describe("real cart and trusted quote presentation", () => {
         state: base,
         controller,
         onBrowse: () => {},
+        deliveryAddress: "1 Example Street, Demo City, Sabah",
+        onChangeAddress: () => {},
       } as never),
     );
     expect(html).toContain("Rice");
@@ -67,11 +69,15 @@ describe("real cart and trusted quote presentation", () => {
     expect(html).toMatch(/(?:RM|MYR).*9\.00/);
     expect(html).toContain("Review order");
     expect(html).toContain("Delivery address");
+    expect(html).toContain("1 Example Street, Demo City, Sabah");
+    expect(html).toContain("Change address");
     expect(html).toContain("Demo outlet");
     expect(html).toContain("Line subtotal");
     expect(html).toContain("Remove Rice");
     expect(html).toContain('role="group"');
     expect(html).toContain('aria-label="Quantity for Rice"');
+    expect(html).not.toContain("Your basket");
+    expect(html).not.toContain(">Your cart<");
     expect(html).not.toMatch(
       /<(?:button|a)[^>]*>[^<]*(?:pay|confirm order|tracking)/i,
     );

@@ -192,8 +192,10 @@ describe("customer orders presentation", () => {
     expect(html).toContain("Out for delivery");
     expect(html).toContain("Current orders");
     expect(html).toContain("Order history");
-    expect(html).toContain("this page");
-    expect(html).toContain("status filtering isn&#x27;t available yet");
+    expect(html).toContain("Showing orders on page 1 of 2");
+    expect(html).not.toContain("status filtering");
+    expect(html).toContain("Order total");
+    expect(html).not.toMatch(/>Delivery<\/span><strong>/);
     expect(html).toContain("ui-status--info");
     expect(html).toContain("Next page");
     expect(html).not.toContain("RIDER_INTERNAL_STATE");
@@ -226,6 +228,30 @@ describe("customer orders presentation", () => {
     expect(html).toContain("1 on this page");
   });
 
+  it("keeps one-page history truthful without a nonexistent-page warning", () => {
+    const delivered = {
+      ...page.data[0],
+      customerStage: "DELIVERED" as const,
+    };
+    const html = renderToStaticMarkup(
+      createElement(OrdersScreen, {
+        state: state({
+          page: {
+            data: [delivered],
+            meta: { page: 1, pageSize: 25, total: 1, totalPages: 1 },
+          },
+        }),
+        controller,
+        onOpen: () => {},
+        onBrowse: () => {},
+      } as never),
+    );
+
+    expect(html).toContain("No current orders.");
+    expect(html).not.toContain("Other pages");
+    expect(html).not.toContain("Showing orders on page");
+  });
+
   it("renders customer-safe detail, milestones, totals, and address without internal fields", () => {
     const html = renderToStaticMarkup(
       createElement(OrderDetailScreen, {
@@ -239,7 +265,7 @@ describe("customer orders presentation", () => {
       "Pick &amp; Pack",
       "Out for delivery",
       "Delivered",
-      "Delivery estimate unavailable",
+      "Estimate unavailable",
       "Apples",
       "Grand total",
       "Demo Customer",
@@ -251,6 +277,8 @@ describe("customer orders presentation", () => {
     expect(html).not.toContain("RIDER_INTERNAL_STATE");
     expect(html).not.toContain("Backend status");
     expect(html).not.toContain(orderId);
+    expect(html).not.toContain("Not reached yet");
+    expect(html.match(/class="ui-status/g)).toHaveLength(1);
   });
 
   it("shows receipt download only when the exact parsed capability is available", () => {
@@ -274,7 +302,7 @@ describe("customer orders presentation", () => {
     );
     expect(html).toContain("Download receipt");
     expect(html).not.toContain(receipt.receipt.downloadPath!);
-    expect(html).toContain("Delivery estimate unavailable");
+    expect(html).toContain("Estimate unavailable");
   });
 
   it("does not invent a live ETA for delivered history", () => {
@@ -293,7 +321,7 @@ describe("customer orders presentation", () => {
       } as never),
     );
     expect(html).toContain("Delivered");
-    expect(html).not.toContain("Delivery estimate unavailable");
+    expect(html).not.toContain("Estimate unavailable");
     expect(html).not.toMatch(/arriv(?:e|ing) in/i);
   });
 

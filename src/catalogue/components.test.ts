@@ -67,7 +67,42 @@ it("supports the shared image-led product-card composition", () => {
   expect(html).toContain("Add to cart");
   expect(html).toContain("line-clamp-2");
   expect(html).toContain("1 kg");
+  expect(html).toContain("catalogue-availability-row");
+  expect(html).toMatch(/catalogue-price[^>]*>[^<]*12\.34/);
   expect(html).not.toMatch(/points|free delivery|popular/i);
+});
+
+it("uses one quantity pattern after a detail product has been added", async () => {
+  const catalogue =
+    (await import("./components")) as typeof import("./components") & {
+      ProductDetailPurchase?: React.ComponentType<{
+        product: typeof product;
+        quantity: number;
+        orderingDisabled: boolean;
+        paymentFrozen: boolean;
+        onAdd: () => void;
+        onSetQuantity: (quantity: number) => void;
+      }>;
+    };
+  expect(catalogue.ProductDetailPurchase).toBeTypeOf("function");
+  const html = renderToStaticMarkup(
+    createElement(catalogue.ProductDetailPurchase!, {
+      product,
+      quantity: 1,
+      orderingDisabled: false,
+      paymentFrozen: false,
+      onAdd: () => {},
+      onSetQuantity: () => {},
+    }),
+  );
+
+  expect(html).toContain("In your cart");
+  expect(html).toContain('aria-label="Quantity for Rice"');
+  expect(html).not.toContain("Add another");
+  expect(html).not.toContain(">Add to cart<");
+  expect(html).toContain(
+    "Final prices and availability are checked when you review your order.",
+  );
 });
 
 it("uses the reviewer-approved Home serviceability copy", () => {

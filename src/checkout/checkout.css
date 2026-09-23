@@ -1,32 +1,43 @@
 .cart-stack {
   display: grid;
-  gap: 16px;
-  margin: 16px 0 24px;
+  gap: 12px;
+  margin: 8px 0 20px;
 }
 .cart-lines,
 .cart-delivery,
 .quote-card,
 .quote-error {
   border: 1px solid #e2e8e5;
-  border-radius: 24px;
+  border-radius: 18px;
   background: white;
-  padding: 18px;
+  padding: 14px;
   box-shadow: 0 12px 34px rgb(15 23 42 / 6%);
 }
 .cart-delivery {
   display: grid;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 5px 10px;
 }
 .cart-delivery h2,
 .cart-delivery p {
   margin: 0;
 }
 .cart-delivery h2 {
-  font-size: 18px;
+  font-size: 15px;
+  line-height: 1.35;
 }
 .cart-delivery > p {
+  grid-column: 1 / -1;
   color: var(--color-text-muted);
   font-size: 13px;
+}
+.cart-change-address {
+  min-height: 44px;
+  align-self: center;
+  color: var(--color-cks-primary);
+  font-size: 12px;
+  font-weight: 800;
 }
 .cart-section-heading,
 .quote-card-heading,
@@ -43,7 +54,7 @@
   font-size: 19px;
   font-weight: 900;
 }
-.cart-section-heading > span,
+.cart-section-heading > strong,
 .quote-currency {
   flex-shrink: 0;
   border-radius: 999px;
@@ -62,15 +73,15 @@
 }
 .cart-line {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) auto;
-  gap: 12px;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  gap: 10px;
   border-top: 1px solid #e5ebe7;
-  padding: 16px 0;
+  padding: 12px 0;
 }
 .cart-line-image {
   display: grid;
-  width: 72px;
-  height: 72px;
+  width: 56px;
+  height: 56px;
   place-items: center;
   grid-row: 1 / span 2;
   overflow: hidden;
@@ -84,7 +95,7 @@
   object-fit: contain;
 }
 .cart-line:first-of-type {
-  margin-top: 12px;
+  margin-top: 6px;
 }
 .cart-line-copy {
   min-width: 0;
@@ -126,7 +137,7 @@
   font-weight: 900;
 }
 .cart-remove {
-  grid-column: 1 / -1;
+  grid-column: 2;
   justify-self: start;
   min-height: 36px;
   color: #9f1239;
@@ -145,8 +156,8 @@
   justify-content: space-between;
   gap: 8px;
   margin: 0;
-  border-top: 1px solid var(--color-border);
-  padding-top: 10px;
+  border-top: 0;
+  padding-top: 0;
   color: var(--color-text-muted);
   font-size: 12px;
 }
@@ -156,7 +167,7 @@
 }
 .cart-display-total {
   border-top: 1px solid #d7e5da;
-  padding-top: 16px;
+  padding-top: 12px;
   font-size: 14px;
   font-weight: 800;
 }

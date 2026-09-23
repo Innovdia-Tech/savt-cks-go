@@ -119,10 +119,11 @@ function OrderCard({
         <span>{order.outletName}</span>
       </span>
       <span className="order-card-total">
-        <span>
-          {order.deliveryType === "NOW" ? "Delivery" : "Scheduled delivery"}
-        </span>
+        <span>Order total</span>
         <strong>{money(order.grandTotalMinor)}</strong>
+      </span>
+      <span className="order-card-delivery-type">
+        {order.deliveryType === "NOW" ? "Delivery now" : "Scheduled delivery"}
       </span>
       <span className="order-card-open">
         View details <span aria-hidden="true">→</span>
@@ -229,42 +230,52 @@ export function OrdersScreen({
           Refresh
         </button>
       </div>
-      <p className="orders-page-note">
-        Showing page {page.meta.page} of {Math.max(page.meta.totalPages, 1)}.
-        Current and history groups reflect this page because customer order
-        status filtering isn&apos;t available yet.
-      </p>
+      {page.meta.totalPages > 1 && (
+        <p className="orders-page-note">
+          Showing orders on page {page.meta.page} of {page.meta.totalPages}.
+        </p>
+      )}
       <OrderGroup
         title="Current orders"
         orders={current}
-        empty="No current orders on this page. Other pages may still contain active orders."
+        empty={
+          page.meta.totalPages > 1
+            ? "No current orders on this page. Other pages may still contain active orders."
+            : "No current orders."
+        }
         onOpen={onOpen}
       />
       <OrderGroup
         title="Order history"
         orders={history}
-        empty="No completed or cancelled orders on this page. Other pages may contain order history."
+        empty={
+          page.meta.totalPages > 1
+            ? "No completed or cancelled orders on this page. Other pages may contain order history."
+            : "No completed or cancelled orders."
+        }
         onOpen={onOpen}
       />
-      <nav className="order-pages" aria-label="Order pages">
-        <button
-          className="customer-button"
-          disabled={page.meta.page <= 1}
-          onClick={() => void controller.previousPage()}
-        >
-          Previous page
-        </button>
-        <span>
-          Page {page.meta.page} of {Math.max(page.meta.totalPages, 1)}
-        </span>
-        <button
-          className="customer-button"
-          disabled={page.meta.page >= page.meta.totalPages}
-          onClick={() => void controller.nextPage()}
-        >
-          Next page
-        </button>
-      </nav>
+      {page.meta.totalPages > 1 && (
+        <nav className="order-pages" aria-label="Order pages">
+          <button
+            className="customer-button"
+            disabled={page.meta.page <= 1}
+            onClick={() => void controller.previousPage()}
+          >
+            Previous page
+          </button>
+          <span>
+            Page {page.meta.page} of {Math.max(page.meta.totalPages, 1)}
+          </span>
+          <button
+            className="customer-button"
+            disabled={page.meta.page >= page.meta.totalPages}
+            onClick={() => void controller.nextPage()}
+          >
+            Next page
+          </button>
+        </nav>
+      )}
     </div>
   );
 }
@@ -346,6 +357,12 @@ export function OrderDetailScreen({
         </div>
         <p>Placed {malaysiaTime(order.createdAt)}</p>
         <p className="order-stage-explanation">{stage.explanation}</p>
+        {activeOrder && (
+          <div className="order-eta-compact" aria-label="Estimated delivery">
+            <span>Estimated delivery</span>
+            <strong>Estimate unavailable</strong>
+          </div>
+        )}
       </section>
       <section className="order-section" aria-labelledby="order-progress-title">
         <div className="order-section-heading">
@@ -353,7 +370,6 @@ export function OrderDetailScreen({
             <p className="order-eyebrow">Latest update</p>
             <h3 id="order-progress-title">Where your order is</h3>
           </div>
-          <Status stage={order.customerStage} />
         </div>
         <ol className="order-progress" aria-label="Order progress">
           {progressStages.map((progressStage, index) => {
@@ -376,31 +392,19 @@ export function OrderDetailScreen({
                     <time dateTime={times[index]!}>
                       {malaysiaTime(times[index]!)}
                     </time>
-                  ) : (
+                  ) : reached || current ? (
                     <small>
                       {current
                         ? copy.explanation
-                        : reached
-                          ? "Stage confirmed; update time unavailable."
-                          : "Not reached yet"}
+                        : "Stage confirmed; update time unavailable."}
                     </small>
-                  )}
+                  ) : null}
                 </div>
               </li>
             );
           })}
         </ol>
       </section>
-      {activeOrder && (
-        <section className="order-eta" aria-labelledby="order-eta-title">
-          <p className="order-eyebrow">Estimated delivery</p>
-          <h3 id="order-eta-title">Delivery estimate unavailable</h3>
-          <p>
-            CKS Go does not provide an arrival estimate for this order yet. We
-            will show only confirmed progress.
-          </p>
-        </section>
-      )}
       <section className="order-section" aria-labelledby="order-items-title">
         <h3 id="order-items-title">Items</h3>
         <ul className="order-items">

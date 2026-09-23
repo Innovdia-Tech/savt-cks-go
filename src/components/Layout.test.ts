@@ -79,4 +79,54 @@ describe("HeaderActions", () => {
     expect(html).toContain("From Demo neighbourhood outlet");
     expect(html).not.toContain("Assigned for this address");
   });
+
+  it("keeps shopping context on browse screens and removes it from orders", async () => {
+    const layout = (await import("./Layout")) as typeof import("./Layout") & {
+      DeliveryHeader?: React.ComponentType<{
+        context: "home" | "browse" | "transaction" | "orders";
+        outlet: {
+          id: string;
+          displayReference: string;
+          displayName: string;
+          status: "ACTIVE";
+          operatingState: "ONLINE";
+          availability: "AVAILABLE";
+        };
+        onManage: () => void;
+        addressLink?: React.ReactNode;
+      }>;
+    };
+    expect(layout.DeliveryHeader).toBeTypeOf("function");
+    const outlet = {
+      id: "00000000-0000-4000-8000-000000000001",
+      displayReference: "DEMO-01",
+      displayName: "Demo neighbourhood outlet",
+      status: "ACTIVE" as const,
+      operatingState: "ONLINE" as const,
+      availability: "AVAILABLE" as const,
+    };
+    const browse = renderToStaticMarkup(
+      createElement(layout.DeliveryHeader!, {
+        context: "browse",
+        outlet,
+        onManage: () => {},
+        addressLink: createElement("span", null, "Selected address"),
+      }),
+    );
+    const orders = renderToStaticMarkup(
+      createElement(layout.DeliveryHeader!, {
+        context: "orders",
+        outlet,
+        onManage: () => {},
+        addressLink: createElement("span", null, "Selected address"),
+      }),
+    );
+
+    expect(browse).toContain("Selected address");
+    expect(browse).toContain("Delivery available");
+    expect(browse).toContain("app-header__outlet--quiet");
+    expect(orders).not.toContain("Selected address");
+    expect(orders).not.toContain("Delivery available");
+    expect(orders).toContain("app-header__brand");
+  });
 });

@@ -253,11 +253,15 @@ export function CartScreen({
   controller,
   payment,
   onBrowse,
+  deliveryAddress,
+  onChangeAddress,
 }: {
   state: CartState;
   controller: CartController;
   payment?: ComponentProps<typeof PaymentPanel>;
   onBrowse: () => void;
+  deliveryAddress?: string;
+  onChangeAddress?: () => void;
 }) {
   if (!state.lines.length)
     return (
@@ -288,8 +292,15 @@ export function CartScreen({
         >
           <div>
             <p className="quote-eyebrow">Delivery address</p>
-            <h2 id="cart-delivery-title">{state.assignment.addressLabel}</h2>
+            <h2 id="cart-delivery-title">
+              {deliveryAddress || state.assignment.addressLabel}
+            </h2>
           </div>
+          {onChangeAddress && (
+            <button className="cart-change-address" onClick={onChangeAddress}>
+              Change address
+            </button>
+          )}
           <p>
             Fulfilled by <strong>{state.assignment.outletDisplayName}</strong>
           </p>
@@ -297,13 +308,12 @@ export function CartScreen({
       )}
       <section className="cart-lines" aria-labelledby="cart-lines-title">
         <div className="cart-section-heading">
-          <div>
-            <p className="quote-eyebrow">Your basket</p>
-            <h2 id="cart-lines-title">Your cart</h2>
-          </div>
-          <span>
+          <h2 id="cart-lines-title" className="sr-only">
+            Cart items
+          </h2>
+          <strong>
             {state.lines.length} {state.lines.length === 1 ? "item" : "items"}
-          </span>
+          </strong>
         </div>
         {state.lines.map((line) => (
           <article className="cart-line" key={line.outletProductId}>

@@ -22,7 +22,14 @@ type AppShellProps = {
   outlet?: Outlet | null;
   restoreScrollTop?: number;
   onScrollPositionChange?: (top: number) => void;
+  headerContext?: ShellHeaderContext;
 };
+
+export type ShellHeaderContext =
+  | "home"
+  | "browse"
+  | "transaction"
+  | "orders";
 
 export function AppShell({
   children,
@@ -35,6 +42,7 @@ export function AppShell({
   outlet,
   restoreScrollTop,
   onScrollPositionChange,
+  headerContext = screenKey === "home" ? "home" : "browse",
 }: AppShellProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -55,7 +63,7 @@ export function AppShell({
           }}
         >
           <DeliveryHeader
-            home={screenKey === "home"}
+            context={headerContext}
             outlet={outlet}
             onLogout={onLogout}
             onManage={() => onNavigate("profile")}
@@ -73,29 +81,44 @@ export function AppShell({
   );
 }
 
-function DeliveryHeader({
-  home,
+export function DeliveryHeader({
+  context,
   onLogout,
   onManage,
   outlet,
+  addressLink,
 }: {
-  home: boolean;
+  context: ShellHeaderContext;
   onLogout?: () => void;
   onManage: () => void;
   outlet?: Outlet | null;
+  addressLink?: ReactNode;
 }) {
+  const shoppingContext = context === "home" || context === "browse";
   return (
-    <header className="app-header">
-      <HeaderActions home={home} onLogout={onLogout} />
-      <DeliveryAddressLink onManage={onManage} />
-      {outlet && <DeliveryAvailabilityPanel outlet={outlet} />}
+    <header className={`app-header app-header--${context}`}>
+      <HeaderActions home={context === "home"} onLogout={onLogout} />
+      {shoppingContext &&
+        (addressLink ?? <DeliveryAddressLink onManage={onManage} />)}
+      {shoppingContext && outlet && (
+        <DeliveryAvailabilityPanel outlet={outlet} quiet />
+      )}
     </header>
   );
 }
 
-export function DeliveryAvailabilityPanel({ outlet }: { outlet: Outlet }) {
+export function DeliveryAvailabilityPanel({
+  outlet,
+  quiet = false,
+}: {
+  outlet: Outlet;
+  quiet?: boolean;
+}) {
   return (
-    <div className="app-header__outlet" role="status">
+    <div
+      className={`app-header__outlet ${quiet ? "app-header__outlet--quiet" : ""}`}
+      role="status"
+    >
       <span className="app-header__outlet-icon" aria-hidden="true">
         <TruckIcon className="h-5 w-5" />
       </span>

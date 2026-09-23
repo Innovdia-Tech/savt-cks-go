@@ -1,4 +1,5 @@
 import type { Assignment, Category, Detail, Outlet } from "./contracts";
+import type { CustomerOrderStage, OrderListItem } from "../orders/contracts";
 const id = (n: number) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const categories: Category[] = [
@@ -55,6 +56,10 @@ export const orderScenarios = [
   "empty",
   "delivered",
   "receipt-ready",
+  "preparing",
+  "out-for-delivery",
+  "mixed",
+  "multi-page",
   "error",
   "malformed",
 ] as const;
@@ -148,22 +153,31 @@ export class DevelopmentCatalogueAdapter {
       storageType: "AMBIENT",
     })).sort((a, b) => a.name.localeCompare(b.name));
   }
-  private syntheticOrder() {
-    const orderId = id(990);
-    const at = new Date(this.now() - 45 * 60_000).toISOString();
-    const delivered =
+  private primaryOrderStage(): CustomerOrderStage {
+    if (this.orderCancelled) return "CANCELLED";
+    if (
       this.orderScenario === "delivered" ||
-      this.orderScenario === "receipt-ready";
-    const cancelled = this.orderCancelled;
-    const stage = cancelled
-      ? "CANCELLED"
-      : delivered
-        ? "DELIVERED"
-        : "ORDER_RECEIVED";
-    const receiptAvailable = this.orderScenario === "receipt-ready";
+      this.orderScenario === "receipt-ready"
+    )
+      return "DELIVERED";
+    if (this.orderScenario === "preparing") return "PICK_AND_PACK";
+    if (this.orderScenario === "out-for-delivery") return "OUT_FOR_DELIVERY";
+    return "ORDER_RECEIVED";
+  }
+  private syntheticOrder(
+    stage: CustomerOrderStage = this.primaryOrderStage(),
+    sequence = 1,
+  ): OrderListItem {
+    const orderId = id(991 - sequence);
+    const at = new Date(this.now() - 45 * 60_000).toISOString();
+    const delivered = stage === "DELIVERED";
+    const cancelled = stage === "CANCELLED";
+    const outForDelivery = stage === "OUT_FOR_DELIVERY" || delivered;
+    const receiptAvailable =
+      this.orderScenario === "receipt-ready" && delivered;
     return {
       orderId,
-      orderNumber: "SYNTH-ORDER-0001",
+      orderNumber: `SYNTH-ORDER-${String(sequence).padStart(4, "0")}`,
       createdAt: at,
       updatedAt: new Date(this.now()).toISOString(),
       customerStage: stage,
@@ -174,9 +188,9 @@ export class DevelopmentCatalogueAdapter {
       grandTotalMinor: 4590,
       deliveryType: "NOW" as const,
       tracking: {
-        currentState: delivered ? "DELIVERED" : null,
-        assignedAt: delivered ? at : null,
-        pickedUpAt: delivered ? at : null,
+        currentState: outForDelivery ? stage : null,
+        assignedAt: outForDelivery ? at : null,
+        pickedUpAt: outForDelivery ? at : null,
         deliveredAt: delivered
           ? new Date(this.now() - 5 * 60_000).toISOString()
           : null,
@@ -185,8 +199,24 @@ export class DevelopmentCatalogueAdapter {
       canCancel: !delivered && !cancelled,
     };
   }
-  private syntheticOrderDetail() {
-    const summary = this.syntheticOrder();
+  private syntheticOrders(page: number): OrderListItem[] {
+    if (this.orderScenario === "empty") return [];
+    if (this.orderScenario === "mixed")
+      return page === 1
+        ? [
+            this.syntheticOrder("ORDER_RECEIVED", 1),
+            this.syntheticOrder("DELIVERED", 2),
+          ]
+        : [];
+    if (this.orderScenario === "multi-page")
+      return page === 1
+        ? [this.syntheticOrder("DELIVERED", 1)]
+        : page === 2
+          ? [this.syntheticOrder("OUT_FOR_DELIVERY", 2)]
+          : [];
+    return page === 1 ? [this.syntheticOrder()] : [];
+  }
+  private syntheticOrderDetail(summary = this.syntheticOrder()) {
     const delivered = summary.customerStage === "DELIVERED";
     const cancelled = summary.customerStage === "CANCELLED";
     const confirmedAt = delivered ? summary.updatedAt : null;
@@ -240,11 +270,33 @@ export class DevelopmentCatalogueAdapter {
       delivery: { deliveryType: summary.deliveryType, ...summary.tracking },
       milestones: {
         paymentConfirmedAt: summary.createdAt,
-        acceptedAt: delivered ? summary.createdAt : null,
-        pickingStartedAt: null,
-        pickingConfirmedAt: delivered ? summary.createdAt : null,
-        pandaConfirmedAt: null,
-        packingCompletedAt: delivered ? summary.createdAt : null,
+        acceptedAt: ["PICK_AND_PACK", "OUT_FOR_DELIVERY", "DELIVERED"].includes(
+          summary.customerStage,
+        )
+          ? summary.createdAt
+          : null,
+        pickingStartedAt: [
+          "PICK_AND_PACK",
+          "OUT_FOR_DELIVERY",
+          "DELIVERED",
+        ].includes(summary.customerStage)
+          ? summary.createdAt
+          : null,
+        pickingConfirmedAt: ["OUT_FOR_DELIVERY", "DELIVERED"].includes(
+          summary.customerStage,
+        )
+          ? summary.createdAt
+          : null,
+        pandaConfirmedAt: ["OUT_FOR_DELIVERY", "DELIVERED"].includes(
+          summary.customerStage,
+        )
+          ? summary.createdAt
+          : null,
+        packingCompletedAt: ["OUT_FOR_DELIVERY", "DELIVERED"].includes(
+          summary.customerStage,
+        )
+          ? summary.createdAt
+          : null,
         cancelledAt: cancelled ? summary.updatedAt : null,
         deliveredAt: summary.tracking.deliveredAt,
         completedAt: delivered ? summary.updatedAt : null,
@@ -569,24 +621,38 @@ export class DevelopmentCatalogueAdapter {
         });
       const page = Number(u.searchParams.get("page") ?? 1);
       const pageSize = Number(u.searchParams.get("pageSize") ?? 25);
-      const data = this.orderScenario === "empty" ? [] : [syntheticOrder];
+      const data = this.syntheticOrders(page);
+      const total =
+        this.orderScenario === "multi-page"
+          ? 2
+          : this.orderScenario === "mixed"
+            ? 2
+            : data.length;
+      const totalPages =
+        this.orderScenario === "multi-page" ? 2 : total > 0 ? 1 : 0;
       return Response.json({
-        data: page === 1 ? data : [],
+        data,
         meta: {
           page,
           pageSize,
-          total: data.length,
-          totalPages: data.length ? 1 : 0,
+          total,
+          totalPages,
         },
       });
     }
-    if (
-      u.pathname === `/api/v1/customer/orders/${syntheticOrder.orderId}` &&
-      init?.method === "GET"
-    ) {
+    const orderPathMatch = u.pathname.match(
+      /^\/api\/v1\/customer\/orders\/([0-9a-f-]{36})$/i,
+    );
+    if (orderPathMatch && init?.method === "GET") {
       if (this.orderScenario === "error")
         return failure(503, "CUSTOMER_ORDER_UNAVAILABLE");
-      return Response.json({ data: this.syntheticOrderDetail() });
+      const candidate = [
+        ...this.syntheticOrders(1),
+        ...this.syntheticOrders(2),
+      ].find((order) => order.orderId === orderPathMatch[1]);
+      return candidate
+        ? Response.json({ data: this.syntheticOrderDetail(candidate) })
+        : failure(404, "CUSTOMER_ORDER_NOT_FOUND");
     }
     if (
       u.pathname ===

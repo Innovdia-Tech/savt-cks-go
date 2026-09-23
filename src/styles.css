@@ -323,6 +323,36 @@ a[href] {
     line-height: 1rem;
   }
 
+  .app-header__outlet--quiet {
+    margin-top: var(--space-2);
+    gap: var(--space-2);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: var(--space-1) 0 0;
+  }
+
+  .app-header__outlet--quiet .app-header__outlet-icon {
+    width: 2rem;
+    height: 2rem;
+    background: var(--color-savt-reward-soft);
+  }
+
+  .app-header__outlet--quiet div {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: 0.3rem;
+  }
+
+  .app-header__outlet--quiet div > span::before {
+    content: "· ";
+  }
+
+  .app-header--transaction,
+  .app-header--orders {
+    padding-bottom: var(--space-3);
+  }
+
   .bottom-navigation {
     position: relative;
     z-index: var(--z-navigation);
