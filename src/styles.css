@@ -251,8 +251,9 @@ a[href] {
   }
 
   .app-header__shopping-actions + .delivery-address-link {
-    padding-right: 3rem;
-    padding-left: 3rem;
+    width: auto;
+    margin-right: 3rem;
+    margin-left: 3rem;
   }
 
   .app-header__brand {
