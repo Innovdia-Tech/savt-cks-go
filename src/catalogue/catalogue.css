@@ -224,7 +224,7 @@
   display: grid;
   min-width: 68px;
   min-height: 90px;
-  grid-template-rows: 54px 30px;
+  grid-template-rows: 54px auto;
   justify-items: center;
   align-items: start;
   gap: 6px;
@@ -250,10 +250,6 @@
 }
 .catalogue-category-tiles button > span:last-child {
   width: 100%;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
   text-align: center;
 }
 .catalogue-category-icon {
@@ -722,7 +718,7 @@
   .catalogue-root--home .catalogue-category-tiles button {
     min-width: 60px;
     min-height: 72px;
-    grid-template-rows: 44px 24px;
+    grid-template-rows: 44px auto;
     gap: 4px;
   }
 
