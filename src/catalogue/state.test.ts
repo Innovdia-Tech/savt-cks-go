@@ -159,6 +159,27 @@ describe("assignment state isolation", () => {
     expect(c.getSnapshot().page).toBe(1);
     c.dispose();
   });
+  it("clears hidden search and category filters before returning Home", async () => {
+    const { c, api } = setup();
+    bind(c);
+    await settle();
+    await c.search("rice");
+    await c.category("00000000-0000-4000-8000-000000000003");
+    vi.mocked(api.products).mockClear();
+
+    await c.resetFilters();
+
+    expect(c.getSnapshot().q).toBe("");
+    expect(c.getSnapshot().categoryId).toBeUndefined();
+    expect(c.getSnapshot().page).toBe(1);
+    expect(api.products).toHaveBeenCalledTimes(1);
+    expect(api.products).toHaveBeenCalledWith(
+      assignment,
+      { page: 1, q: "", categoryId: undefined },
+      expect.any(AbortSignal),
+    );
+    c.dispose();
+  });
   it("clears catalogue on session loss and preserves read-only state", async () => {
     const { c } = setup();
     bind(c, { readOnly: true });

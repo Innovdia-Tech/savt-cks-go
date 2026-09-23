@@ -4,23 +4,51 @@ type QuantitySelectorProps = {
   quantity: number;
   onIncrement: () => void;
   onDecrement: () => void;
+  label?: string;
+  minimum?: number;
+  maximum?: number;
+  disabled?: boolean;
+  incrementDisabled?: boolean;
+  decrementDisabled?: boolean;
+  className?: string;
 };
 
-export function QuantitySelector({ quantity, onIncrement, onDecrement }: QuantitySelectorProps) {
+export function QuantitySelector({
+  quantity,
+  onIncrement,
+  onDecrement,
+  label = "Quantity",
+  minimum = 1,
+  maximum,
+  disabled = false,
+  incrementDisabled = false,
+  decrementDisabled = false,
+  className = "",
+}: QuantitySelectorProps) {
   return (
-    <div className="flex h-12 items-center rounded-full bg-savt-light p-0.5">
+    <div
+      className={`ui-quantity ${className}`.trim()}
+      role="group"
+      aria-label={label}
+    >
       <button
-        onClick={onDecrement}
-        className="grid h-11 w-11 place-items-center rounded-full text-savt-dark transition active:bg-white"
+        type="button"
         aria-label="Decrease quantity"
+        disabled={disabled || decrementDisabled || quantity <= minimum}
+        onClick={onDecrement}
       >
         <MinusIcon className="h-4 w-4" />
       </button>
-      <span className="w-8 text-center text-sm font-black text-slate-950">{quantity}</span>
+      <span aria-live="polite">{quantity}</span>
       <button
-        onClick={onIncrement}
-        className="grid h-11 w-11 place-items-center rounded-full bg-white text-savt-dark shadow-sm transition active:scale-95"
+        type="button"
         aria-label="Increase quantity"
+        disabled={
+          disabled ||
+          incrementDisabled ||
+          (maximum !== undefined && quantity >= maximum)
+        }
+        onClick={onIncrement}
       >
         <PlusIcon className="h-4 w-4" />
       </button>

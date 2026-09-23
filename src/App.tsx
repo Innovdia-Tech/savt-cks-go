@@ -223,7 +223,7 @@ function HomeScreen({
       <TrustStrip />
       <SavingsStrip />
       <SectionHeader title="Shop supermarket aisles" action="View all" />
-      <div className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
+      <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
         {categories.map((category) => {
           const visual = categoryVisual(category.id);
           const Icon = visual.Icon;
@@ -297,7 +297,7 @@ function ListingScreen({
           <FilterIcon />
         </button>
       </div>
-      <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+      <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
         {categories.map((category) => {
           const visual = categoryVisual(category.id);
           const Icon = visual.Icon;
@@ -665,7 +665,7 @@ function FilterChips({
   ] as const;
 
   return (
-    <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+    <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
       {filters.map((filter) => (
         <button
           key={filter.id}

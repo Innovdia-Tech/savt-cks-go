@@ -131,6 +131,16 @@ export class CatalogueController {
     this.update({ categoryId, page: 1, detail: null, detailId: undefined });
     return this.load();
   }
+  resetFilters() {
+    this.update({
+      q: "",
+      categoryId: undefined,
+      page: 1,
+      detail: null,
+      detailId: undefined,
+    });
+    return this.load();
+  }
   nextPage(page: number) {
     if (page < 1 || page > 1000) return Promise.resolve();
     this.update({ page, detail: null, detailId: undefined });

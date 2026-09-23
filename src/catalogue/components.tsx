@@ -9,9 +9,33 @@ import type { CatalogueState } from "./state";
 import type { Screen } from "../types";
 import { useCheckout } from "../checkout/context";
 import { AddressTransitionError, CartScreen } from "../checkout/components";
+import { MAX_LINE_QUANTITY } from "../checkout/contracts";
+import { QuantitySelector } from "../components/QuantitySelector";
 import { usePayment } from "../payment/context";
 import { useOrders } from "../orders/context";
 import { OrderDetailScreen, OrdersScreen } from "../orders/components";
+import {
+  Button,
+  SearchField,
+  StatusBadge,
+  SystemState,
+} from "../components/ui";
+import { BagIcon, FruitIcon, GridIcon, PantryIcon } from "../components/Icons";
+import {
+  AdvertisingCarousel,
+  filterRenderableSlides,
+  isSupportedAdvertisingTarget,
+  shouldAutoAdvance,
+  type AdvertisingSlide,
+} from "./AdvertisingCarousel";
+import type { DevelopmentAdvertisingScenario } from "./development-advertising";
+
+export {
+  AdvertisingCarousel,
+  filterRenderableSlides,
+  isSupportedAdvertisingTarget,
+  shouldAutoAdvance,
+};
 export const money = (minor: number) =>
   new Intl.NumberFormat("en-MY", { style: "currency", currency: "MYR" }).format(
     minor / 100,
@@ -37,9 +61,7 @@ export function ProductImage({
         />
       ) : (
         <span role="img" aria-label={`Image unavailable for ${name}`}>
-          <span aria-hidden="true" className="catalogue-image-symbol">
-            ▧
-          </span>
+          <BagIcon className="catalogue-image-symbol" />
           <span>Image unavailable</span>
         </span>
       )}
@@ -51,34 +73,50 @@ export function ProductTile({
   onOpen,
   onAdd,
   orderingDisabled = false,
+  variant = "grid",
 }: {
   product: Product;
   onOpen: () => void;
   onAdd?: () => void;
   orderingDisabled?: boolean;
+  variant?: "grid" | "list";
 }) {
   const canAdd =
     product.availability === "AVAILABLE" && !orderingDisabled && !!onAdd;
   return (
-    <article className="catalogue-tile">
+    <article className={`catalogue-tile catalogue-tile--${variant}`}>
       <button
         className="catalogue-open"
         onClick={onOpen}
         aria-label={`View ${product.name}`}
       >
         <ProductImage url={product.imageUrl} name={product.name} />
-        <span className="catalogue-name">{product.name}</span>
+        <span className="catalogue-name line-clamp-2">{product.name}</span>
         <span className="catalogue-unit">
           {product.packSize || product.uom.name}
         </span>
+        {variant === "list" && (
+          <span className="catalogue-price-row">
+            <strong className="catalogue-price">
+              {money(product.sellingPriceMinor)}
+            </strong>
+            <StatusBadge status={product.availability} />
+          </span>
+        )}
       </button>
-      <strong className="catalogue-price">
-        {money(product.sellingPriceMinor)}
-      </strong>
-      <span className="catalogue-availability">
-        {product.availability === "AVAILABLE" ? "Available" : "Unavailable"}
-      </span>
-      <button
+      {variant === "grid" && (
+        <>
+          <div className="catalogue-price-row">
+            <strong className="catalogue-price">
+              {money(product.sellingPriceMinor)}
+            </strong>
+          </div>
+          <div className="catalogue-availability-row">
+            <StatusBadge status={product.availability} />
+          </div>
+        </>
+      )}
+      <Button
         className="catalogue-add"
         disabled={!canAdd}
         onClick={onAdd}
@@ -88,19 +126,84 @@ export function ProductTile({
             : `Add ${product.name} — unavailable`
         }
       >
-        Add
-      </button>
+        {variant === "list" ? (
+          <>
+            <span aria-hidden="true">+</span>
+            <span className="sr-only">Add to cart</span>
+          </>
+        ) : (
+          "Add to cart"
+        )}
+      </Button>
     </article>
   );
 }
+
+export function ProductDetailPurchase({
+  product,
+  quantity,
+  orderingDisabled,
+  paymentFrozen,
+  onAdd,
+  onSetQuantity,
+}: {
+  product: Product;
+  quantity: number | null;
+  orderingDisabled: boolean;
+  paymentFrozen: boolean;
+  onAdd: () => void;
+  onSetQuantity: (quantity: number) => void;
+}) {
+  return (
+    <div className="catalogue-detail-purchase">
+      {quantity === null ? (
+        <Button
+          className="catalogue-add"
+          disabled={orderingDisabled || paymentFrozen}
+          onClick={onAdd}
+        >
+          Add to cart
+        </Button>
+      ) : (
+        <div className="catalogue-detail-quantity">
+          <span>In your cart</span>
+          <QuantitySelector
+            label={`Quantity for ${product.name}`}
+            quantity={quantity}
+            minimum={0}
+            maximum={MAX_LINE_QUANTITY}
+            disabled={paymentFrozen}
+            incrementDisabled={orderingDisabled}
+            onDecrement={() => onSetQuantity(quantity - 1)}
+            onIncrement={() => onSetQuantity(quantity + 1)}
+          />
+        </div>
+      )}
+      <p className="catalogue-caption">
+        Final prices and availability are checked when you review your order.
+      </p>
+    </div>
+  );
+}
+
+export function CategoryArtwork({ name }: { name?: string }) {
+  const normalized = name?.trim().toLowerCase();
+  const Icon =
+    normalized === "pantry"
+      ? PantryIcon
+      : normalized === "fresh food"
+        ? FruitIcon
+        : GridIcon;
+  return <Icon className="catalogue-category-icon" />;
+}
 const errors: Record<string, [string, string]> = {
   CUSTOMER_NO_SERVICEABLE_OUTLET: [
-    "No serviceable outlet",
-    "We cannot serve this address right now. Try another saved address.",
+    "Delivery unavailable",
+    "Delivery is not available for this address.",
   ],
   CUSTOMER_ASSIGNMENT_INCOMPLETE: [
-    "Assignment could not be completed",
-    "The route provider is unavailable. Try again later.",
+    "Delivery availability unavailable",
+    "We couldn't check delivery availability. Please try again.",
   ],
   CUSTOMER_ASSIGNMENT_CONTEXT_UNAVAILABLE: [
     "Browsing is temporarily unavailable",
@@ -143,12 +246,12 @@ const errors: Record<string, [string, string]> = {
     "This product is no longer available to browse. Return to products.",
   ],
   NETWORK_ERROR: [
-    "You appear to be offline",
-    "Check your connection and try again.",
+    "Delivery availability unavailable",
+    "We couldn't check delivery availability. Please try again.",
   ],
   REQUEST_TIMEOUT: [
-    "Request timed out",
-    "Check your connection and try again.",
+    "Delivery availability unavailable",
+    "We couldn't check delivery availability. Please try again.",
   ],
   INVALID_RESPONSE: [
     "Catalogue response unavailable",
@@ -166,11 +269,13 @@ const errors: Record<string, [string, string]> = {
 export function CatalogueStatus({
   phase,
   error,
+  hasAssignment = false,
   onRetry,
   onManage,
 }: {
   phase: CatalogueState["phase"];
   error: string | null;
+  hasAssignment?: boolean;
   onRetry: () => void;
   onManage: () => void;
 }) {
@@ -192,34 +297,53 @@ export function CatalogueStatus({
       "Edit your saved address and add its coordinates.",
     ],
     "assignment-loading": [
-      "Finding your assigned outlet",
-      "Checking service for this address.",
+      "Checking delivery availability…",
+      "We'll show this outlet's groceries when the check is complete.",
     ],
     loading: ["Loading catalogue", "Fetching the latest products."],
     "session-expired": errors.CUSTOMER_SESSION_INVALID,
     expired: errors.CUSTOMER_ASSIGNMENT_CONTEXT_EXPIRED,
   };
-  const [title, description] = phases[phase] ??
+  const productConnectivityError =
+    hasAssignment && ["NETWORK_ERROR", "REQUEST_TIMEOUT"].includes(error ?? "")
+      ? [
+          "Catalogue temporarily unavailable",
+          "We couldn't load the catalogue. Please try again.",
+        ]
+      : undefined;
+  const [title, description] = productConnectivityError ??
+    phases[phase] ??
     errors[error ?? ""] ?? ["Catalogue unavailable", "Please try again later."];
   const busy = ["address-loading", "assignment-loading", "loading"].includes(
     phase,
   );
   const addressAction =
     ["no-address", "coordinates", "address-error"].includes(phase) ||
-    error?.startsWith("CUSTOMER_ADDRESS_");
+    error?.startsWith("CUSTOMER_ADDRESS_") ||
+    error === "CUSTOMER_NO_SERVICEABLE_OUTLET";
   return (
-    <section className="catalogue-state" role="status" aria-live="polite">
-      <h2>{title}</h2>
-      <p>{description}</p>
-      {!busy && phase !== "session-expired" && (
-        <button
-          className="customer-button"
-          onClick={addressAction ? onManage : onRetry}
-        >
-          {addressAction ? "Manage addresses" : "Try again"}
-        </button>
-      )}
-    </section>
+    <SystemState
+      tone={busy ? "loading" : "error"}
+      title={title}
+      description={description}
+      busy={busy}
+      actionLabel={
+        !busy && phase !== "session-expired"
+          ? addressAction
+            ? error === "CUSTOMER_NO_SERVICEABLE_OUTLET"
+              ? "Change address"
+              : "Manage addresses"
+            : "Try again"
+          : undefined
+      }
+      onAction={
+        !busy && phase !== "session-expired"
+          ? addressAction
+            ? onManage
+            : onRetry
+          : undefined
+      }
+    />
   );
 }
 function readRoute() {
@@ -230,17 +354,47 @@ function readRoute() {
     ? value
     : "home";
 }
+
+export function routeTitle(route: string) {
+  const page = route.startsWith("detail/")
+    ? "Product details"
+    : route.startsWith("order/")
+      ? "Order details"
+      : route === "categories"
+        ? "Categories"
+        : route === "cart"
+          ? "Cart"
+          : route === "orders"
+            ? "Orders"
+            : route === "profile"
+              ? "Profile and addresses"
+              : "Browse products";
+  return `${page} | CKS Go`;
+}
+
 export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
   const { state, controller, controls } = useCatalogue();
   const checkout = useCheckout();
   const payment = usePayment();
   const orders = useOrders();
-  const { guardNavigation } = useCustomer();
+  const customer = useCustomer();
+  const { guardNavigation } = customer;
   const [route, setRoute] = useState(readRoute);
   const [query, setQuery] = useState(state.q);
   const [composing, setComposing] = useState(false);
+  const [advertisingScenario, setAdvertisingScenario] =
+    useState<DevelopmentAdvertisingScenario>("multiple");
+  const [advertisingSlides, setAdvertisingSlides] = useState<
+    AdvertisingSlide[]
+  >([]);
   const heading = useRef<HTMLHeadingElement>(null),
     search = useRef<HTMLInputElement>(null);
+  const productOrigin = useRef<"home" | "categories">("home");
+  const browseOrigin = useRef<"home" | "categories">("home");
+  const scrollPositions = useRef(new Map<string, number>());
+  useEffect(() => {
+    document.title = routeTitle(route);
+  }, [route]);
   useEffect(() => {
     const change = () =>
       guardHistoryNavigation(
@@ -254,7 +408,10 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
     return () => window.removeEventListener("hashchange", change);
   }, [route, guardNavigation]);
   useEffect(() => {
-    heading.current?.focus();
+    const returningToBrowse =
+      (route === "home" || route === "categories") &&
+      (scrollPositions.current.get(route) ?? 0) > 0;
+    if (!returningToBrowse) heading.current?.focus({ preventScroll: true });
   }, [route]);
   useEffect(() => {
     if (composing || query === state.q) return;
@@ -267,6 +424,38 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
     state.assignment?.customerAddressId,
     state.assignment?.addressRowVersion,
   ]);
+  useEffect(() => {
+    if (route !== "home" || !state.categoryId) return;
+    void controller.category();
+  }, [route, state.categoryId, controller]);
+  useEffect(() => {
+    if ((route !== "home" && route !== "categories") || state.phase !== "ready")
+      return;
+    const top = scrollPositions.current.get(route) ?? 0;
+    if (top <= 0) return;
+    const frame = window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>(".app-shell__scroll")
+        ?.scrollTo({ top });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [route, state.phase, state.products]);
+  useEffect(() => {
+    let current = true;
+    if (!import.meta.env.DEV || !controls) {
+      setAdvertisingSlides([]);
+      return;
+    }
+    void import("./development-advertising").then((development) => {
+      if (current)
+        setAdvertisingSlides(
+          development.developmentAdvertisingSlides(advertisingScenario),
+        );
+    });
+    return () => {
+      current = false;
+    };
+  }, [advertisingScenario, controls]);
   const detailId = route.startsWith("detail/") ? route.slice(7) : undefined;
   const orderDetailId = route.startsWith("order/") ? route.slice(6) : undefined;
   useEffect(() => {
@@ -278,21 +467,57 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
     if (orderDetailId) void orders.controller.open(orderDetailId);
     else orders.controller.closeDetail();
   }, [orderDetailId, orders.controller]);
-  const navigate = (next: string) =>
+  const navigate = (next: string) => {
+    const currentScroll =
+      document.querySelector<HTMLElement>(".app-shell__scroll")?.scrollTop;
+    if (currentScroll !== undefined)
+      scrollPositions.current.set(route, currentScroll);
     guardNavigation(() => {
       window.location.hash = next;
       setRoute(next);
     });
+  };
+  const openProduct = (productId: string) => {
+    const origin = route === "categories" ? "categories" : "home";
+    productOrigin.current = origin;
+    browseOrigin.current = origin;
+    navigate(`detail/${productId}`);
+  };
   const nav = (screen: Screen) =>
-    navigate(
-      screen === "listing"
-        ? "categories"
-        : screen === "tracking"
-          ? "orders"
-          : screen,
-    );
+    (() => {
+      if (screen === "home" || screen === "listing")
+        browseOrigin.current = screen === "listing" ? "categories" : "home";
+      if (screen === "cart" && browse)
+        browseOrigin.current = route as "home" | "categories";
+      navigate(
+        screen === "listing"
+          ? "categories"
+          : screen === "tracking"
+            ? "orders"
+            : screen,
+      );
+    })();
   const browse = route === "home" || route === "categories";
   const p = state.detail?.data;
+  const selectedAddress = customer.controller.selectedAddress();
+  const cartDeliveryAddress = selectedAddress
+    ? [
+        selectedAddress.addressLine1,
+        selectedAddress.addressLine2,
+        selectedAddress.city,
+        selectedAddress.state,
+      ]
+        .filter(Boolean)
+        .join(", ")
+    : undefined;
+  const headerContext =
+    route === "home"
+      ? "home"
+      : route === "categories" || detailId
+        ? "browse"
+        : route === "orders" || orderDetailId
+          ? "orders"
+          : "transaction";
   return (
     <AppShell
       active={
@@ -311,10 +536,21 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
       onNavigate={nav}
       onLogout={onLogout}
       screenKey={route}
+      headerContext={headerContext}
       outlet={state.assignment?.outlet}
+      restoreScrollTop={scrollPositions.current.get(route) ?? 0}
+      onScrollPositionChange={(top) => {
+        if (
+          (route === "home" || route === "categories") &&
+          (state.phase !== "ready" || !state.products)
+        )
+          return;
+        scrollPositions.current.set(route, top);
+      }}
     >
-      <div className="catalogue-root">
-        {controls}
+      <div
+        className={`catalogue-root ${route === "home" ? "catalogue-root--home" : ""}`}
+      >
         {route === "profile" ? (
           <>
             <CheckoutAddress
@@ -333,10 +569,16 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
           </>
         ) : (
           <>
-            <div className="catalogue-heading">
-              <h1 ref={heading} tabIndex={-1}>
+            <div
+              className={`catalogue-heading ${route === "home" ? "catalogue-heading--hidden" : ""}`}
+            >
+              <h1
+                ref={heading}
+                tabIndex={-1}
+                className={route === "home" ? "sr-only" : undefined}
+              >
                 {route === "home"
-                  ? "Browse products"
+                  ? "CKS Go home"
                   : route === "categories"
                     ? "Categories"
                     : detailId
@@ -350,7 +592,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
               {detailId && (
                 <button
                   className="catalogue-link"
-                  onClick={() => navigate("home")}
+                  onClick={() => navigate(productOrigin.current)}
                 >
                   Back to products
                 </button>
@@ -377,7 +619,9 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                   ...payment,
                   onViewOrder: (orderId) => navigate(`order/${orderId}`),
                 }}
-                onBrowse={() => navigate("home")}
+                onBrowse={() => navigate(browseOrigin.current)}
+                deliveryAddress={cartDeliveryAddress}
+                onChangeAddress={() => navigate("profile")}
               />
             ) : route === "orders" ? (
               <OrdersScreen
@@ -395,45 +639,81 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
             ) : (
               <>
                 {browse && (
-                  <form
-                    noValidate
+                  <SearchField
                     className="catalogue-search"
+                    id="catalogue-search"
+                    ref={search}
+                    label="Search products"
+                    maxLength={200}
+                    value={query}
+                    placeholder="Search products"
+                    onCompositionStart={() => setComposing(true)}
+                    onCompositionEnd={() => setComposing(false)}
+                    onChange={(e) => setQuery(e.target.value)}
                     onSubmit={(e) => {
                       e.preventDefault();
                       if (!composing) void controller.search(query);
                     }}
+                    onClear={() => {
+                      setQuery("");
+                      void controller.search("");
+                      search.current?.focus();
+                    }}
+                  />
+                )}
+                {route === "home" && state.phase === "ready" && (
+                  <AdvertisingCarousel
+                    slides={advertisingSlides}
+                    onNavigate={(target) => navigate(target)}
+                  />
+                )}
+                {route === "home" && state.categories.length > 0 && (
+                  <section
+                    className="catalogue-home-categories"
+                    aria-labelledby="home-categories-title"
                   >
-                    <label htmlFor="catalogue-search">Search products</label>
-                    <div>
-                      <input
-                        id="catalogue-search"
-                        ref={search}
-                        type="search"
-                        maxLength={200}
-                        value={query}
-                        onCompositionStart={() => setComposing(true)}
-                        onCompositionEnd={() => setComposing(false)}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search this outlet"
-                      />
-                      {query && (
+                    <div className="catalogue-section-heading">
+                      <h2 id="home-categories-title">Shop by category</h2>
+                      <button
+                        type="button"
+                        className="catalogue-link"
+                        onClick={() => navigate("categories")}
+                      >
+                        View all categories
+                      </button>
+                    </div>
+                    <div className="catalogue-category-tiles">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void controller.category();
+                          navigate("categories");
+                        }}
+                      >
+                        <span aria-hidden="true">
+                          <CategoryArtwork />
+                        </span>
+                        <span>All</span>
+                      </button>
+                      {state.categories.slice(0, 4).map((category) => (
                         <button
                           type="button"
-                          aria-label="Clear search"
+                          key={category.id}
                           onClick={() => {
-                            setQuery("");
-                            void controller.search("");
-                            search.current?.focus();
+                            void controller.category(category.id);
+                            navigate("categories");
                           }}
                         >
-                          ×
+                          <span aria-hidden="true">
+                            <CategoryArtwork name={category.name} />
+                          </span>
+                          <span>{category.name}</span>
                         </button>
-                      )}
-                      <button type="submit">Search</button>
+                      ))}
                     </div>
-                  </form>
+                  </section>
                 )}
-                {browse &&
+                {route === "categories" &&
                   (state.categories.length > 0 || state.categoryPage > 1) && (
                     <section aria-label="Product categories">
                       <div className="catalogue-categories">
@@ -483,6 +763,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                   <CatalogueStatus
                     phase={state.phase}
                     error={state.error}
+                    hasAssignment={Boolean(state.assignment)}
                     onRetry={() => void controller.retry()}
                     onManage={() => navigate("profile")}
                   />
@@ -519,28 +800,33 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                         <dt>Storage</dt>
                         <dd>{p.storageType.toLowerCase()}</dd>
                       </dl>
-                      <button
-                        className="catalogue-add"
-                        disabled={
+                      <ProductDetailPurchase
+                        product={p}
+                        quantity={
+                          checkout.state.lines.find(
+                            (line) =>
+                              line.outletProductId === p.outletProductId,
+                          )?.quantity ?? null
+                        }
+                        orderingDisabled={
                           state.readOnly ||
-                          checkout.state.paymentFrozen ||
                           p.availability !== "AVAILABLE" ||
                           !state.assignment ||
                           checkout.state.assignment?.outletId !==
                             state.assignment.outlet.id
                         }
-                        onClick={() => {
+                        paymentFrozen={checkout.state.paymentFrozen}
+                        onAdd={() => {
                           if (!state.assignment) return;
                           checkout.controller.add(p, state.assignment);
-                          navigate("cart");
                         }}
-                      >
-                        Add to cart
-                      </button>
-                      <p>
-                        Prices and stock are confirmed when you request a
-                        trusted quote.
-                      </p>
+                        onSetQuantity={(quantity) =>
+                          checkout.controller.setQuantity(
+                            p.outletProductId,
+                            quantity,
+                          )
+                        }
+                      />
                     </article>
                   )
                 ) : (
@@ -550,20 +836,46 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                         No categories are available for this outlet.
                       </p>
                     )}
-                    <p className="catalogue-caption">
-                      Add available products from this assigned outlet.
-                      Displayed prices are shown in MYR and confirmed by a
-                      trusted quote.
-                    </p>
+                    <div className="catalogue-section-heading catalogue-products-heading">
+                      <div>
+                        <h2>
+                          {route === "home"
+                            ? "Shop groceries"
+                            : state.categoryId
+                              ? (state.categories.find(
+                                  (category) =>
+                                    category.id === state.categoryId,
+                                )?.name ?? "Groceries")
+                              : "All products"}
+                        </h2>
+                        {route === "categories" && (
+                          <p className="catalogue-caption">
+                            {state.products?.meta.total ?? 0} products from your
+                            assigned outlet
+                          </p>
+                        )}
+                      </div>
+                      {route === "home" && (
+                        <button
+                          type="button"
+                          className="catalogue-link"
+                          onClick={() => navigate("categories")}
+                        >
+                          View all products
+                        </button>
+                      )}
+                    </div>
                     {state.products?.data.length ? (
-                      <div className="catalogue-grid">
-                        {state.products.data.map((product) => (
+                      <div className={"catalogue-grid"}>
+                        {(route === "home"
+                          ? state.products.data.slice(0, 6)
+                          : state.products.data
+                        ).map((product) => (
                           <ProductTile
                             key={product.outletProductId}
                             product={product}
-                            onOpen={() =>
-                              navigate("detail/" + product.outletProductId)
-                            }
+                            variant="grid"
+                            onOpen={() => openProduct(product.outletProductId)}
                             orderingDisabled={
                               state.readOnly ||
                               checkout.state.paymentFrozen ||
@@ -582,20 +894,21 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                         ))}
                       </div>
                     ) : (
-                      <section className="catalogue-state" role="status">
-                        <h2>
-                          {state.q
+                      <SystemState
+                        tone="empty"
+                        title={
+                          state.q
                             ? "No search results"
-                            : "No products in this selection"}
-                        </h2>
-                        <p>
-                          {state.q
+                            : "No products in this selection"
+                        }
+                        description={
+                          state.q
                             ? "Try another product name or clear your search."
-                            : "Choose another category or try again later."}
-                        </p>
-                      </section>
+                            : "Choose another category or try again later."
+                        }
+                      />
                     )}
-                    {state.products && (
+                    {state.products && route === "categories" && (
                       <div className="catalogue-pages">
                         <button
                           disabled={state.page <= 1}
@@ -620,6 +933,36 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                       </div>
                     )}
                   </>
+                )}
+                {controls && (
+                  <div className="catalogue-dev-tools">
+                    {controls}
+                    <details className="catalogue-dev">
+                      <summary>Advertising carousel preview</summary>
+                      <label htmlFor="advertising-scenario">
+                        Carousel state
+                      </label>
+                      <select
+                        id="advertising-scenario"
+                        value={advertisingScenario}
+                        onChange={(event) =>
+                          setAdvertisingScenario(
+                            event.target
+                              .value as DevelopmentAdvertisingScenario,
+                          )
+                        }
+                      >
+                        <option value="multiple">Multiple banners</option>
+                        <option value="single">One banner</option>
+                        <option value="zero">Zero banners</option>
+                        <option value="failed-creative">Failed creative</option>
+                      </select>
+                      <p>
+                        Development-only previews. Production stays empty until
+                        a compatible customer merchandising feed is connected.
+                      </p>
+                    </details>
+                  </div>
                 )}
               </>
             )}

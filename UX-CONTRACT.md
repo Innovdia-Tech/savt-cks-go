@@ -2,16 +2,22 @@
 
 ## Canonical UI Map
 
-| Capability     | Canonical owner                                | Source of truth           | Allowed variants                                               | Verification                           |
-| -------------- | ---------------------------------------------- | ------------------------- | -------------------------------------------------------------- | -------------------------------------- |
-| Form           | src/addresses/AddressForm.tsx                  | Customer DTOs             | Add/edit, memory-only drafts                                   | Validation and browser create/edit     |
-| Select/Listbox | CheckoutAddress in src/customer/components.tsx | Active saved-address list | Native platform popup                                          | Checkout selection and keyboard        |
-| CRUD           | src/customer/state.ts                          | Customer address service  | Pessimistic writes, explicit conflict reload, stable retries   | API/state tests and browser full flow  |
-| Toast          | DataFeedback in src/customer/components.tsx    | Customer error contracts  | Persistent inline status/error                                 | Render and browser failure tests       |
-| Navigation     | src/customer/context.tsx                       | Memory-only form state    | Discard dialog; native beforeunload                            | Escape, cancel, discard browser checks |
-| Scrollbar      | Existing src/styles.css and Layout.tsx         | Existing prototype shell  | Global tokenized baseline; existing scroll ownership preserved | Narrow and desktop browser review      |
+| Capability     | Canonical owner                                | Source of truth                  | Allowed variants                                                                   | Verification                            |
+| -------------- | ---------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------- |
+| Form           | src/addresses/AddressForm.tsx                  | Customer DTOs                    | Add/edit, memory-only drafts                                                       | Validation and browser create/edit      |
+| Select/Listbox | CheckoutAddress in src/customer/components.tsx | Active saved-address list        | Native platform popup                                                              | Checkout selection and keyboard         |
+| CRUD           | src/customer/state.ts                          | Customer address service         | Pessimistic writes, explicit conflict reload, stable retries                       | API/state tests and browser full flow   |
+| Toast          | DataFeedback in src/customer/components.tsx    | Customer error contracts         | Persistent inline status/error                                                     | Render and browser failure tests        |
+| Navigation     | src/customer/context.tsx                       | Memory-only form state           | Discard dialog; native beforeunload                                                | Escape, cancel, discard browser checks  |
+| Scrollbar      | Existing src/styles.css and Layout.tsx         | Existing prototype shell         | Global tokenized baseline; existing scroll ownership preserved                     | Narrow and desktop browser review       |
+| Button         | src/components/ui.tsx                          | DESIGN.md + runtime tokens       | Primary/secondary/tertiary/icon; stable busy and disabled states                   | Component semantics + browser keyboard  |
+| Status         | src/components/ui.tsx                          | Closed catalogue/order contracts | Availability and customer order stages only; Figma promo labels are presentational | Component render + feature tests        |
+| System states  | src/components/ui.tsx                          | Existing feature phases/errors   | Loading, empty and error with safe action callbacks                                | Component render + browser state matrix |
+| App shell      | src/components/Layout.tsx                      | Existing hash routes             | Home, Categories, Cart, Orders; Account intentionally omitted                      | Shell tests + four viewport review      |
 
 Source authority: current CKS Go customer DTOs, controller, address service and session guards. Tests: customer/contracts, API, state and rendered presentation suites; local browser acceptance at the requested narrow sizes. No sensitive values in URLs, storage, logs or presentation session snapshots. Legacy mocked affordances remain outside this bounded package.
+
+CKS-first presentation rule: CKS Red is the safe commerce primary and active customer-navigation color. Savt Green remains for rewards, savings and positive Savt ecosystem meaning. This visual rule does not change lifecycle, authority, permissions, payment finality or order state.
 
 ## CUST02B catalogue UI consequences
 
@@ -61,7 +67,7 @@ Source: pinned CKS Go backend payment contract at `ab1e6b90c4b5b324ce463a8b08f40
 | Order confirmation | `payment/contracts.ts` and `PaymentPanel` | “Order Confirmed” only for PAID plus strict backend Order identity and matching checkout reference             | parser, controller, and rendered tests |
 | Session boundary   | `payment/state.ts`                        | Clear token, URL, intent, Order, retry key, and fence late work on logout/session loss                         | generation-race tests                  |
 
-The payment panel reuses the existing rounded white card, green primary action, native button semantics, focus ring, and narrow-shell behavior. It does not display checkout URLs, quote tokens, PaymentIntent IDs, raw backend/provider codes, or provider redirect parameters. A restart after terminal failure clears cart and payment state and requires a fresh quote.
+The payment panel reuses the existing rounded white card, CKS-red primary action, native button semantics, focus ring, and narrow-shell behavior. It does not display checkout URLs, quote tokens, PaymentIntent IDs, raw backend/provider codes, or provider redirect parameters. A restart after terminal failure clears cart and payment state and requires a fresh quote.
 
 ## CUST03B customer orders UI consequences
 
@@ -77,4 +83,4 @@ Source: pinned CKS Go backend customer-order and receipt contracts at `9f5b779e3
 | Receipt download | `orders/api.ts` and detail screen       | Exact returned download path for current order; PDF content type; browser-owned file save                    | contract/API and receipt-ready browser checks      |
 | Session boundary | `orders/state.ts`                       | Clear history/detail/retry state and fence late work on logout or 401                                        | state races and session browser scenario           |
 
-History and detail reuse the existing shell, rounded cards, green action hierarchy, focus ring and MYR formatting. Destructive confirmation is app-owned; file saving remains browser-owned. Customer order data, receipt blobs, cancellation keys and CSRF are memory-only. Cancellation failure never fabricates a new status, and receipt visibility never comes from a payment assumption.
+History and detail reuse the existing shell, rounded cards, CKS-red action hierarchy, focus ring and MYR formatting. Destructive confirmation is app-owned; file saving remains browser-owned. Customer order data, receipt blobs, cancellation keys and CSRF are memory-only. Cancellation failure never fabricates a new status, and receipt visibility never comes from a payment assumption.

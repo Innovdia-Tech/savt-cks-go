@@ -83,6 +83,18 @@ it("keeps the empty-assortment fixture consistent across categories and products
   expect((await api.products(a, { page: 1 })).data).toEqual([]);
 });
 
+it("keeps the longer-price acceptance fixture explicit and formatter-compatible", async () => {
+  const { api } = await setup("long-price");
+  const assignment = await api.assign(address);
+  const products = await api.products(assignment, { page: 1 });
+  expect(
+    products.data.find((product) => product.name === "Apples 01"),
+  ).toMatchObject({
+    sellingPriceMinor: 123450,
+    currency: "MYR",
+  });
+});
+
 it("assigns deterministic same and different outlets for address-transition acceptance", async () => {
   const { api } = await setup();
   const home = await api.assign(address);
@@ -268,6 +280,26 @@ it("provides empty, delivered, and receipt-ready order acceptance states", async
   );
   expect(pdf.type).toBe("application/pdf");
   expect(pdf.size).toBeGreaterThan(0);
+});
+
+it("provides explicit customer-stage and paginated order review fixtures", async () => {
+  const { adapter, orders } = await setup();
+  adapter.setOrderScenario("preparing" as never);
+  expect((await orders.list()).data[0].customerStage).toBe("PICK_AND_PACK");
+  adapter.setOrderScenario("out-for-delivery" as never);
+  expect((await orders.list()).data[0].customerStage).toBe("OUT_FOR_DELIVERY");
+  adapter.setOrderScenario("mixed" as never);
+  const mixed = await orders.list();
+  expect(mixed.data.map((order) => order.customerStage)).toEqual([
+    "ORDER_RECEIVED",
+    "DELIVERED",
+  ]);
+  adapter.setOrderScenario("multi-page" as never);
+  const first = await orders.list(1, 25);
+  const second = await orders.list(2, 25);
+  expect(first.meta.totalPages).toBe(2);
+  expect(first.data[0].customerStage).toBe("DELIVERED");
+  expect(second.data[0].customerStage).toBe("OUT_FOR_DELIVERY");
 });
 
 it("cancels through only the customer cancel command and retains zero browser Order creation", async () => {

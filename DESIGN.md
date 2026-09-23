@@ -1,11 +1,117 @@
+---
+version: alpha
+colors:
+  cks-primary: "#E52329"
+  cks-primary-hover: "#C91D23"
+  cks-primary-pressed: "#AB171C"
+  savt-reward: "#4CAF50"
+  savt-reward-dark: "#3F8E1E"
+  background: "#F8FAF6"
+  surface: "#FFFFFF"
+  border: "#E6ECE2"
+  text: "#111827"
+  text-muted: "#667083"
+  info: "#3B82F6"
+  warning: "#F59E0B"
+  error: "#EF4444"
+typography:
+  heading-large:
+    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "24px"
+    lineHeight: "32px"
+  heading:
+    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "20px"
+    lineHeight: "28px"
+  body:
+    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "14px"
+    lineHeight: "20px"
+rounded:
+  button: "14px"
+  card: "16px"
+  chip: "999px"
+  sheet: "20px"
+spacing:
+  xs: "4px"
+  sm: "8px"
+  md: "12px"
+  lg: "16px"
+  xl: "20px"
+  2xl: "24px"
+components:
+  primary-button:
+    backgroundColor: "#E52329"
+    textColor: "#FFFFFF"
+    borderRadius: "14px"
+  reward-chip:
+    backgroundColor: "#EEF8E8"
+    textColor: "#3F8E1E"
+    borderRadius: "999px"
+  app-shell:
+    backgroundColor: "#F8FAF6"
+    maxWidth: "430px"
+---
+
 # CKS GO customer catalogue, checkout and orders
 
-CUST01B through CUST03B extend the existing English-language, Malaysia-focused mobile grocery prototype. Preserve the existing green palette, Inter/system typography, rounded white cards and 430px shell. CUST03B adds backend-authoritative customer order history, detail, tracking, cancellation and receipt download after CUST03A payment finality. It does not add frontend Order creation, infer fulfilment state, or change the backend.
+## Overview
+
+CUST-FIGMA01 establishes a CKS-first retail foundation for the customer mini-app inside the Savt identity, rewards and payment ecosystem. The north star is the approved 390px Figma customer system: compact grocery utility, quiet warm-neutral surfaces, confident red commerce actions, and green used only when Savt reward or positive ecosystem meaning is earned. The interface must never read as a generic green fintech shell or as a desktop grocery marketplace stretched edge to edge.
+
+The product register leads: fast scanning, stable state rendering, accessible touch targets and backend-authoritative evidence outrank decorative novelty. The visual signature is the disciplined CKS-red action line running from product Add through checkout, payment, active navigation and order actions; everything around it stays restrained.
+
+Primary design authority: Figma file `ncty6c6YIPuFnHymP2nqos`. Node `25:55` (`Customer_Design_System_Board`) supplies tokens and component guidance; node `14:5` (`06_CKS_GO_Home__Serviceable_Frame`) supplies the canonical serviceable-home composition; page node `3:3` supplies Phase 1 screen context. The earlier file `UXedi4eBmFntqpwNzIAiXj` is secondary only and was not needed to resolve this foundation.
+
+Runtime ownership uses Model B: CSS custom properties in `src/styles.css` own accepted values; `tailwind.config.js` maps semantic aliases to those properties; this file mirrors values and explains intent. Shared components consume semantic roles, never independent copies.
+
+## Colors
+
+- CKS Red is the primary commerce/action role: Add to cart, checkout, payment, order actions, active customer navigation and cart emphasis.
+- Savt Green and Savt Green Dark are reserved for Savt Cash, rewards, savings, earned benefits and positive Savt ecosystem messages. Green is not the universal CTA color.
+- Background, surface, border, ink and muted text follow the Figma neutrals. Info, warning and error are semantic and always paired with copy/icon/shape, never color alone.
+- Error red and brand red have different roles even when visually related: destructive/error messaging uses the error token; ordinary safe commerce uses CKS primary.
+
+## Typography
+
+Inter is primary with the system stack as a metric-compatible fallback. Large headings are 24/32 bold, section headings 20/28 semibold, body 14/20 regular, and supporting/meta text 12/18. Buttons use 13/18 semibold. Feature files should consume the shared type scale instead of inventing sizes.
+
+## Layout
+
+The Figma reference is 390×844, but production is fluid from 320px upward. The application uses the full phone width, preserves one canonical content scroller, and applies safe-area insets to top chrome and bottom navigation. At tablet and desktop widths it remains intentionally mobile-app-like, centered within a maximum 430px shell instead of stretching product cards across the viewport. Page padding follows the 20–24px Figma rhythm.
+
+## Elevation & Depth
+
+Static surfaces use borders first. Product/address cards may use the Figma soft shadow `0 5px 14px rgb(16 24 40 / 7%)`; persistent navigation uses a restrained upward shadow. Heavy elevation and decorative glass effects are anti-references. Loading, empty and error swaps reserve compatible geometry.
+
+## Shapes
+
+Buttons/fields use 14px radii, cards 16px, chips/badges full pills, and sheets 20px. Important mobile controls target 48px height (44px minimum). Radius communicates component family rather than novelty; feature-specific arbitrary rounding is drift.
+
+## Components
+
+- Primary button: solid CKS Red with white text, stable disabled/loading geometry and a visible CKS focus ring.
+- Secondary button: white/light surface, semantic border and dark text. Tertiary actions are restrained text buttons.
+- Product card: bordered white card, reserved image geometry, 14px name, CKS-red price/action, and only contract-supported availability. Reward chips appear only when reward data exists.
+- Search/input/textarea: white surface, semantic border, 14px radius, labelled control, visible focus and an app-owned clear action for search. Textareas do not expose manual resize.
+- Bottom navigation: Home, Categories, Cart and Orders only. Active commerce navigation uses CKS Red. Account is hidden until a supported route exists.
+- Loading/empty/error: shared stable-footprint components with human-readable copy and safe recovery. Raw backend codes never render.
+- Quantity sheet: native accessible dialog foundation, viewport-bounded with safe-area padding. Quantity controls are pill-shaped with named increment/decrement buttons.
+
+## Do's and Don'ts
+
+- Do keep session, catalogue, cart, quote, payment, order, receipt and bridge authority in their existing controllers/contracts.
+- Do use CKS red for commerce and Savt green for rewards/success.
+- Do verify at 390×844, 430×932, 768×1024 and 1280×900.
+- Don't add unsupported routes/statuses or infer business state from Figma.
+- Don't paste Figma absolute positioning, hide scrollbars, persist customer context, or invent logo assets.
+
+CUST01B through CUST03B extend the existing English-language, Malaysia-focused mobile grocery prototype. CUST-FIGMA01 supersedes the former universal green action palette with the approved CKS-first semantic split while preserving Inter/system typography, rounded white cards and the 430px shell. CUST03B adds backend-authoritative customer order history, detail, tracking, cancellation and receipt download after CUST03A payment finality. It does not add frontend Order creation, infer fulfilment state, or change the backend.
 
 ## Runtime owners
 
-- Existing visual tokens: `tailwind.config.js`, `src/styles.css`.
-- Customer feature styles: `src/customer/customer.css`; white/surface cards, slate borders, green actions. The darker green on new buttons provides readable white button text.
+- Existing visual tokens: CSS variables in `src/styles.css` are canonical; `tailwind.config.js` is the semantic adapter.
+- Customer feature styles: `src/customer/customer.css`; white/surface cards, semantic borders, CKS-red commerce actions and Savt-green reward/success treatments.
 - Customer forms: `src/addresses/AddressForm.tsx`; 16px inputs and 44px action targets.
 - Lifecycle and feedback: `src/customer/state.ts`, `errors.ts`, `components.tsx`.
 - Session authority: existing `src/session/controller.ts`; its credential callback is infrastructure-only.
@@ -17,7 +123,7 @@ Profile and address requests follow the CKS integration checkout DTOs and routes
 
 ## CUST02B catalogue binding
 
-The frozen `CUST02A-CP0-R2-assignment-context.md` is authoritative (SHA-256 `d662cca7e63d35fcadc8bd821710d8b769c71ac94408f952abc00822cde767f3`). Its approved data/copy adaptation preserves the existing English Malaysia grocery visual direction: green surfaces, Inter/system text, rounded white cards, 430px shell, category strip and two-column product grid.
+The frozen `CUST02A-CP0-R2-assignment-context.md` is authoritative (SHA-256 `d662cca7e63d35fcadc8bd821710d8b769c71ac94408f952abc00822cde767f3`). Its data and lifecycle boundaries remain authoritative, while CUST-FIGMA01 supersedes its historical universal-green and two-column presentation with the CKS-red action hierarchy, Inter/system text, rounded white cards, 430px shell, category tiles and compact serviceable-home product list approved in Figma.
 
 Runtime owners: `src/catalogue/contracts.ts` (closed wire projections), `api.ts` (credentialed requests), `state.ts` (memory and generation boundaries), `context.tsx` (read-only customer/session subscriptions), `components.tsx` and `catalogue.css` (presentation). Existing `CheckoutAddress` has a catalogue copy variant and continues to use the original selection controller. Address mutations, session and bridge protocols are unchanged.
 

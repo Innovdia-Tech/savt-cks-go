@@ -69,16 +69,16 @@ export function CustomerSessionBoundary({
   const requestId = "requestId" in state ? state.requestId : undefined;
 
   return (
-    <main className="grid min-h-dvh place-items-center bg-[#EAF2ED] px-5 text-savt-ink">
+    <main className="grid min-h-dvh place-items-center bg-app-background px-5 text-savt-ink">
       <section className="w-full max-w-[390px] rounded-[32px] border border-white/80 bg-white p-7 text-center shadow-lift">
         <div
           className={`mx-auto grid h-16 w-16 place-items-center rounded-[24px] ${
-            loading ? "bg-savt-light" : "bg-slate-100"
+            loading ? "bg-cks-soft text-cks-primary" : "bg-slate-100"
           }`}
           aria-hidden="true"
         >
           {loading ? (
-            <span className="h-7 w-7 animate-spin rounded-full border-[3px] border-emerald-200 border-t-savt-green" />
+            <span className="h-7 w-7 animate-spin rounded-full border-[3px] border-red-100 border-t-cks-primary" />
           ) : (
             <span className="text-2xl">!</span>
           )}
@@ -98,7 +98,7 @@ export function CustomerSessionBoundary({
           <button
             type="button"
             onClick={() => void controller.retry()}
-            className="mt-6 min-h-12 w-full rounded-[18px] bg-savt-green px-5 text-sm font-black text-white shadow-button"
+            className="mt-6 min-h-12 w-full rounded-control bg-cks-primary px-5 text-sm font-black text-white shadow-button"
           >
             Try again
           </button>

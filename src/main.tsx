@@ -126,7 +126,7 @@ async function start() {
     );
   } catch {
     root.render(
-      <main className="grid min-h-dvh place-items-center bg-[#EAF2ED] px-5 text-center">
+      <main className="grid min-h-dvh place-items-center bg-app-background px-5 text-center">
         <section className="max-w-sm rounded-[32px] bg-white p-7 shadow-lift">
           <h1 className="text-2xl font-black text-slate-950">
             Unable to open CKS Go

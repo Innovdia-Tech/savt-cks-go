@@ -60,13 +60,24 @@ describe("real cart and trusted quote presentation", () => {
         state: base,
         controller,
         onBrowse: () => {},
+        deliveryAddress: "1 Example Street, Demo City, Sabah",
+        onChangeAddress: () => {},
       } as never),
     );
     expect(html).toContain("Rice");
-    expect(html).toContain("Displayed subtotal");
+    expect(html).toContain("Estimated subtotal");
     expect(html).toMatch(/(?:RM|MYR).*9\.00/);
-    expect(html).toContain("Get trusted quote");
+    expect(html).toContain("Review order");
+    expect(html).toContain("Delivery address");
+    expect(html).toContain("1 Example Street, Demo City, Sabah");
+    expect(html).toContain("Change address");
+    expect(html).toContain("Demo outlet");
+    expect(html).toContain("Line subtotal");
     expect(html).toContain("Remove Rice");
+    expect(html).toContain('role="group"');
+    expect(html).toContain('aria-label="Quantity for Rice"');
+    expect(html).not.toContain("Your basket");
+    expect(html).not.toContain(">Your cart<");
     expect(html).not.toMatch(
       /<(?:button|a)[^>]*>[^<]*(?:pay|confirm order|tracking)/i,
     );
@@ -82,19 +93,21 @@ describe("real cart and trusted quote presentation", () => {
       } as never),
     );
     for (const text of [
-      "Trusted quote",
-      "Quote ID",
+      "Review your order",
       "Rice",
       "Merchandise subtotal",
       "Delivery fee",
       "Processing fee",
       "Grand total",
-      "Estimated total time",
+      "Estimated delivery",
       "Expires",
       "Home",
       "Demo outlet",
     ])
       expect(html).toContain(text);
+    expect(html).not.toContain("Quote ID");
+    expect(html).not.toContain(id("b"));
+    expect(html).not.toContain(id("a"));
     expect(html).not.toContain("memory-only-quote-token");
     expect(html).not.toMatch(
       /<(?:button|a)[^>]*>[^<]*(?:pay|confirm order|tracking)/i,
@@ -126,7 +139,7 @@ describe("real cart and trusted quote presentation", () => {
         onBrowse: () => {},
       } as never),
     );
-    expect(ready).toContain("Proceed to payment");
+    expect(ready).toMatch(/Pay (?:RM|MYR).*14\.32/);
     expect(ready).not.toContain("memory-only-quote-token");
 
     const frozen = renderToStaticMarkup(
