@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { CustomerOrderStage } from "../orders/contracts";
+import { SearchIcon } from "./Icons";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "tertiary";
@@ -121,6 +122,9 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
       <>
         <label htmlFor={id}>{label}</label>
         <div className="ui-search-field__control">
+          <span className="ui-search-field__icon" aria-hidden="true">
+            <SearchIcon />
+          </span>
           <input
             {...props}
             id={id}

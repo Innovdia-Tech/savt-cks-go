@@ -18,6 +18,22 @@ import {
   StatusBadge,
   SystemState,
 } from "../components/ui";
+import { BagIcon, FruitIcon, GridIcon, PantryIcon } from "../components/Icons";
+import {
+  AdvertisingCarousel,
+  filterRenderableSlides,
+  isSupportedAdvertisingTarget,
+  shouldAutoAdvance,
+  type AdvertisingSlide,
+} from "./AdvertisingCarousel";
+import type { DevelopmentAdvertisingScenario } from "./development-advertising";
+
+export {
+  AdvertisingCarousel,
+  filterRenderableSlides,
+  isSupportedAdvertisingTarget,
+  shouldAutoAdvance,
+};
 export const money = (minor: number) =>
   new Intl.NumberFormat("en-MY", { style: "currency", currency: "MYR" }).format(
     minor / 100,
@@ -43,9 +59,7 @@ export function ProductImage({
         />
       ) : (
         <span role="img" aria-label={`Image unavailable for ${name}`}>
-          <span aria-hidden="true" className="catalogue-image-symbol">
-            ▧
-          </span>
+          <BagIcon className="catalogue-image-symbol" />
           <span>Image unavailable</span>
         </span>
       )}
@@ -75,17 +89,27 @@ export function ProductTile({
         aria-label={`View ${product.name}`}
       >
         <ProductImage url={product.imageUrl} name={product.name} />
-        <span className="catalogue-name">{product.name}</span>
+        <span className="catalogue-name line-clamp-2">{product.name}</span>
         <span className="catalogue-unit">
           {product.packSize || product.uom.name}
         </span>
+        {variant === "list" && (
+          <span className="catalogue-price-row">
+            <strong className="catalogue-price">
+              {money(product.sellingPriceMinor)}
+            </strong>
+            <StatusBadge status={product.availability} />
+          </span>
+        )}
       </button>
-      <div className="catalogue-price-row">
-        <strong className="catalogue-price">
-          {money(product.sellingPriceMinor)}
-        </strong>
-        <StatusBadge status={product.availability} />
-      </div>
+      {variant === "grid" && (
+        <div className="catalogue-price-row">
+          <strong className="catalogue-price">
+            {money(product.sellingPriceMinor)}
+          </strong>
+          <StatusBadge status={product.availability} />
+        </div>
+      )}
       <Button
         className="catalogue-add"
         disabled={!canAdd}
@@ -108,14 +132,25 @@ export function ProductTile({
     </article>
   );
 }
+
+export function CategoryArtwork({ name }: { name?: string }) {
+  const normalized = name?.trim().toLowerCase();
+  const Icon =
+    normalized === "pantry"
+      ? PantryIcon
+      : normalized === "fresh food"
+        ? FruitIcon
+        : GridIcon;
+  return <Icon className="catalogue-category-icon" />;
+}
 const errors: Record<string, [string, string]> = {
   CUSTOMER_NO_SERVICEABLE_OUTLET: [
-    "No serviceable outlet",
-    "We cannot serve this address right now. Try another saved address.",
+    "Delivery unavailable",
+    "Delivery is not available for this address.",
   ],
   CUSTOMER_ASSIGNMENT_INCOMPLETE: [
-    "Assignment could not be completed",
-    "The route provider is unavailable. Try again later.",
+    "Delivery availability unavailable",
+    "We couldn't check delivery availability. Please try again.",
   ],
   CUSTOMER_ASSIGNMENT_CONTEXT_UNAVAILABLE: [
     "Browsing is temporarily unavailable",
@@ -158,12 +193,12 @@ const errors: Record<string, [string, string]> = {
     "This product is no longer available to browse. Return to products.",
   ],
   NETWORK_ERROR: [
-    "You appear to be offline",
-    "Check your connection and try again.",
+    "Delivery availability unavailable",
+    "We couldn't check delivery availability. Please try again.",
   ],
   REQUEST_TIMEOUT: [
-    "Request timed out",
-    "Check your connection and try again.",
+    "Delivery availability unavailable",
+    "We couldn't check delivery availability. Please try again.",
   ],
   INVALID_RESPONSE: [
     "Catalogue response unavailable",
@@ -181,11 +216,13 @@ const errors: Record<string, [string, string]> = {
 export function CatalogueStatus({
   phase,
   error,
+  hasAssignment = false,
   onRetry,
   onManage,
 }: {
   phase: CatalogueState["phase"];
   error: string | null;
+  hasAssignment?: boolean;
   onRetry: () => void;
   onManage: () => void;
 }) {
@@ -207,21 +244,30 @@ export function CatalogueStatus({
       "Edit your saved address and add its coordinates.",
     ],
     "assignment-loading": [
-      "Finding your assigned outlet",
-      "Checking service for this address.",
+      "Checking delivery availability…",
+      "We'll show this outlet's groceries when the check is complete.",
     ],
     loading: ["Loading catalogue", "Fetching the latest products."],
     "session-expired": errors.CUSTOMER_SESSION_INVALID,
     expired: errors.CUSTOMER_ASSIGNMENT_CONTEXT_EXPIRED,
   };
-  const [title, description] = phases[phase] ??
+  const productConnectivityError =
+    hasAssignment && ["NETWORK_ERROR", "REQUEST_TIMEOUT"].includes(error ?? "")
+      ? [
+          "Catalogue temporarily unavailable",
+          "We couldn't load the catalogue. Please try again.",
+        ]
+      : undefined;
+  const [title, description] = productConnectivityError ??
+    phases[phase] ??
     errors[error ?? ""] ?? ["Catalogue unavailable", "Please try again later."];
   const busy = ["address-loading", "assignment-loading", "loading"].includes(
     phase,
   );
   const addressAction =
     ["no-address", "coordinates", "address-error"].includes(phase) ||
-    error?.startsWith("CUSTOMER_ADDRESS_");
+    error?.startsWith("CUSTOMER_ADDRESS_") ||
+    error === "CUSTOMER_NO_SERVICEABLE_OUTLET";
   return (
     <SystemState
       tone={busy ? "loading" : "error"}
@@ -231,7 +277,9 @@ export function CatalogueStatus({
       actionLabel={
         !busy && phase !== "session-expired"
           ? addressAction
-            ? "Manage addresses"
+            ? error === "CUSTOMER_NO_SERVICEABLE_OUTLET"
+              ? "Change address"
+              : "Manage addresses"
             : "Try again"
           : undefined
       }
@@ -280,6 +328,11 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
   const [route, setRoute] = useState(readRoute);
   const [query, setQuery] = useState(state.q);
   const [composing, setComposing] = useState(false);
+  const [advertisingScenario, setAdvertisingScenario] =
+    useState<DevelopmentAdvertisingScenario>("multiple");
+  const [advertisingSlides, setAdvertisingSlides] = useState<
+    AdvertisingSlide[]
+  >([]);
   const heading = useRef<HTMLHeadingElement>(null),
     search = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -312,10 +365,25 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
     state.assignment?.addressRowVersion,
   ]);
   useEffect(() => {
-    if (route !== "home" || (!state.q && !state.categoryId)) return;
-    setQuery("");
-    void controller.resetFilters();
-  }, [route, state.q, state.categoryId, controller]);
+    if (route !== "home" || !state.categoryId) return;
+    void controller.category();
+  }, [route, state.categoryId, controller]);
+  useEffect(() => {
+    let current = true;
+    if (!import.meta.env.DEV || !controls) {
+      setAdvertisingSlides([]);
+      return;
+    }
+    void import("./development-advertising").then((development) => {
+      if (current)
+        setAdvertisingSlides(
+          development.developmentAdvertisingSlides(advertisingScenario),
+        );
+    });
+    return () => {
+      current = false;
+    };
+  }, [advertisingScenario, controls]);
   const detailId = route.startsWith("detail/") ? route.slice(7) : undefined;
   const orderDetailId = route.startsWith("order/") ? route.slice(6) : undefined;
   useEffect(() => {
@@ -423,12 +491,6 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                 Your account is read-only. Products cannot be ordered.
               </p>
             )}
-            {route === "home" && state.phase === "ready" && (
-              <section className="catalogue-trust-banner">
-                <strong>Shop with trusted totals</strong>
-                <span>Prices and stock are confirmed before payment.</span>
-              </section>
-            )}
             {route === "cart" ? (
               <CartScreen
                 state={checkout.state}
@@ -454,7 +516,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
               />
             ) : (
               <>
-                {route === "categories" && (
+                {browse && (
                   <SearchField
                     className="catalogue-search"
                     id="catalogue-search"
@@ -462,7 +524,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                     label="Search products"
                     maxLength={200}
                     value={query}
-                    placeholder="Search this outlet"
+                    placeholder="Search products"
                     onCompositionStart={() => setComposing(true)}
                     onCompositionEnd={() => setComposing(false)}
                     onChange={(e) => setQuery(e.target.value)}
@@ -477,19 +539,25 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                     }}
                   />
                 )}
+                {route === "home" && state.phase === "ready" && (
+                  <AdvertisingCarousel
+                    slides={advertisingSlides}
+                    onNavigate={(target) => navigate(target)}
+                  />
+                )}
                 {route === "home" && state.categories.length > 0 && (
                   <section
                     className="catalogue-home-categories"
                     aria-labelledby="home-categories-title"
                   >
                     <div className="catalogue-section-heading">
-                      <h2 id="home-categories-title">Categories</h2>
+                      <h2 id="home-categories-title">Shop by category</h2>
                       <button
                         type="button"
                         className="catalogue-link"
                         onClick={() => navigate("categories")}
                       >
-                        View all
+                        View all categories
                       </button>
                     </div>
                     <div className="catalogue-category-tiles">
@@ -500,7 +568,9 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                           navigate("categories");
                         }}
                       >
-                        <span aria-hidden="true">⌂</span>
+                        <span aria-hidden="true">
+                          <CategoryArtwork />
+                        </span>
                         <span>All</span>
                       </button>
                       {state.categories.slice(0, 4).map((category) => (
@@ -512,7 +582,9 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                             navigate("categories");
                           }}
                         >
-                          <span aria-hidden="true">◇</span>
+                          <span aria-hidden="true">
+                            <CategoryArtwork name={category.name} />
+                          </span>
                           <span>{category.name}</span>
                         </button>
                       ))}
@@ -569,6 +641,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                   <CatalogueStatus
                     phase={state.phase}
                     error={state.error}
+                    hasAssignment={Boolean(state.assignment)}
                     onRetry={() => void controller.retry()}
                     onManage={() => navigate("profile")}
                   />
@@ -640,12 +713,9 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                       <div>
                         <h2>
                           {route === "home"
-                            ? "Products from this outlet"
+                            ? "Shop groceries"
                             : "Browse products"}
                         </h2>
-                        <p className="catalogue-caption">
-                          Displayed prices are confirmed by a trusted quote.
-                        </p>
                       </div>
                       {route === "home" && (
                         <button
@@ -653,7 +723,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                           className="catalogue-link"
                           onClick={() => navigate("categories")}
                         >
-                          View all
+                          View all products
                         </button>
                       )}
                     </div>
@@ -733,7 +803,34 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                   </>
                 )}
                 {controls && (
-                  <div className="catalogue-dev-tools">{controls}</div>
+                  <div className="catalogue-dev-tools">
+                    {controls}
+                    <details className="catalogue-dev">
+                      <summary>Advertising carousel preview</summary>
+                      <label htmlFor="advertising-scenario">
+                        Carousel state
+                      </label>
+                      <select
+                        id="advertising-scenario"
+                        value={advertisingScenario}
+                        onChange={(event) =>
+                          setAdvertisingScenario(
+                            event.target
+                              .value as DevelopmentAdvertisingScenario,
+                          )
+                        }
+                      >
+                        <option value="multiple">Multiple banners</option>
+                        <option value="single">One banner</option>
+                        <option value="zero">Zero banners</option>
+                        <option value="failed-creative">Failed creative</option>
+                      </select>
+                      <p>
+                        Development-only previews. Production stays empty until
+                        a compatible customer merchandising feed is connected.
+                      </p>
+                    </details>
+                  </div>
                 )}
               </>
             )}

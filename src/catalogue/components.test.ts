@@ -65,7 +65,66 @@ it("supports the compact Figma-derived home list-card composition", () => {
   expect(html).toContain("catalogue-tile--list");
   expect(html).toContain('aria-label="Add Rice to cart"');
   expect(html).toContain('aria-hidden="true">+</span>');
+  expect(html).toContain("line-clamp-2");
+  expect(html).toContain("1 kg");
   expect(html).not.toMatch(/points|free delivery|popular/i);
+});
+
+it("uses the reviewer-approved Home serviceability copy", () => {
+  const unavailable = renderToStaticMarkup(
+    createElement(CatalogueStatus, {
+      phase: "error",
+      error: "CUSTOMER_NO_SERVICEABLE_OUTLET",
+      onRetry: () => {},
+      onManage: () => {},
+    }),
+  );
+  const failed = renderToStaticMarkup(
+    createElement(CatalogueStatus, {
+      phase: "error",
+      error: "NETWORK_ERROR",
+      onRetry: () => {},
+      onManage: () => {},
+    }),
+  );
+
+  expect(unavailable).toContain("Delivery is not available for this address.");
+  expect(unavailable).toContain("Change address");
+  expect(failed).toContain(
+    "We couldn&#x27;t check delivery availability. Please try again.",
+  );
+  expect(failed).toContain("Try again");
+});
+
+it("uses catalogue-specific connectivity copy after assignment succeeds", () => {
+  const html = renderToStaticMarkup(
+    createElement(CatalogueStatus, {
+      phase: "error",
+      error: "NETWORK_ERROR",
+      hasAssignment: true,
+      onRetry: () => {},
+      onManage: () => {},
+    }),
+  );
+
+  expect(html).toContain("Catalogue temporarily unavailable");
+  expect(html).toContain(
+    "We couldn&#x27;t load the catalogue. Please try again.",
+  );
+  expect(html).not.toContain("check delivery availability");
+});
+
+it("renders vector category artwork without placeholder glyphs", async () => {
+  const catalogue =
+    (await import("./components")) as typeof import("./components") & {
+      CategoryArtwork?: (props: { name?: string }) => React.ReactNode;
+    };
+  expect(catalogue.CategoryArtwork).toBeTypeOf("function");
+  const html = renderToStaticMarkup(
+    createElement(catalogue.CategoryArtwork!, { name: "Pantry" }),
+  );
+  expect(html).toContain("<svg");
+  expect(html).not.toMatch(/[◇⌂]/);
 });
 it("uses approved returned image URLs without inventing sources", () => {
   const html = renderToStaticMarkup(

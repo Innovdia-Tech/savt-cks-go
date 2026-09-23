@@ -79,16 +79,23 @@ function DeliveryHeader({
     <header className="app-header">
       <HeaderActions home={home} onLogout={onLogout} />
       <DeliveryAddressLink onManage={onManage} />
-      {outlet && (
-        <div className="app-header__outlet">
-          <div>
-            <span>Delivering from</span>
-            <strong>{outlet.displayName}</strong>
-          </div>
-          <p>{outlet.displayReference} · Assigned for this address</p>
-        </div>
-      )}
+      {outlet && <DeliveryAvailabilityPanel outlet={outlet} />}
     </header>
+  );
+}
+
+export function DeliveryAvailabilityPanel({ outlet }: { outlet: Outlet }) {
+  return (
+    <div className="app-header__outlet" role="status">
+      <span className="app-header__outlet-icon" aria-hidden="true">
+        <TruckIcon className="h-5 w-5" />
+      </span>
+      <div>
+        <strong>Delivery available</strong>
+        <span>From {outlet.displayName}</span>
+        <small>{outlet.displayReference}</small>
+      </div>
+    </div>
   );
 }
 

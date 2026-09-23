@@ -47,4 +47,36 @@ describe("HeaderActions", () => {
     expect(html).toContain("Exit");
     expect(html).not.toContain("app-header__brand");
   });
+
+  it("presents outlet assignment as compact delivery availability", async () => {
+    const layout = (await import("./Layout")) as typeof import("./Layout") & {
+      DeliveryAvailabilityPanel?: React.ComponentType<{
+        outlet: {
+          id: string;
+          displayReference: string;
+          displayName: string;
+          status: "ACTIVE";
+          operatingState: "ONLINE";
+          availability: "AVAILABLE";
+        };
+      }>;
+    };
+    expect(layout.DeliveryAvailabilityPanel).toBeTypeOf("function");
+    const html = renderToStaticMarkup(
+      createElement(layout.DeliveryAvailabilityPanel!, {
+        outlet: {
+          id: "00000000-0000-4000-8000-000000000001",
+          displayReference: "DEMO-01",
+          displayName: "Demo neighbourhood outlet",
+          status: "ACTIVE",
+          operatingState: "ONLINE",
+          availability: "AVAILABLE",
+        },
+      }),
+    );
+
+    expect(html).toContain("Delivery available");
+    expect(html).toContain("From Demo neighbourhood outlet");
+    expect(html).not.toContain("Assigned for this address");
+  });
 });

@@ -134,6 +134,7 @@ export function CustomerProfileScreen() {
     state.listPhase !== "ready" ||
     state.profilePhase !== "ready" ||
     state.error?.category === "conflict";
+  const selectedAddressId = controller.selectedAddress()?.id;
   const done = () => {
     setDirty(false);
     setEditing(null);
@@ -213,7 +214,15 @@ export function CustomerProfileScreen() {
               {state.addresses
                 .filter((a) => a.status === status)
                 .map((address) => (
-                  <article key={address.id} className="customer-card">
+                  <article
+                    key={address.id}
+                    className={`customer-card ${selectedAddressId === address.id ? "customer-card--selected" : ""}`.trim()}
+                  >
+                    {selectedAddressId === address.id && (
+                      <span className="customer-selected-address">
+                        Selected for delivery
+                      </span>
+                    )}
                     <AddressText address={address} />
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button
@@ -354,7 +363,7 @@ export function CheckoutAddress({
   const selected = controller.selectedAddress();
   return (
     <section className="customer-surface customer-card space-y-3">
-      <h2 className="font-black">Delivery address</h2>
+      <h2 className="font-black">Deliver to</h2>
       {state.listPhase === "loading" ? (
         <p role="status">Loading saved addresses…</p>
       ) : state.listPhase === "error" ? (
@@ -362,7 +371,7 @@ export function CheckoutAddress({
       ) : selected ? (
         <>
           <label htmlFor="checkout-address" className="block text-sm font-bold">
-            Choose an active address
+            Change selected address
           </label>
           <select
             id="checkout-address"
@@ -404,8 +413,8 @@ export function CheckoutAddress({
       )}
       <p className="text-xs text-slate-500">
         {catalogue
-          ? "Your outlet is assigned automatically for the selected address."
-          : "Your selected address determines the assigned outlet. A trusted quote confirms prices, stock, fees and timing before any future payment step."}
+          ? "Delivery availability is checked automatically for this address."
+          : "This address is used for delivery."}
       </p>
     </section>
   );
@@ -414,14 +423,21 @@ export function DeliveryAddressLink({ onManage }: { onManage: () => void }) {
   const { state, controller } = useCustomer();
   const a = controller.selectedAddress();
   return (
-    <button className="delivery-address-link" onClick={onManage}>
-      <span>Delivering to</span>
+    <button
+      className="delivery-address-link"
+      onClick={onManage}
+      aria-label="Change delivery address"
+    >
+      <span className="delivery-address-link__heading">
+        <span>Deliver to</span>
+        <span>Change</span>
+      </span>
       <strong>
         {state.listPhase === "loading"
           ? "Loading delivery address…"
           : a
             ? [a.addressLine1, a.city, a.state].filter(Boolean).join(", ")
-            : "Profile & saved addresses"}
+            : "Add a delivery address"}
       </strong>
     </button>
   );

@@ -274,41 +274,53 @@ a[href] {
 
   .app-header__outlet {
     margin-top: var(--space-3);
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 9.375rem;
+    display: flex;
     align-items: center;
     gap: var(--space-3);
     border: 1px solid #d9ead4;
     border-radius: var(--radius-card);
     color: var(--color-savt-reward-dark);
     background: var(--color-savt-reward-soft);
-    padding: var(--space-3) var(--space-5);
+    padding: var(--space-3) var(--space-4);
   }
 
   .app-header__outlet div {
     display: grid;
+    min-width: 0;
+    gap: 0.125rem;
   }
 
-  .app-header__outlet span,
+  .app-header__outlet-icon {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: var(--radius-chip);
+    color: var(--color-success);
+    background: var(--color-surface);
+  }
+
   .app-header__outlet strong {
     line-height: 1.2;
   }
 
-  .app-header__outlet span {
-    font-size: var(--text-meta);
+  .app-header__outlet strong {
+    font-size: var(--text-body);
     font-weight: 800;
   }
 
-  .app-header__outlet strong {
+  .app-header__outlet div > span {
     overflow-wrap: anywhere;
-    font-size: 0.875rem;
+    color: var(--color-text);
+    font-size: var(--text-meta);
+    line-height: var(--leading-meta);
   }
 
-  .app-header__outlet p {
-    margin: 0;
+  .app-header__outlet small {
     color: var(--color-text-muted);
     font-size: 0.6875rem;
-    line-height: 1.35;
+    line-height: 1rem;
   }
 
   .bottom-navigation {
@@ -512,6 +524,7 @@ a[href] {
   }
 
   .ui-search-field__control {
+    position: relative;
     display: flex;
     min-height: 3rem;
     align-items: center;
@@ -526,7 +539,19 @@ a[href] {
     border-radius: var(--radius-button);
     color: var(--color-text);
     background: var(--color-surface);
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+  }
+
+  .ui-search-field__icon {
+    position: absolute;
+    z-index: 1;
+    left: 0.875rem;
+    display: grid;
+    width: 1.25rem;
+    height: 1.25rem;
+    place-items: center;
+    color: var(--color-text-muted);
+    pointer-events: none;
   }
 
   .ui-system-state {

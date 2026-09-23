@@ -62,6 +62,7 @@ describe("customer presentation", () => {
       "Add address",
     ])
       expect(html).toContain(text);
+    expect(html).toContain("Selected for delivery");
   });
   it("shows an actionable no-address checkout state", async () => {
     const html = await render("empty", CheckoutAddress);
@@ -70,6 +71,8 @@ describe("customer presentation", () => {
   });
   it("checkout displays only active saved addresses", async () => {
     const html = await render("mixed", CheckoutAddress);
+    expect(html).toContain("Deliver to");
+    expect(html).toContain("Change selected address");
     expect(html).toContain("Demo home");
     expect(html).toContain("Demo flat");
     expect(html).toContain("Demo suburb");
