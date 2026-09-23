@@ -235,7 +235,7 @@ a[href] {
     gap: var(--space-3);
   }
 
-  .app-header__home-actions {
+  .app-header__shopping-actions {
     position: absolute;
     top: calc(var(--space-3) + var(--safe-area-top));
     right: var(--space-3);
@@ -246,11 +246,11 @@ a[href] {
     pointer-events: none;
   }
 
-  .app-header__home-actions > * {
+  .app-header__shopping-actions > * {
     pointer-events: auto;
   }
 
-  .app-header__home-actions + .delivery-address-link {
+  .app-header__shopping-actions + .delivery-address-link {
     padding-right: 3rem;
     padding-left: 3rem;
   }
@@ -272,102 +272,12 @@ a[href] {
     font-weight: 800;
   }
 
-  .app-header__outlet {
-    margin-top: var(--space-3);
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    border: 1px solid #d9ead4;
-    border-radius: var(--radius-card);
-    color: var(--color-savt-reward-dark);
-    background: var(--color-savt-reward-soft);
-    padding: var(--space-3) var(--space-4);
-  }
-
-  .app-header__outlet div {
-    display: grid;
-    min-width: 0;
-    gap: 0.125rem;
-  }
-
-  .app-header__outlet-icon {
-    display: grid;
-    width: 2.5rem;
-    height: 2.5rem;
-    flex: 0 0 auto;
-    place-items: center;
-    border-radius: var(--radius-chip);
-    color: var(--color-success);
-    background: var(--color-surface);
-  }
-
-  .app-header__outlet strong {
-    line-height: 1.2;
-  }
-
-  .app-header__outlet strong {
-    font-size: var(--text-body);
-    font-weight: 800;
-  }
-
-  .app-header__outlet div > span {
+  .app-header__outlet-line {
+    margin: var(--space-1) 3rem 0;
     overflow-wrap: anywhere;
-    color: var(--color-text);
+    color: var(--color-text-muted);
     font-size: var(--text-meta);
     line-height: var(--leading-meta);
-  }
-
-  .app-header__outlet small {
-    color: var(--color-text-muted);
-    font-size: 0.6875rem;
-    line-height: 1rem;
-  }
-
-  .app-header__outlet--quiet {
-    margin-top: var(--space-2);
-    gap: var(--space-2);
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    padding: var(--space-1) 0 0;
-  }
-
-  .app-header__outlet--quiet .app-header__outlet-icon {
-    width: 2rem;
-    height: 2rem;
-    background: var(--color-savt-reward-soft);
-  }
-
-  .app-header__outlet--quiet div {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: baseline;
-    column-gap: 0.3rem;
-  }
-
-  .app-header__outlet--quiet div > span::before {
-    content: "· ";
-  }
-
-  @media (max-width: 340px) {
-    .app-header__outlet--quiet {
-      align-items: flex-start;
-    }
-
-    .app-header__outlet--quiet div {
-      width: 100%;
-      grid-template-columns: minmax(0, 1fr);
-      align-items: start;
-      row-gap: 0.125rem;
-    }
-
-    .app-header__outlet--quiet div > span::before {
-      content: "";
-    }
-
-    .app-header__outlet--quiet .app-header__outlet-name {
-      overflow-wrap: normal;
-      word-break: normal;
-    }
   }
 
   .app-header--transaction,

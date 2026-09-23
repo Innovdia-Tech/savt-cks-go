@@ -37,20 +37,20 @@ describe("BottomNavigation", () => {
 });
 
 describe("HeaderActions", () => {
-  it("keeps compact Savt return and exit controls available on Home", () => {
+  it("keeps compact Savt return and close controls consistent while shopping", () => {
     const html = renderToStaticMarkup(
-      createElement(HeaderActions, { home: true, onLogout: () => {} }),
+      createElement(HeaderActions, { shopping: true, onLogout: () => {} }),
     );
 
     expect(html).toContain('aria-label="Back to Savt"');
-    expect(html).toContain('aria-label="Log out of CKS Go"');
-    expect(html).toContain("Exit");
+    expect(html).toContain('aria-label="Close CKS Go"');
+    expect(html).toContain("Close");
     expect(html).not.toContain("app-header__brand");
   });
 
-  it("presents outlet assignment as compact delivery availability", async () => {
+  it("presents the valid outlet assignment as quiet informational text", async () => {
     const layout = (await import("./Layout")) as typeof import("./Layout") & {
-      DeliveryAvailabilityPanel?: React.ComponentType<{
+      AssignedOutletLine?: React.ComponentType<{
         outlet: {
           id: string;
           displayReference: string;
@@ -61,9 +61,9 @@ describe("HeaderActions", () => {
         };
       }>;
     };
-    expect(layout.DeliveryAvailabilityPanel).toBeTypeOf("function");
+    expect(layout.AssignedOutletLine).toBeTypeOf("function");
     const html = renderToStaticMarkup(
-      createElement(layout.DeliveryAvailabilityPanel!, {
+      createElement(layout.AssignedOutletLine!, {
         outlet: {
           id: "00000000-0000-4000-8000-000000000001",
           displayReference: "DEMO-01",
@@ -75,9 +75,11 @@ describe("HeaderActions", () => {
       }),
     );
 
-    expect(html).toContain("Delivery available");
     expect(html).toContain("From Demo neighbourhood outlet");
-    expect(html).not.toContain("Assigned for this address");
+    expect(html).toContain('role="status"');
+    expect(html).not.toContain("Delivery available");
+    expect(html).not.toContain("DEMO-01");
+    expect(html).not.toContain("app-header__outlet-icon");
   });
 
   it("keeps shopping context on browse screens and removes it from orders", async () => {
@@ -123,13 +125,14 @@ describe("HeaderActions", () => {
     );
 
     expect(browse).toContain("Selected address");
-    expect(browse).toContain("Delivery available");
-    expect(browse).toContain("app-header__outlet--quiet");
-    expect(browse).toContain("app-header__outlet-availability");
-    expect(browse).toContain("app-header__outlet-name");
-    expect(browse).toContain("app-header__outlet-reference");
+    expect(browse).toContain("From Demo neighbourhood outlet");
+    expect(browse).toContain('aria-label="Close CKS Go"');
+    expect(browse).not.toContain("Delivery available");
+    expect(browse).not.toContain("DEMO-01");
+    expect(browse).not.toContain("app-header__brand");
     expect(orders).not.toContain("Selected address");
-    expect(orders).not.toContain("Delivery available");
+    expect(orders).not.toContain("Demo neighbourhood outlet");
     expect(orders).toContain("app-header__brand");
+    expect(orders).toContain('aria-label="Log out of CKS Go"');
   });
 });

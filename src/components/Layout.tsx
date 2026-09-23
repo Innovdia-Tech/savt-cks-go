@@ -97,65 +97,48 @@ export function DeliveryHeader({
   const shoppingContext = context === "home" || context === "browse";
   return (
     <header className={`app-header app-header--${context}`}>
-      <HeaderActions home={context === "home"} onLogout={onLogout} />
+      <HeaderActions shopping={shoppingContext} onLogout={onLogout} />
       {shoppingContext &&
         (addressLink ?? <DeliveryAddressLink onManage={onManage} />)}
       {shoppingContext && outlet && (
-        <DeliveryAvailabilityPanel outlet={outlet} quiet />
+        <AssignedOutletLine outlet={outlet} />
       )}
     </header>
   );
 }
 
-export function DeliveryAvailabilityPanel({
-  outlet,
-  quiet = false,
-}: {
-  outlet: Outlet;
-  quiet?: boolean;
-}) {
+export function AssignedOutletLine({ outlet }: { outlet: Outlet }) {
   return (
-    <div
-      className={`app-header__outlet ${quiet ? "app-header__outlet--quiet" : ""}`}
+    <p
+      className="app-header__outlet-line"
       role="status"
+      aria-live="polite"
+      aria-atomic="true"
     >
-      <span className="app-header__outlet-icon" aria-hidden="true">
-        <TruckIcon className="h-5 w-5" />
-      </span>
-      <div>
-        <strong className="app-header__outlet-availability">
-          Delivery available
-        </strong>
-        <span className="app-header__outlet-name">
-          From {outlet.displayName}
-        </span>
-        <small className="app-header__outlet-reference">
-          {outlet.displayReference}
-        </small>
-      </div>
-    </div>
+      From {outlet.displayName}
+    </p>
   );
 }
 
 export function HeaderActions({
-  home,
+  shopping,
   onLogout,
 }: {
-  home: boolean;
+  shopping: boolean;
   onLogout?: () => void;
 }) {
-  return home ? (
-    <div className="app-header__home-actions">
+  return shopping ? (
+    <div className="app-header__shopping-actions">
       <IconButton label="Back to Savt" onClick={() => window.history.back()}>
         <ChevronLeftIcon className="h-4 w-4" />
       </IconButton>
       <button
         type="button"
-        aria-label="Log out of CKS Go"
+        aria-label="Close CKS Go"
         onClick={onLogout}
         className="app-header__exit"
       >
-        Exit
+        Close
       </button>
     </div>
   ) : (

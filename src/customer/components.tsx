@@ -3,6 +3,7 @@ import { useCustomer } from "./context";
 import { errorMessage } from "./errors";
 import { AddressForm } from "../addresses/AddressForm";
 import type { Address } from "../addresses/contracts";
+import { ChevronRightIcon } from "../components/Icons";
 export { CustomerDataProvider } from "./context";
 export function ProfileSummary() {
   const { state } = useCustomer();
@@ -424,21 +425,22 @@ export function DeliveryAddressLink({ onManage }: { onManage: () => void }) {
   const a = controller.selectedAddress();
   return (
     <button
+      type="button"
       className="delivery-address-link"
       onClick={onManage}
       aria-label="Change delivery address"
     >
-      <span className="delivery-address-link__heading">
-        <span>Deliver to</span>
-        <span>Change</span>
+      <span className="delivery-address-link__copy">
+        <span className="delivery-address-link__label">Deliver to</span>
+        <strong>
+          {state.listPhase === "loading"
+            ? "Loading delivery address…"
+            : a
+              ? [a.addressLine1, a.city, a.state].filter(Boolean).join(", ")
+              : "Add a delivery address"}
+        </strong>
       </span>
-      <strong>
-        {state.listPhase === "loading"
-          ? "Loading delivery address…"
-          : a
-            ? [a.addressLine1, a.city, a.state].filter(Boolean).join(", ")
-            : "Add a delivery address"}
-      </strong>
+      <ChevronRightIcon className="delivery-address-link__chevron" />
     </button>
   );
 }

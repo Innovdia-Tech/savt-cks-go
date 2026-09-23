@@ -4,35 +4,38 @@
 .delivery-address-link {
   display: grid;
   min-height: 44px;
+  width: 100%;
   max-width: 100%;
-  align-content: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
   border: 0;
   color: var(--color-text);
   background: transparent;
   padding: var(--space-1) 0;
   text-align: left;
 }
-.delivery-address-link > span {
+.delivery-address-link__copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.125rem;
+}
+.delivery-address-link__label {
   color: var(--color-text-muted);
   font-size: 10px;
   font-weight: 500;
 }
-.delivery-address-link__heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-.delivery-address-link__heading > span:last-child {
-  color: var(--color-cks-primary);
-  font-size: var(--text-meta);
-  font-weight: 800;
-}
-.delivery-address-link > strong {
+.delivery-address-link__copy > strong {
   max-width: 100%;
   font-size: 13px;
   line-height: 18px;
   overflow-wrap: anywhere;
+}
+.delivery-address-link__chevron {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
 }
 .customer-card {
   border: 1px solid var(--color-border);
