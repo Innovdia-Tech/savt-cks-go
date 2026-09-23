@@ -123,9 +123,15 @@ export function DeliveryAvailabilityPanel({
         <TruckIcon className="h-5 w-5" />
       </span>
       <div>
-        <strong>Delivery available</strong>
-        <span>From {outlet.displayName}</span>
-        <small>{outlet.displayReference}</small>
+        <strong className="app-header__outlet-availability">
+          Delivery available
+        </strong>
+        <span className="app-header__outlet-name">
+          From {outlet.displayName}
+        </span>
+        <small className="app-header__outlet-reference">
+          {outlet.displayReference}
+        </small>
       </div>
     </div>
   );

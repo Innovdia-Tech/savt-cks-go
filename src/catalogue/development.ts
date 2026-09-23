@@ -18,6 +18,7 @@ const failure = (status: number, code: string) =>
 export const scenarios = [
   "success",
   "null-images",
+  "long-price",
   "unavailable",
   "empty-categories",
   "empty-search",
@@ -140,7 +141,8 @@ export class DevelopmentCatalogueAdapter {
       brand: null,
       uom: { code: "PACK", name: "Pack" },
       packSize: "1 kg",
-      sellingPriceMinor: 450 + i * 25,
+      sellingPriceMinor:
+        this.scenario === "long-price" && i === 0 ? 123450 : 450 + i * 25,
       currency: "MYR",
       availability:
         this.scenario === "blocked" ||

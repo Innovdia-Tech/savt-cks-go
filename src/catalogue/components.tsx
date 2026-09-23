@@ -548,7 +548,9 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
         scrollPositions.current.set(route, top);
       }}
     >
-      <div className="catalogue-root">
+      <div
+        className={`catalogue-root ${route === "home" ? "catalogue-root--home" : ""}`}
+      >
         {route === "profile" ? (
           <>
             <CheckoutAddress

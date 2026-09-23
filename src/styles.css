@@ -348,6 +348,28 @@ a[href] {
     content: "· ";
   }
 
+  @media (max-width: 340px) {
+    .app-header__outlet--quiet {
+      align-items: flex-start;
+    }
+
+    .app-header__outlet--quiet div {
+      width: 100%;
+      grid-template-columns: minmax(0, 1fr);
+      align-items: start;
+      row-gap: 0.125rem;
+    }
+
+    .app-header__outlet--quiet div > span::before {
+      content: "";
+    }
+
+    .app-header__outlet--quiet .app-header__outlet-name {
+      overflow-wrap: normal;
+      word-break: normal;
+    }
+  }
+
   .app-header--transaction,
   .app-header--orders {
     padding-bottom: var(--space-3);

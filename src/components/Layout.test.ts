@@ -125,6 +125,9 @@ describe("HeaderActions", () => {
     expect(browse).toContain("Selected address");
     expect(browse).toContain("Delivery available");
     expect(browse).toContain("app-header__outlet--quiet");
+    expect(browse).toContain("app-header__outlet-availability");
+    expect(browse).toContain("app-header__outlet-name");
+    expect(browse).toContain("app-header__outlet-reference");
     expect(orders).not.toContain("Selected address");
     expect(orders).not.toContain("Delivery available");
     expect(orders).toContain("app-header__brand");

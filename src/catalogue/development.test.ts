@@ -83,6 +83,18 @@ it("keeps the empty-assortment fixture consistent across categories and products
   expect((await api.products(a, { page: 1 })).data).toEqual([]);
 });
 
+it("keeps the longer-price acceptance fixture explicit and formatter-compatible", async () => {
+  const { api } = await setup("long-price");
+  const assignment = await api.assign(address);
+  const products = await api.products(assignment, { page: 1 });
+  expect(
+    products.data.find((product) => product.name === "Apples 01"),
+  ).toMatchObject({
+    sellingPriceMinor: 123450,
+    currency: "MYR",
+  });
+});
+
 it("assigns deterministic same and different outlets for address-transition acceptance", async () => {
   const { api } = await setup();
   const home = await api.assign(address);
