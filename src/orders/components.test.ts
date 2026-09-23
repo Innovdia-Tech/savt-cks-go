@@ -140,6 +140,14 @@ const controller = {
   downloadReceipt: async () => null,
 };
 
+const progressStep = (html: string, label: string) => {
+  const step = [...html.matchAll(/<li([^>]*)>([\s\S]*?)<\/li>/g)].find(
+    ([, , content]) => content.includes(`<strong>${label}</strong>`),
+  );
+  expect(step).toBeDefined();
+  return { attributes: step![1], content: step![2] };
+};
+
 describe("customer orders presentation", () => {
   it.each([
     ["loading", "Loading your orders"],
@@ -341,7 +349,108 @@ describe("customer orders presentation", () => {
 
     expect(html).toContain("Stage confirmed; update time unavailable.");
     expect(html).not.toContain("Not reached yet");
+    for (const label of [
+      "Order received",
+      "Pick &amp; Pack",
+      "Out for delivery",
+      "Delivered",
+    ])
+      expect(progressStep(html, label).attributes).toContain("is-reached");
   });
+
+  it("does not treat Panda confirmation as customer pickup progress", () => {
+    const pandaConfirmedAt = "2026-09-21T04:30:00.000Z";
+    const preparing = {
+      ...detail,
+      customerStage: "PICK_AND_PACK" as const,
+      milestones: { ...detail.milestones, pandaConfirmedAt },
+      delivery: { ...detail.delivery, pickedUpAt: null },
+    };
+    const html = renderToStaticMarkup(
+      createElement(OrderDetailScreen, {
+        state: state({ detail: preparing }),
+        controller,
+        onBack: () => {},
+      } as never),
+    );
+    const outForDelivery = progressStep(html, "Out for delivery");
+
+    expect(outForDelivery.attributes).not.toContain("is-reached");
+    expect(outForDelivery.content).not.toContain("<time");
+    expect(html).not.toContain(pandaConfirmedAt);
+  });
+
+  it("uses the authoritative delivery stage without borrowing a Panda timestamp", () => {
+    const pandaConfirmedAt = "2026-09-21T04:30:00.000Z";
+    const outForDelivery = {
+      ...detail,
+      customerStage: "OUT_FOR_DELIVERY" as const,
+      milestones: { ...detail.milestones, pandaConfirmedAt },
+      delivery: { ...detail.delivery, pickedUpAt: null },
+    };
+    const html = renderToStaticMarkup(
+      createElement(OrderDetailScreen, {
+        state: state({ detail: outForDelivery }),
+        controller,
+        onBack: () => {},
+      } as never),
+    );
+    const progress = progressStep(html, "Out for delivery");
+
+    expect(progress.attributes).toContain("is-reached");
+    expect(progress.attributes).toContain("is-current");
+    expect(progress.content).not.toContain("<time");
+    expect(progress.content).toContain(
+      "Your packed order is on its way to your delivery address.",
+    );
+    expect(html).not.toContain(pandaConfirmedAt);
+  });
+
+  it("shows a genuine pickup timestamp for out-for-delivery progress", () => {
+    const pickedUpAt = "2026-09-21T04:45:00.000Z";
+    const outForDelivery = {
+      ...detail,
+      customerStage: "OUT_FOR_DELIVERY" as const,
+      delivery: { ...detail.delivery, pickedUpAt },
+    };
+    const html = renderToStaticMarkup(
+      createElement(OrderDetailScreen, {
+        state: state({ detail: outForDelivery }),
+        controller,
+        onBack: () => {},
+      } as never),
+    );
+    const progress = progressStep(html, "Out for delivery");
+
+    expect(progress.attributes).toContain("is-reached");
+    expect(progress.content).toContain(`<time dateTime="${pickedUpAt}">`);
+  });
+
+  it.each(["CANCELLED", "REJECTED"] as const)(
+    "does not add unsupported future progress to %s orders",
+    (customerStage) => {
+      const pandaConfirmedAt = "2026-09-21T04:30:00.000Z";
+      const terminal = {
+        ...detail,
+        customerStage,
+        canCancel: false,
+        milestones: { ...detail.milestones, pandaConfirmedAt },
+        delivery: { ...detail.delivery, pickedUpAt: null },
+      };
+      const html = renderToStaticMarkup(
+        createElement(OrderDetailScreen, {
+          state: state({ detail: terminal }),
+          controller,
+          onBack: () => {},
+        } as never),
+      );
+      const outForDelivery = progressStep(html, "Out for delivery");
+
+      expect(outForDelivery.attributes).not.toContain("is-reached");
+      expect(outForDelivery.content).not.toContain("<time");
+      expect(html).not.toContain(pandaConfirmedAt);
+    },
+  );
 
   it("renders authoritative cancellation rejection and stable retry copy", () => {
     const rejected = renderToStaticMarkup(

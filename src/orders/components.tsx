@@ -290,7 +290,7 @@ const progressStages = [
 const progressTimes = (detail: OrderDetail) => [
   detail.milestones.paymentConfirmedAt,
   detail.milestones.pickingStartedAt ?? detail.milestones.acceptedAt,
-  detail.delivery.pickedUpAt ?? detail.milestones.pandaConfirmedAt,
+  detail.delivery.pickedUpAt,
   detail.milestones.deliveredAt ?? detail.delivery.deliveredAt,
 ];
 
