@@ -87,6 +87,25 @@ const detail = (): OrderDetail => ({
     downloadPath: null,
   },
 });
+const detailWithReceipt = (): OrderDetail => ({
+  ...detail(),
+  receipt: {
+    receiptAvailable: true,
+    receiptReference: "CKS-20260921-0001",
+    issuedAt: at,
+    metadataPath: `/api/v1/orders/${orderId}/receipt`,
+    downloadPath: `/api/v1/orders/${orderId}/receipt/download`,
+  },
+});
+const deferredReceipt = () => {
+  let resolve!: (blob: Blob) => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<Blob>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+};
 const page = (pageNumber = 1, totalPages = 1): OrderPage => ({
   data: [
     {
@@ -275,16 +294,8 @@ describe("OrdersController", () => {
   });
 
   it("downloads only the receipt capability on the current detail", async () => {
-    const withReceipt = detail();
-    withReceipt.receipt = {
-      receiptAvailable: true,
-      receiptReference: "CKS-20260921-0001",
-      issuedAt: at,
-      metadataPath: `/api/v1/orders/${orderId}/receipt`,
-      downloadPath: `/api/v1/orders/${orderId}/receipt/download`,
-    };
     const controller = new OrdersController(
-      api({ detail: async () => withReceipt }),
+      api({ detail: async () => detailWithReceipt() }),
       new SessionStub(),
     );
     await controller.open(orderId);
@@ -295,6 +306,119 @@ describe("OrdersController", () => {
     expect(result?.blob.type).toBe("application/pdf");
     expect(controller.getSnapshot().receiptPhase).toBe("ready");
   });
+
+  it("fences a late receipt after another order opens even when abort is ignored", async () => {
+    const otherOrderId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const pending = deferredReceipt();
+    let receiptSignal: AbortSignal | undefined;
+    const controller = new OrdersController(
+      api({
+        detail: async (requestedOrderId) =>
+          requestedOrderId === orderId
+            ? detailWithReceipt()
+            : {
+                ...detail(),
+                orderId: otherOrderId,
+                orderNumber: "CKS-20260921-0002",
+              },
+        downloadReceipt: async (_orderId, _path, signal) => {
+          receiptSignal = signal;
+          return pending.promise;
+        },
+      }),
+      new SessionStub(),
+    );
+    await controller.open(orderId);
+    const oldDownload = controller.downloadReceipt();
+    expect(controller.getSnapshot().receiptPhase).toBe("downloading");
+    await controller.open(otherOrderId);
+    expect(receiptSignal?.aborted).toBe(true);
+    const orderBState = controller.getSnapshot();
+    expect(orderBState).toMatchObject({
+      detailPhase: "ready",
+      detail: { orderId: otherOrderId, orderNumber: "CKS-20260921-0002" },
+      receiptPhase: "idle",
+      receiptError: null,
+    });
+    pending.resolve(new Blob(["old receipt"], { type: "application/pdf" }));
+    expect(await oldDownload).toBeNull();
+    expect(controller.getSnapshot()).toBe(orderBState);
+  });
+
+  it.each(["resolve", "reject"] as const)(
+    "aborts and fences a receipt when detail closes (%s)",
+    async (settlement) => {
+      const pending = deferredReceipt();
+      let receiptSignal: AbortSignal | undefined;
+      const controller = new OrdersController(
+        api({
+          detail: async () => detailWithReceipt(),
+          downloadReceipt: async (_orderId, _path, signal) => {
+            receiptSignal = signal;
+            return pending.promise;
+          },
+        }),
+        new SessionStub(),
+      );
+      await controller.open(orderId);
+      const oldDownload = controller.downloadReceipt();
+      controller.closeDetail();
+      expect(receiptSignal?.aborted).toBe(true);
+      const closedState = controller.getSnapshot();
+      expect(closedState).toMatchObject({
+        detailPhase: "idle",
+        detail: null,
+        detailError: null,
+        receiptPhase: "idle",
+        receiptError: null,
+      });
+      if (settlement === "resolve")
+        pending.resolve(new Blob(["old receipt"], { type: "application/pdf" }));
+      else pending.reject(new Error("late receipt failure"));
+      expect(await oldDownload).toBeNull();
+      expect(controller.getSnapshot()).toBe(closedState);
+    },
+  );
+
+  it.each(["resolve", "reject"] as const)(
+    "aborts and clears a receipt when the session expires (%s)",
+    async (settlement) => {
+      const pending = deferredReceipt();
+      let receiptSignal: AbortSignal | undefined;
+      const session = new SessionStub();
+      const controller = new OrdersController(
+        api({
+          detail: async () => detailWithReceipt(),
+          downloadReceipt: async (_orderId, _path, signal) => {
+            receiptSignal = signal;
+            return pending.promise;
+          },
+        }),
+        session,
+      );
+      await controller.load();
+      await controller.open(orderId);
+      const oldDownload = controller.downloadReceipt();
+      session.set("expired");
+      expect(receiptSignal?.aborted).toBe(true);
+      const expiredState = controller.getSnapshot();
+      expect(expiredState).toMatchObject({
+        listPhase: "session-expired",
+        page: null,
+        listError: "CUSTOMER_SESSION_INVALID",
+        detailPhase: "session-expired",
+        detail: null,
+        detailError: "CUSTOMER_SESSION_INVALID",
+        receiptPhase: "idle",
+        receiptError: null,
+      });
+      if (settlement === "resolve")
+        pending.resolve(new Blob(["old receipt"], { type: "application/pdf" }));
+      else pending.reject(new Error("late receipt failure"));
+      expect(await oldDownload).toBeNull();
+      expect(controller.getSnapshot()).toBe(expiredState);
+    },
+  );
 
   it("disposes subscriptions and resets state", async () => {
     const session = new SessionStub();
