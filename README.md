@@ -10,11 +10,11 @@ React + TypeScript + TailwindCSS customer-web foundation for the CKS GO grocery 
 - Assigned-outlet cart backed by real catalogue product identities
 - Server-authoritative trusted checkout quotes
 - Backend-owned payment initiation and observational payment results
-- Customer order history, detail, backend-projected tracking, supported cancellation and receipt download
+- Customer order history, detail, backend-projected tracking, receipt download and optional WhatsApp help
 - Strict customer-session bootstrap, native handoff, exchange, restoration and logout
 - Explicit loading, offline, expired-session, bridge-unavailable and error states
 
-Catalogue, saved addresses, cart, trusted checkout quotes, payment results and customer orders use their real customer-web contracts. Provider communication, paid Order materialization, fulfilment authority and cancellation eligibility remain backend-owned. The retained mock prototype cannot be reached from the exported real catalogue/cart flow.
+Catalogue, saved addresses, cart, trusted checkout quotes, payment results and customer orders use their real customer-web contracts. Provider communication, paid Order materialization and fulfilment authority remain backend-owned. The retained mock prototype cannot be reached from the exported real catalogue/cart flow.
 
 ## Business rules represented
 
@@ -25,7 +25,7 @@ Catalogue, saved addresses, cart, trusted checkout quotes, payment results and c
 - Prices, stock, fees and timing become authoritative only after an explicit trusted-quote request.
 - Returning from external payment is navigation only; only backend `PAID` plus Order evidence confirms an order.
 - History and tracking display only customer-safe backend projections; the browser never creates Orders or derives fulfilment state.
-- Cancellation and receipt actions appear only when the exact order contract supports them and remain backend-authoritative.
+- Once payment is confirmed and an Order is created, customers can view and track it but cannot edit or cancel it in the app. Receipt availability and historical cancellation/refund information remain backend-projected.
 
 ## Run locally
 
@@ -44,6 +44,8 @@ VITE_CKS_GO_DEVELOPMENT_BRIDGE=true
 ```
 
 The synthetic API session is held in memory, contains no Savt member identity or credential, and both development adapters are rejected by production builds. The switches are independent so the native bridge fail-closed state can be tested locally. Without the bridge switch, the app requires the `SavtCksGoBridge` WebView channel. Without the API switch, it uses same-origin `/api/v1/customer/session` endpoints unless `VITE_CUSTOMER_API_ORIGIN` names a validated HTTPS origin.
+
+Optional public support setting: `VITE_CKS_GO_SUPPORT_WHATSAPP=`. It defaults to empty. Configure an approved E.164-style international number with a leading `+`; missing or invalid values leave WhatsApp help inactive without blocking startup. The app constructs an HTTPS `wa.me` link with only the displayed Order number in the prefilled enquiry. Support activation remains pending until an approved number is configured and native external-opening behavior is accepted in Flutter.
 
 If npm is blocked by a local certificate error such as `UNABLE_TO_VERIFY_LEAF_SIGNATURE`, fix the machine's npm certificate configuration or explicitly approve a temporary project-scoped install workaround before running the commands above.
 
@@ -89,10 +91,10 @@ External return, focus and visibility trigger backend observation only. PENDING,
 
 ## Customer order history and tracking (CUST03B)
 
-The customer web calls CKS Go's `GET /api/v1/customer/orders`, `GET /api/v1/customer/orders/:orderId` and, when offered, `POST /api/v1/customer/orders/:orderId/cancel`. It uses the customer-safe receipt download path returned by the strict order-detail contract. The browser never creates an Order, invents a customer stage, derives fulfilment authority, calls a payment provider, or presents internal operational fields.
+The customer web calls CKS Go's `GET /api/v1/customer/orders` and `GET /api/v1/customer/orders/:orderId`. It uses the customer-safe receipt download path returned by the strict order-detail contract. The browser never creates or cancels an Order, invents a customer stage, derives fulfilment authority, calls a payment provider, or presents internal operational fields.
 
 History is paginated and includes explicit loading, empty, error, expired-session and refresh states. Detail renders the backend order stage, returned milestones, customer-safe items and totals, delivery destination and refund requirement. Raw delivery state, rider data, SKU snapshots, payment-provider data and internal identifiers are not presented.
 
-Cancellation posts an empty body with in-memory CSRF and a stable UUIDv4 idempotency key. `canCancel` controls the affordance only; the backend remains authoritative and the UI updates solely from its response. Receipt download is available only when the detail contract declares it and the exact current-order path returns a PDF. Order state, receipt blobs and action credentials are not persisted.
+The frontend does not offer cancellation or retries even if an older backend projects `canCancel: true`; parsing keeps that field for response compatibility. Historical cancelled Orders and refund obligations remain visible. Receipt download is available only when the detail contract declares it and the exact current-order path returns a PDF. Order state and receipt blobs are not persisted. Backend cancellation enforcement is handled separately in CUST-CANCEL01-BE.
 
 The read-only backend contract authority reviewed for CUST03B was `Innovdia-Tech/cks-go` at `9f5b779e38eea447e0bf425e0489e70107231356`. No backend code was changed.

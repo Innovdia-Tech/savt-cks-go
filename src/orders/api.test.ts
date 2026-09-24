@@ -2,24 +2,9 @@ import { describe, expect, it } from "vitest";
 import { OrdersApi, OrdersError } from "./api";
 
 const orderId = "11111111-1111-4111-8111-111111111111";
-const key = "22222222-2222-4222-8222-222222222222";
-const at = "2026-09-21T04:00:00.000Z";
 const listResponse = {
   data: [],
   meta: { page: 2, pageSize: 10, total: 0, totalPages: 0 },
-};
-const cancellationResponse = {
-  data: {
-    orderId,
-    customerStage: "CANCELLED",
-    paymentStatus: "PAID",
-    cancelledAt: at,
-    canCancel: false,
-    refundRequired: true,
-    requiredAmountMinor: 1000,
-    requirementStatus: "REQUIRED",
-    currency: "MYR",
-  },
 };
 
 const session = {
@@ -61,25 +46,8 @@ describe("OrdersApi", () => {
     expect(url).toBe(`/api/v1/customer/orders/${orderId}`);
   });
 
-  it("cancels with empty body, CSRF, cookies, and the caller's stable key", async () => {
-    let request: RequestInit | undefined;
-    const api = new OrdersApi("", session, async (_input, init) => {
-      request = init;
-      return Response.json(cancellationResponse);
-    });
-    await expect(api.cancel(orderId, key)).resolves.toEqual(
-      cancellationResponse.data,
-    );
-    expect(request).toMatchObject({
-      method: "POST",
-      credentials: "include",
-      cache: "no-store",
-      body: "{}",
-    });
-    expect(new Headers(request?.headers).get("x-cks-csrf")).toBe(
-      "C".repeat(43),
-    );
-    expect(new Headers(request?.headers).get("Idempotency-Key")).toBe(key);
+  it("does not expose an order cancellation mutation", () => {
+    expect("cancel" in new OrdersApi("", session)).toBe(false);
   });
 
   it("downloads only the exact owned receipt PDF path", async () => {
@@ -104,7 +72,7 @@ describe("OrdersApi", () => {
       Response.json(
         {
           error: {
-            code: "CUSTOMER_ORDER_NOT_CANCELLABLE",
+            code: "CUSTOMER_ORDER_NOT_FOUND",
             message: "internal",
           },
           meta: { requestId: "x" },
@@ -112,8 +80,8 @@ describe("OrdersApi", () => {
         { status: 409 },
       ),
     );
-    await expect(safe.cancel(orderId, key)).rejects.toMatchObject({
-      code: "CUSTOMER_ORDER_NOT_CANCELLABLE",
+    await expect(safe.list()).rejects.toMatchObject({
+      code: "CUSTOMER_ORDER_NOT_FOUND",
     });
     const unsafe = new OrdersApi("", session, async () =>
       Response.json(

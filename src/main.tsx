@@ -115,7 +115,10 @@ async function start() {
               <CheckoutProvider controller={checkout} customer={customer}>
                 <PaymentProvider controller={payment}>
                   <OrdersProvider controller={orders}>
-                    <App onLogout={() => void session.logout()} />
+                    <App
+                      onLogout={() => void session.logout()}
+                      supportWhatsApp={config.supportWhatsApp}
+                    />
                   </OrdersProvider>
                 </PaymentProvider>
               </CheckoutProvider>

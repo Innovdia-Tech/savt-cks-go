@@ -1,5 +1,5 @@
 import { OrdersError } from "./api";
-import type { CancellationResult, OrderDetail, OrderPage } from "./contracts";
+import type { OrderDetail, OrderPage } from "./contracts";
 
 type OrdersPort = {
   list(
@@ -8,11 +8,6 @@ type OrdersPort = {
     signal?: AbortSignal,
   ): Promise<OrderPage>;
   detail(orderId: string, signal?: AbortSignal): Promise<OrderDetail>;
-  cancel(
-    orderId: string,
-    key: string,
-    signal?: AbortSignal,
-  ): Promise<CancellationResult>;
   downloadReceipt(
     orderId: string,
     path: string,
@@ -31,14 +26,10 @@ export type OrdersState = {
   detailPhase: Phase;
   detail: OrderDetail | null;
   detailError: string | null;
-  cancelPhase: "idle" | "cancelling" | "succeeded" | "error";
-  cancelError: string | null;
-  canRetryCancellation: boolean;
   receiptPhase: "idle" | "downloading" | "ready" | "error";
   receiptError: string | null;
 };
 export type ReceiptDownload = { blob: Blob; filename: string };
-type CancellationAttempt = { orderId: string; key: string };
 
 const empty = (sessionExpired = false): OrdersState => ({
   listPhase: sessionExpired ? "session-expired" : "idle",
@@ -47,17 +38,9 @@ const empty = (sessionExpired = false): OrdersState => ({
   detailPhase: sessionExpired ? "session-expired" : "idle",
   detail: null,
   detailError: sessionExpired ? "CUSTOMER_SESSION_INVALID" : null,
-  cancelPhase: "idle",
-  cancelError: null,
-  canRetryCancellation: false,
   receiptPhase: "idle",
   receiptError: null,
 });
-const uncertainCancellation = new Set([
-  "NETWORK_ERROR",
-  "REQUEST_TIMEOUT",
-  "INVALID_RESPONSE",
-]);
 const codeOf = (error: unknown) =>
   error instanceof OrdersError ? error.code : "INVALID_RESPONSE";
 
@@ -66,20 +49,16 @@ export class OrdersController {
   private readonly listeners = new Set<() => void>();
   private listGeneration = 0;
   private detailGeneration = 0;
-  private cancellationGeneration = 0;
   private receiptGeneration = 0;
   private listAbort?: AbortController;
   private detailAbort?: AbortController;
-  private cancellationAbort?: AbortController;
   private receiptAbort?: AbortController;
-  private cancellation?: CancellationAttempt;
   private readonly unsubscribeSession: () => void;
   private sessionPhase: string;
 
   constructor(
     private readonly api: OrdersPort,
     private readonly session: SessionPort,
-    private readonly newId = () => crypto.randomUUID(),
   ) {
     this.sessionPhase = session.getSnapshot().phase;
     this.unsubscribeSession = session.subscribe(() => {
@@ -139,11 +118,8 @@ export class OrdersController {
 
   async open(orderId: string): Promise<void> {
     this.detailAbort?.abort();
-    this.cancellationAbort?.abort();
     this.receiptAbort?.abort();
-    ++this.cancellationGeneration;
     ++this.receiptGeneration;
-    this.cancellation = undefined;
     const abort = new AbortController();
     this.detailAbort = abort;
     const generation = ++this.detailGeneration;
@@ -151,9 +127,6 @@ export class OrdersController {
       detailPhase: "loading",
       detail: null,
       detailError: null,
-      cancelPhase: "idle",
-      cancelError: null,
-      canRetryCancellation: false,
       receiptPhase: "idle",
       receiptError: null,
     });
@@ -176,112 +149,16 @@ export class OrdersController {
 
   closeDetail(): void {
     this.detailAbort?.abort();
-    this.cancellationAbort?.abort();
     this.receiptAbort?.abort();
     ++this.detailGeneration;
-    ++this.cancellationGeneration;
     ++this.receiptGeneration;
-    this.cancellation = undefined;
     this.update({
       detailPhase: "idle",
       detail: null,
       detailError: null,
-      cancelPhase: "idle",
-      cancelError: null,
-      canRetryCancellation: false,
       receiptPhase: "idle",
       receiptError: null,
     });
-  }
-
-  cancel(): Promise<void> {
-    const detail = this.state.detail;
-    if (
-      !detail ||
-      !detail.canCancel ||
-      this.cancellation ||
-      this.state.cancelPhase === "cancelling"
-    )
-      return Promise.resolve();
-    this.cancellation = { orderId: detail.orderId, key: this.newId() };
-    return this.executeCancellation(this.cancellation);
-  }
-  retryCancellation(): Promise<void> {
-    return this.cancellation && this.state.canRetryCancellation
-      ? this.executeCancellation(this.cancellation)
-      : Promise.resolve();
-  }
-  private async executeCancellation(
-    attempt: CancellationAttempt,
-  ): Promise<void> {
-    this.cancellationAbort?.abort();
-    const abort = new AbortController();
-    this.cancellationAbort = abort;
-    const generation = ++this.cancellationGeneration;
-    this.update({
-      cancelPhase: "cancelling",
-      cancelError: null,
-      canRetryCancellation: false,
-    });
-    try {
-      const result = await this.api.cancel(
-        attempt.orderId,
-        attempt.key,
-        abort.signal,
-      );
-      if (generation !== this.cancellationGeneration) return;
-      if (
-        result.orderId !== attempt.orderId ||
-        this.state.detail?.orderId !== attempt.orderId
-      )
-        throw new OrdersError("INVALID_RESPONSE");
-      this.cancellation = undefined;
-      const current = this.state.detail;
-      const detail: OrderDetail = {
-        ...current,
-        customerStage: "CANCELLED",
-        cancellationKind: "CUSTOMER_REQUEST",
-        canCancel: false,
-        milestones: { ...current.milestones, cancelledAt: result.cancelledAt },
-        refund: {
-          refundRequired: true,
-          requiredAmountMinor: result.requiredAmountMinor,
-          totalRequiredAmountMinor: result.requiredAmountMinor,
-          requirementStatus: "REQUIRED",
-        },
-      };
-      const page = this.state.page
-        ? {
-            ...this.state.page,
-            data: this.state.page.data.map((order) =>
-              order.orderId === result.orderId
-                ? {
-                    ...order,
-                    customerStage: "CANCELLED" as const,
-                    canCancel: false,
-                  }
-                : order,
-            ),
-          }
-        : null;
-      this.update({
-        detail,
-        page,
-        cancelPhase: "succeeded",
-        cancelError: null,
-        canRetryCancellation: false,
-      });
-    } catch (error) {
-      if (generation !== this.cancellationGeneration) return;
-      const code = codeOf(error);
-      const retry = uncertainCancellation.has(code);
-      if (!retry) this.cancellation = undefined;
-      this.update({
-        cancelPhase: "error",
-        cancelError: code,
-        canRetryCancellation: retry,
-      });
-    }
   }
 
   async downloadReceipt(): Promise<ReceiptDownload | null> {
@@ -334,18 +211,15 @@ export class OrdersController {
 
   private clearForSessionLoss(): void {
     this.abortAll();
-    this.cancellation = undefined;
     this.state = empty(true);
     this.emit();
   }
   private abortAll(): void {
     ++this.listGeneration;
     ++this.detailGeneration;
-    ++this.cancellationGeneration;
     ++this.receiptGeneration;
     this.listAbort?.abort();
     this.detailAbort?.abort();
-    this.cancellationAbort?.abort();
     this.receiptAbort?.abort();
   }
   private update(patch: Partial<OrdersState>): void {

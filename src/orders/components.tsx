@@ -1,21 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import type {
   CustomerOrderStage,
   OrderDetail,
   OrderListItem,
 } from "./contracts";
 import type { OrdersController, OrdersState } from "./state";
+import { buildOrderSupportUrl, openOrderSupport } from "./support";
 import { StatusBadge, SystemState } from "../components/ui";
 
 type Actions = Pick<
   OrdersController,
-  | "load"
-  | "refresh"
-  | "nextPage"
-  | "previousPage"
-  | "cancel"
-  | "retryCancellation"
-  | "downloadReceipt"
+  "load" | "refresh" | "nextPage" | "previousPage" | "downloadReceipt"
 >;
 
 const money = (minor: number) =>
@@ -310,12 +305,13 @@ export function OrderDetailScreen({
   state,
   controller,
   onBack,
+  supportWhatsApp = "",
 }: {
   state: OrdersState;
   controller: Actions;
   onBack: () => void;
+  supportWhatsApp?: string;
 }) {
-  const [cancelOpen, setCancelOpen] = useState(false);
   if (state.detailPhase === "idle" || state.detailPhase === "loading")
     return (
       <StateCard
@@ -347,6 +343,7 @@ export function OrderDetailScreen({
   );
   const times = progressTimes(order);
   const activeOrder = currentOrderStages.includes(order.customerStage);
+  const helpUrl = buildOrderSupportUrl(supportWhatsApp, order.orderNumber);
   return (
     <div className="order-detail-stack">
       <section className="order-detail-hero">
@@ -481,10 +478,7 @@ export function OrderDetailScreen({
           </p>
         </section>
       )}
-      {(order.receipt.receiptAvailable ||
-        order.canCancel ||
-        state.cancelPhase !== "idle" ||
-        state.receiptPhase === "error") && (
+      {(order.receipt.receiptAvailable || state.receiptPhase === "error") && (
         <section className="order-actions" aria-label="Order actions">
           {order.receipt.receiptAvailable && (
             <button
@@ -497,35 +491,6 @@ export function OrderDetailScreen({
                 : "Download receipt"}
             </button>
           )}
-          {order.canCancel && !state.canRetryCancellation && (
-            <button
-              className="customer-button order-cancel"
-              disabled={state.cancelPhase === "cancelling"}
-              onClick={() => setCancelOpen(true)}
-            >
-              Cancel order
-            </button>
-          )}
-          {state.canRetryCancellation && (
-            <button
-              className="customer-button order-cancel"
-              onClick={() => void controller.retryCancellation()}
-            >
-              Retry cancellation
-            </button>
-          )}
-          {state.cancelPhase === "succeeded" && (
-            <p className="order-action-success" role="status">
-              Order cancelled. CKS Go recorded the refund requirement.
-            </p>
-          )}
-          {state.cancelPhase === "error" && (
-            <p className="order-action-error" role="alert">
-              {state.canRetryCancellation
-                ? "The cancellation result could not be confirmed. Retry the same request before taking another action."
-                : "This order could not be cancelled. CKS Go rechecked the current order state."}
-            </p>
-          )}
           {state.receiptPhase === "error" && (
             <p className="order-action-error" role="alert">
               The receipt could not be downloaded safely. Try again later.
@@ -533,74 +498,22 @@ export function OrderDetailScreen({
           )}
         </section>
       )}
-      <CancellationDialog
-        open={cancelOpen}
-        orderNumber={order.orderNumber}
-        busy={state.cancelPhase === "cancelling"}
-        onCancel={() => setCancelOpen(false)}
-        onConfirm={() => {
-          setCancelOpen(false);
-          void controller.cancel();
-        }}
-      />
+      <section
+        className="order-section order-help"
+        aria-labelledby="order-help-title"
+      >
+        <h3 id="order-help-title">Get help with this order</h3>
+        {helpUrl ? (
+          <button
+            className="customer-button"
+            onClick={() => openOrderSupport(supportWhatsApp, order.orderNumber)}
+          >
+            Open WhatsApp support
+          </button>
+        ) : (
+          <p>WhatsApp support is not available yet.</p>
+        )}
+      </section>
     </div>
-  );
-}
-
-export function CancellationDialog({
-  open,
-  orderNumber,
-  busy,
-  onCancel,
-  onConfirm,
-}: {
-  open: boolean;
-  orderNumber: string;
-  busy: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const node = dialog.current;
-    if (!node) return;
-    if (open && !node.open) node.showModal();
-    if (!open && node.open) node.close();
-  }, [open]);
-  return (
-    <dialog
-      ref={dialog}
-      className="customer-dialog order-dialog"
-      aria-labelledby="cancel-order-title"
-      onCancel={(event) => {
-        event.preventDefault();
-        if (!busy) onCancel();
-      }}
-    >
-      <p className="order-eyebrow">Customer cancellation</p>
-      <h2 id="cancel-order-title">Cancel order {orderNumber}?</h2>
-      <p>
-        CKS Go will recheck whether this paid order can still be cancelled. If
-        accepted, it creates a refund requirement; it does not prove a completed
-        refund.
-      </p>
-      <div className="order-dialog-actions">
-        <button
-          autoFocus
-          className="customer-button"
-          disabled={busy}
-          onClick={onCancel}
-        >
-          Keep order
-        </button>
-        <button
-          className="customer-button order-cancel-confirm"
-          disabled={busy}
-          onClick={onConfirm}
-        >
-          {busy ? "Cancelling…" : "Cancel order"}
-        </button>
-      </div>
-    </dialog>
   );
 }

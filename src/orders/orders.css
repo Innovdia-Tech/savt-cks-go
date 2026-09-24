@@ -92,7 +92,7 @@
 .order-refresh:focus-visible,
 .order-pages button:focus-visible,
 .order-actions button:focus-visible,
-.order-dialog button:focus-visible {
+.order-help button:focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
@@ -443,48 +443,22 @@
   display: grid;
   gap: 10px;
 }
-.order-cancel {
-  border-color: #fecdd3;
-  color: #9f1239;
-}
-.order-cancel-confirm {
-  border-color: #be123c;
-  background: #be123c;
-  color: white;
-}
-.order-action-success,
 .order-action-error {
+  background: #fff1f2;
   border-radius: 14px;
+  color: #9f1239;
   padding: 10px;
   font-size: 13px;
   font-weight: 700;
 }
-.order-action-success {
-  background: #ecfdf3;
-  color: #166534;
+.order-help p {
+  margin-top: 8px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.6;
 }
-.order-action-error {
-  background: #fff1f2;
-  color: #9f1239;
-}
-.order-dialog {
-  max-height: calc(100dvh - 32px);
-  overflow-y: auto;
-}
-.order-dialog h2 {
-  margin-top: 5px;
-  font-size: 20px;
-  font-weight: 900;
-}
-.order-dialog p:not(.order-eyebrow) {
-  margin: 14px 0;
-  color: #475569;
-  line-height: 1.55;
-}
-.order-dialog-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+.order-help button {
+  margin-top: 12px;
 }
 @media (max-width: 380px) {
   .order-pages {
@@ -493,9 +467,6 @@
   .order-pages span {
     grid-column: 1 / -1;
     grid-row: 1;
-  }
-  .order-dialog-actions {
-    grid-template-columns: 1fr;
   }
 }
 @media (prefers-reduced-motion: reduce) {

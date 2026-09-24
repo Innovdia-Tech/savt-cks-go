@@ -56,6 +56,7 @@ export const orderScenarios = [
   "active",
   "empty",
   "delivered",
+  "cancelled",
   "receipt-ready",
   "preparing",
   "out-for-delivery",
@@ -81,7 +82,6 @@ export class DevelopmentCatalogueAdapter {
   private paymentCreates = 0;
   private paymentResults = 0;
   private orderScenario: OrderScenario = "active";
-  private orderCancelled = false;
   constructor(
     production: boolean,
     private readonly now = Date.now,
@@ -99,7 +99,6 @@ export class DevelopmentCatalogueAdapter {
     this.paymentCreates = 0;
     this.paymentResults = 0;
     this.orderScenario = "active";
-    this.orderCancelled = false;
   }
   expire() {
     this.assignment = null;
@@ -109,7 +108,6 @@ export class DevelopmentCatalogueAdapter {
   }
   setOrderScenario(result: OrderScenario) {
     this.orderScenario = result;
-    this.orderCancelled = false;
   }
   paymentMetrics() {
     return {
@@ -156,7 +154,7 @@ export class DevelopmentCatalogueAdapter {
     })).sort((a, b) => a.name.localeCompare(b.name));
   }
   private primaryOrderStage(): CustomerOrderStage {
-    if (this.orderCancelled) return "CANCELLED";
+    if (this.orderScenario === "cancelled") return "CANCELLED";
     if (
       this.orderScenario === "delivered" ||
       this.orderScenario === "receipt-ready"
@@ -655,33 +653,6 @@ export class DevelopmentCatalogueAdapter {
       return candidate
         ? Response.json({ data: this.syntheticOrderDetail(candidate) })
         : failure(404, "CUSTOMER_ORDER_NOT_FOUND");
-    }
-    if (
-      u.pathname ===
-        `/api/v1/customer/orders/${syntheticOrder.orderId}/cancel` &&
-      init?.method === "POST"
-    ) {
-      if (!h.get("x-cks-csrf")) return failure(403, "CUSTOMER_CSRF_INVALID");
-      if (!h.get("Idempotency-Key"))
-        return failure(428, "MUTATION_PRECONDITION_REQUIRED");
-      if (String(init.body) !== "{}")
-        return failure(400, "CUSTOMER_ORDER_CANCEL_BODY_INVALID");
-      if (!syntheticOrder.canCancel)
-        return failure(409, "CUSTOMER_ORDER_NOT_CANCELLABLE");
-      this.orderCancelled = true;
-      return Response.json({
-        data: {
-          orderId: syntheticOrder.orderId,
-          customerStage: "CANCELLED",
-          paymentStatus: "PAID",
-          cancelledAt: new Date(this.now()).toISOString(),
-          canCancel: false,
-          refundRequired: true,
-          requiredAmountMinor: syntheticOrder.grandTotalMinor,
-          requirementStatus: "REQUIRED",
-          currency: "MYR",
-        },
-      });
     }
     if (
       u.pathname ===

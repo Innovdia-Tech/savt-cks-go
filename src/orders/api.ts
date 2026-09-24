@@ -3,10 +3,8 @@ import { parseApiErrorEnvelope } from "../api/contracts";
 import { uuid } from "../customer/contracts";
 import type { CustomerSessionController } from "../session/controller";
 import {
-  parseCancellation,
   parseOrderDetail,
   parseOrderList,
-  type CancellationResult,
   type OrderDetail,
   type OrderPage,
 } from "./contracts";
@@ -21,9 +19,6 @@ const safeCodes = new Set([
   "CUSTOMER_NOT_FOUND",
   "CUSTOMER_ORDER_NOT_FOUND",
   "CUSTOMER_ORDER_QUERY_INVALID",
-  "CUSTOMER_ORDER_CANCEL_BODY_INVALID",
-  "CUSTOMER_ORDER_NOT_CANCELLABLE",
-  "CUSTOMER_ORDER_VOUCHER_CANCELLATION_UNSUPPORTED",
   "IDEMPOTENCY_KEY_REUSED",
   "MUTATION_PRECONDITION_REQUIRED",
   "FINAL_RECEIPT_ORDER_NOT_FOUND",
@@ -75,28 +70,6 @@ export class OrdersApi {
       `/api/v1/customer/orders/${orderId}`,
       { method: "GET" },
       parseOrderDetail,
-      external,
-    );
-  }
-
-  cancel(
-    orderId: string,
-    idempotencyKey: string,
-    external?: AbortSignal,
-  ): Promise<CancellationResult> {
-    if (!uuid(orderId) || !uuid(idempotencyKey))
-      return Promise.reject(new OrdersError("VALIDATION_FAILED"));
-    return this.json(
-      `/api/v1/customer/orders/${orderId}/cancel`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Idempotency-Key": idempotencyKey,
-        },
-        body: "{}",
-      },
-      parseCancellation,
       external,
     );
   }
