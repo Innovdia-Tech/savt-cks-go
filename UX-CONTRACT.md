@@ -83,4 +83,15 @@ Source: pinned CKS Go backend customer-order and receipt contracts at `9f5b779e3
 | Receipt download | `orders/api.ts` and detail screen       | Exact returned download path for current order; PDF content type; browser-owned file save                    | contract/API and receipt-ready browser checks      |
 | Session boundary | `orders/state.ts`                       | Clear history/detail/retry state and fence late work on logout or 401                                        | state races and session browser scenario           |
 
-History and detail reuse the existing shell, rounded cards, CKS-red action hierarchy, focus ring and MYR formatting. Destructive confirmation is app-owned; file saving remains browser-owned. Customer order data, receipt blobs, cancellation keys and CSRF are memory-only. Cancellation failure never fabricates a new status, and receipt visibility never comes from a payment assumption.
+History and detail reuse the existing shell, rounded cards, CKS-red action hierarchy, focus ring and MYR formatting. The CUST03B cancellation row above is historical and is superseded by CUST-CANCEL01 below. File saving remains browser-owned. Customer order data and receipt blobs are memory-only; receipt visibility never comes from a payment assumption.
+
+## CUST-CANCEL01 paid Order view and support override
+
+| Capability        | Canonical owner                        | Current behavior                                                                                                                                                | Verification                           |
+| ----------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| Final Pay notice  | `PaymentPanel`                         | Review items and delivery address before Pay; confirmed Orders cannot be changed or cancelled in the app                                                        | payment render tests                   |
+| Order view        | `OrdersScreen` and `OrderDetailScreen` | Keep history, refresh, tracking, receipt and historical cancelled/refund views; ignore stale `canCancel` for actions                                            | order render, state and contract tests |
+| Customer mutation | `orders/api.ts` and `orders/state.ts`  | No cancellation command, retry, confirmation dialog or POST path                                                                                                | API/state tests and source audit       |
+| WhatsApp help     | `orders/support.ts` and order detail   | Optional `VITE_CKS_GO_SUPPORT_WHATSAPP`; empty/invalid is inert; valid E.164-style number builds only encoded HTTPS `wa.me` enquiry with displayed Order number | config and stubbed-navigation tests    |
+
+Support opens a separate browser context through `window.open` with `noopener,noreferrer` and does not change Order, payment or fulfilment state. Native WebView handling requires separate Flutter acceptance; the payment-handoff bridge is reserved for payment. Backend policy enforcement is tracked in CUST-CANCEL01-BE.

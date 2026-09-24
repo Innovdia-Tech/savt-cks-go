@@ -298,6 +298,11 @@
   font-size: 13px;
   line-height: 1.6;
 }
+.payment-card .payment-final-notice {
+  border-left: 3px solid var(--color-cks-primary);
+  padding-left: 12px;
+  color: var(--color-text);
+}
 .payment-warning {
   border-color: #f3c969;
   background: #fff9e9;

@@ -302,15 +302,18 @@ it("provides explicit customer-stage and paginated order review fixtures", async
   expect(second.data[0].customerStage).toBe("OUT_FOR_DELIVERY");
 });
 
-it("cancels through only the customer cancel command and retains zero browser Order creation", async () => {
+it("keeps historical cancelled Orders readable without a customer cancel command", async () => {
   const { adapter, orders } = await setup();
+  adapter.setOrderScenario("cancelled");
   const order = (await orders.list()).data[0];
-  await expect(
-    orders.cancel(order.orderId, crypto.randomUUID()),
-  ).resolves.toMatchObject({
+  expect(order).toMatchObject({
     customerStage: "CANCELLED",
-    refundRequired: true,
+    canCancel: false,
   });
-  expect((await orders.detail(order.orderId)).customerStage).toBe("CANCELLED");
+  expect(await orders.detail(order.orderId)).toMatchObject({
+    customerStage: "CANCELLED",
+    refund: { refundRequired: true },
+  });
+  expect("cancel" in orders).toBe(false);
   expect(adapter.paymentMetrics().browserOrderPosts).toBe(0);
 });

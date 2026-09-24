@@ -106,7 +106,7 @@ Buttons/fields use 14px radii, cards 16px, chips/badges full pills, and sheets 2
 - Don't add unsupported routes/statuses or infer business state from Figma.
 - Don't paste Figma absolute positioning, hide scrollbars, persist customer context, or invent logo assets.
 
-CUST01B through CUST03B extend the existing English-language, Malaysia-focused mobile grocery prototype. CUST-FIGMA01 supersedes the former universal green action palette with the approved CKS-first semantic split while preserving Inter/system typography, rounded white cards and the 430px shell. CUST03B adds backend-authoritative customer order history, detail, tracking, cancellation and receipt download after CUST03A payment finality. It does not add frontend Order creation, infer fulfilment state, or change the backend.
+CUST01B through CUST03B extend the existing English-language, Malaysia-focused mobile grocery prototype. CUST-FIGMA01 supersedes the former universal green action palette with the approved CKS-first semantic split while preserving Inter/system typography, rounded white cards and the 430px shell. CUST03B added backend-authoritative customer order history, detail, tracking and receipt download after CUST03A payment finality. CUST-CANCEL01 removes customer cancellation actions after Order creation while keeping historical cancelled/refund presentation. It does not add frontend Order creation, infer fulfilment state, or change the backend.
 
 ## Runtime owners
 

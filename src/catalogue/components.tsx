@@ -372,7 +372,13 @@ export function routeTitle(route: string) {
   return `${page} | CKS Go`;
 }
 
-export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
+export function CatalogueApp({
+  onLogout,
+  supportWhatsApp = "",
+}: {
+  onLogout?: () => void;
+  supportWhatsApp?: string;
+}) {
   const { state, controller, controls } = useCatalogue();
   const checkout = useCheckout();
   const payment = usePayment();
@@ -635,6 +641,7 @@ export function CatalogueApp({ onLogout }: { onLogout?: () => void }) {
                 state={orders.state}
                 controller={orders.controller}
                 onBack={() => navigate("orders")}
+                supportWhatsApp={supportWhatsApp}
               />
             ) : (
               <>

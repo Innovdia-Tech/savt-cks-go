@@ -33,6 +33,12 @@ describe("customer payment presentation", () => {
     const html = render(base);
     expect(html).toMatch(/Pay (?:RM|MYR).*23\.00/);
     expect(html).toContain("handed securely to Savt");
+    expect(html).toContain(
+      "Please check your items and delivery address before paying.",
+    );
+    expect(html).toContain(
+      "Once confirmed, orders cannot be changed or cancelled in the app.",
+    );
     expect(html).not.toContain("Order Confirmed");
   });
 

@@ -1,12 +1,8 @@
-import { createElement } from "react";
+import { Children, createElement, isValidElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { OrderDetail, OrderPage } from "./contracts";
-import {
-  CancellationDialog,
-  OrderDetailScreen,
-  OrdersScreen,
-} from "./components";
+import { OrderDetailScreen, OrdersScreen } from "./components";
 import type { OrdersState } from "./state";
 
 const orderId = "11111111-1111-4111-8111-111111111111";
@@ -123,9 +119,6 @@ const state = (patch: Partial<OrdersState> = {}): OrdersState => ({
   detailPhase: "ready",
   detail,
   detailError: null,
-  cancelPhase: "idle",
-  cancelError: null,
-  canRetryCancellation: false,
   receiptPhase: "idle",
   receiptError: null,
   ...patch,
@@ -135,8 +128,6 @@ const controller = {
   refresh: async () => {},
   nextPage: async () => {},
   previousPage: async () => {},
-  cancel: async () => {},
-  retryCancellation: async () => {},
   downloadReceipt: async () => null,
 };
 
@@ -149,6 +140,117 @@ const progressStep = (html: string, label: string) => {
 };
 
 describe("customer orders presentation", () => {
+  it("never offers cancellation from stale backend capability or retry state", () => {
+    const html = renderToStaticMarkup(
+      createElement(OrderDetailScreen, {
+        state: {
+          ...state(),
+          cancelPhase: "error",
+          canRetryCancellation: true,
+        },
+        controller,
+        onBack: () => {},
+      } as never),
+    );
+    expect(html).not.toContain("Cancel order");
+    expect(html).not.toContain("Retry cancellation");
+    expect(html).not.toContain("cancel-order-title");
+    expect(html).toContain("Where your order is");
+  });
+
+  it("shows help without an actionable link when support is not configured", () => {
+    const html = renderToStaticMarkup(
+      createElement(OrderDetailScreen, {
+        state: state(),
+        controller,
+        onBack: () => {},
+      } as never),
+    );
+    expect(html).toContain("Get help with this order");
+    expect(html).not.toContain("wa.me");
+    expect(html).not.toMatch(/<button[^>]*>Get help with this order<\/button>/);
+  });
+
+  it("offers configured support for the displayed Order without exposing private details", () => {
+    const html = renderToStaticMarkup(
+      createElement(OrderDetailScreen, {
+        state: state(),
+        controller,
+        onBack: () => {},
+        supportWhatsApp: "60123456789",
+      } as never),
+    );
+    expect(html).toContain("Open WhatsApp support");
+    expect(html).not.toContain("wa.me");
+    expect(html).not.toContain("paymentIntentId");
+    expect(html).not.toContain("https://wa.me/60123456789");
+  });
+
+  it("opens support separately without invoking an Order action", () => {
+    const open = vi.fn();
+    const downloadReceipt = vi.fn();
+    vi.stubGlobal("window", { open });
+    try {
+      const tree = OrderDetailScreen({
+        state: state(),
+        controller: { ...controller, downloadReceipt } as never,
+        onBack: () => {},
+        supportWhatsApp: "60123456789",
+      });
+      const findButton = (node: ReactNode): (() => void) | undefined => {
+        if (
+          !isValidElement<{ children?: ReactNode; onClick?: () => void }>(node)
+        )
+          return undefined;
+        if (
+          node.type === "button" &&
+          node.props.children === "Open WhatsApp support"
+        )
+          return node.props.onClick;
+        return Children.toArray(node.props.children)
+          .map(findButton)
+          .find(Boolean);
+      };
+      const click = findButton(tree);
+      expect(click).toBeTypeOf("function");
+      click?.();
+      expect(open).toHaveBeenCalledExactlyOnceWith(
+        "https://wa.me/60123456789?text=Hi%20CKS%20Go%20Support%2C%20I%20need%20help%20with%20my%20order%20CKS-20260921-0001.%0AMy%20enquiry%3A",
+        "_blank",
+        "noopener,noreferrer",
+      );
+      expect(downloadReceipt).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("keeps historical cancellation and refund information readable", () => {
+    const cancelled: OrderDetail = {
+      ...detail,
+      customerStage: "CANCELLED",
+      cancellationKind: "CUSTOMER_REQUEST",
+      canCancel: false,
+      milestones: { ...detail.milestones, cancelledAt: at },
+      refund: {
+        refundRequired: true,
+        requiredAmountMinor: 4590,
+        totalRequiredAmountMinor: 4590,
+        requirementStatus: "REQUIRED",
+      },
+    };
+    const html = renderToStaticMarkup(
+      createElement(OrderDetailScreen, {
+        state: state({ detail: cancelled }),
+        controller,
+        onBack: () => {},
+      } as never),
+    );
+    expect(html).toContain("Cancelled");
+    expect(html).toContain("Refund required");
+    expect(html).toContain("refund has been settled");
+    expect(html).not.toContain("Cancel order");
+  });
   it.each([
     ["loading", "Loading your orders"],
     ["error", "Orders unavailable"],
@@ -278,7 +380,7 @@ describe("customer orders presentation", () => {
       "Grand total",
       "Demo Customer",
       "Leave at reception",
-      "Cancel order",
+      "Get help with this order",
     ])
       expect(html).toContain(copy);
     expect(html).not.toContain("INTERNAL-SKU");
@@ -451,50 +553,4 @@ describe("customer orders presentation", () => {
       expect(html).not.toContain(pandaConfirmedAt);
     },
   );
-
-  it("renders authoritative cancellation rejection and stable retry copy", () => {
-    const rejected = renderToStaticMarkup(
-      createElement(OrderDetailScreen, {
-        state: state({
-          cancelPhase: "error",
-          cancelError: "CUSTOMER_ORDER_NOT_CANCELLABLE",
-        }),
-        controller,
-        onBack: () => {},
-      } as never),
-    );
-    expect(rejected).toContain("could not be cancelled");
-    expect(rejected).not.toContain("CUSTOMER_ORDER_NOT_CANCELLABLE");
-    const retry = renderToStaticMarkup(
-      createElement(OrderDetailScreen, {
-        state: state({
-          cancelPhase: "error",
-          cancelError: "REQUEST_TIMEOUT",
-          canRetryCancellation: true,
-        }),
-        controller,
-        onBack: () => {},
-      } as never),
-    );
-    expect(retry).toContain("Retry cancellation");
-    expect(retry).not.toContain(
-      '<button class="customer-button order-cancel">Cancel order</button>',
-    );
-  });
-
-  it("uses an app-owned cancellation dialog with least-destructive initial focus", () => {
-    const html = renderToStaticMarkup(
-      createElement(CancellationDialog, {
-        open: true,
-        orderNumber: detail.orderNumber,
-        busy: false,
-        onCancel: () => {},
-        onConfirm: () => {},
-      }),
-    );
-    expect(html).toContain("Cancel order CKS-20260921-0001?");
-    expect(html).toContain("refund requirement");
-    expect(html).toMatch(/<button[^>]*autofocus=""[^>]*>Keep order<\/button>/);
-    expect(html).not.toMatch(/confirm\(|alert\(/);
-  });
 });

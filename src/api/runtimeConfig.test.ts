@@ -7,6 +7,7 @@ describe("loadRuntimeConfig", () => {
       apiOrigin: "",
       developmentApi: false,
       developmentBridge: false,
+      supportWhatsApp: "",
     });
   });
 
@@ -59,6 +60,28 @@ describe("loadRuntimeConfig", () => {
       developmentApi: false,
       developmentBridge: true,
     });
+  });
+
+  it("accepts only an international support number without blocking startup", () => {
+    expect(
+      loadRuntimeConfig(
+        { VITE_CKS_GO_SUPPORT_WHATSAPP: " +60123456789 " },
+        true,
+      ).supportWhatsApp,
+    ).toBe("60123456789");
+    for (const invalid of [
+      "60123456789",
+      "https://wa.me/60123456789",
+      "+0123456789",
+      "+6012 345 6789",
+      "+123",
+      "+1234567890123456",
+    ]) {
+      expect(
+        loadRuntimeConfig({ VITE_CKS_GO_SUPPORT_WHATSAPP: invalid }, true)
+          .supportWhatsApp,
+      ).toBe("");
+    }
   });
 
   it.each(["VITE_CKS_GO_DEVELOPMENT_API", "VITE_CKS_GO_DEVELOPMENT_BRIDGE"])(

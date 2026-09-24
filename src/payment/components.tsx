@@ -56,6 +56,11 @@ export function PaymentPanel({
         <p className="quote-eyebrow">Secure checkout</p>
         <h2 id="payment-title">Ready for payment</h2>
         <p>Your reviewed total will be handed securely to Savt for payment.</p>
+        <p className="payment-final-notice">
+          Please check your items and delivery address before paying.
+          <br />
+          Once confirmed, orders cannot be changed or cancelled in the app.
+        </p>
         <button className={action} onClick={() => void controller.initiate()}>
           {acceptedTotalMinor === undefined
             ? "Pay securely"
