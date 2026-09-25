@@ -136,7 +136,7 @@ export function ProductTile({
         aria-label={`View ${product.name}`}
       >
         <ProductImage url={product.imageUrl} name={product.name} />
-        <span className="catalogue-name line-clamp-2">{product.name}</span>
+        <span className="catalogue-name">{product.name}</span>
         <span className="catalogue-unit">
           {product.packSize || product.uom.name}
         </span>

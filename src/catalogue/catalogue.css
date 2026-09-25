@@ -420,6 +420,7 @@
   font-weight: 700;
   margin-top: 8px;
   min-height: 20px;
+  overflow-wrap: anywhere;
 }
 .catalogue-unit {
   display: block;

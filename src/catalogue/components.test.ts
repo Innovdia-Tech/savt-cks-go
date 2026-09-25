@@ -97,7 +97,7 @@ it("supports the shared image-led product-card composition", () => {
   expect(html).toContain("catalogue-tile--grid");
   expect(html).toContain('aria-label="Add Rice to cart"');
   expect(html).toContain(">Add</button>");
-  expect(html).toContain("line-clamp-2");
+  expect(html).not.toContain("line-clamp-2");
   expect(html).toContain("1 kg");
   expect(html).not.toContain("catalogue-availability-row");
   expect(html).toMatch(/catalogue-price[^>]*>[^<]*12\.34/);

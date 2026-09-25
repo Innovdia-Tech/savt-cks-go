@@ -184,13 +184,6 @@ a[href] {
   line-height: var(--leading-meta);
 }
 
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
 @layer components {
   .app-viewport {
     height: 100dvh;
@@ -299,6 +292,7 @@ a[href] {
   }
 
   .bottom-navigation {
+    flex-shrink: 0;
     position: relative;
     z-index: var(--z-navigation);
     display: grid;
@@ -327,6 +321,14 @@ a[href] {
     background: transparent;
     font-size: 0.625rem;
     font-weight: 800;
+  }
+
+  .bottom-navigation__label {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    text-align: center;
+    line-height: 1.2;
   }
 
   .bottom-navigation__item.is-active {

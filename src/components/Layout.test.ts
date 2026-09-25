@@ -17,6 +17,9 @@ describe("BottomNavigation", () => {
     expect(html).toContain('aria-current="page"');
     expect(html).toContain("Home");
     expect(html).toContain("Categories");
+    expect(html).toContain(
+      '<span class="bottom-navigation__label">Categories</span>',
+    );
     expect(html).toContain("Cart");
     expect(html).toContain("Orders");
     expect(html).not.toContain("Account");
