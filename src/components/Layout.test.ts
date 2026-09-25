@@ -37,15 +37,33 @@ describe("BottomNavigation", () => {
 });
 
 describe("HeaderActions", () => {
-  it("keeps compact Savt return and close controls consistent while shopping", () => {
+  it("uses the accepted compact home header with ordinary data", () => {
     const html = renderToStaticMarkup(
-      createElement(HeaderActions, { shopping: true, onLogout: () => {} }),
+      createElement(HeaderActions, {
+        context: "home",
+        cartCount: 2,
+        onCart: () => {},
+        onLogout: () => {},
+      }),
+    );
+    expect(html).toContain("CKS Go");
+    expect(html).toContain('aria-label="Open cart"');
+    expect(html).toContain('aria-label="Close CKS Go"');
+    expect(html).toContain("app-header__shopping-actions--shopping");
+  });
+
+  it("keeps compact Back and Close controls on browse screens", () => {
+    const html = renderToStaticMarkup(
+      createElement(HeaderActions, {
+        context: "browse",
+        title: "Categories",
+        onLogout: () => {},
+      }),
     );
 
-    expect(html).toContain('aria-label="Back to Savt"');
+    expect(html).toContain('aria-label="Back"');
     expect(html).toContain('aria-label="Close CKS Go"');
-    expect(html).toContain("Close");
-    expect(html).not.toContain("app-header__brand");
+    expect(html).toContain('<span class="app-header__brand">Categories</span>');
   });
 
   it("presents the valid outlet assignment as quiet informational text", async () => {
@@ -96,6 +114,7 @@ describe("HeaderActions", () => {
         };
         onManage: () => void;
         addressLink?: React.ReactNode;
+        title?: string;
       }>;
     };
     expect(layout.DeliveryHeader).toBeTypeOf("function");
@@ -113,6 +132,7 @@ describe("HeaderActions", () => {
         outlet,
         onManage: () => {},
         addressLink: createElement("span", null, "Selected address"),
+        title: "Categories",
       }),
     );
     const orders = renderToStaticMarkup(
@@ -121,6 +141,7 @@ describe("HeaderActions", () => {
         outlet,
         onManage: () => {},
         addressLink: createElement("span", null, "Selected address"),
+        title: "My Orders",
       }),
     );
 
@@ -129,10 +150,15 @@ describe("HeaderActions", () => {
     expect(browse).toContain('aria-label="Close CKS Go"');
     expect(browse).not.toContain("Delivery available");
     expect(browse).not.toContain("DEMO-01");
-    expect(browse).not.toContain("app-header__brand");
+    expect(browse).toContain(
+      '<span class="app-header__brand">Categories</span>',
+    );
     expect(orders).not.toContain("Selected address");
     expect(orders).not.toContain("Demo neighbourhood outlet");
     expect(orders).toContain("app-header__brand");
-    expect(orders).toContain('aria-label="Log out of CKS Go"');
+    expect(orders).toContain(
+      '<span class="app-header__brand">My Orders</span>',
+    );
+    expect(orders).toContain('aria-label="Close CKS Go"');
   });
 });

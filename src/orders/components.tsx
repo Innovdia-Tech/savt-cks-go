@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type {
   CustomerOrderStage,
   OrderDetail,
@@ -98,63 +98,21 @@ function OrderCard({
 }) {
   return (
     <button
-      className="order-card"
+      className="order-card order-card--shopping"
       onClick={() => onOpen(order.orderId)}
       aria-label={`View order ${order.orderNumber}`}
     >
-      <span className="order-card-top">
-        <span>
-          <small>Order</small>
-          <strong>{order.orderNumber}</strong>
-        </span>
-        <Status stage={order.customerStage} />
-      </span>
-      <span className="order-card-meta">
-        <span>{malaysiaTime(order.createdAt)}</span>
-        <span>{order.outletName}</span>
-      </span>
-      <span className="order-card-total">
-        <span>Order total</span>
-        <strong>{money(order.grandTotalMinor)}</strong>
-      </span>
-      <span className="order-card-delivery-type">
-        {order.deliveryType === "NOW" ? "Delivery now" : "Scheduled delivery"}
-      </span>
-      <span className="order-card-open">
-        View details <span aria-hidden="true">→</span>
+      <strong>#{order.orderNumber}</strong>
+      <Status stage={order.customerStage} />
+      <span>{malaysiaTime(order.createdAt)}</span>
+      <b>
+        <span className="sr-only">Order total </span>
+        {money(order.grandTotalMinor)}
+      </b>
+      <span className="order-card--shopping-arrow" aria-hidden="true">
+        ›
       </span>
     </button>
-  );
-}
-
-function OrderGroup({
-  title,
-  orders,
-  empty,
-  onOpen,
-}: {
-  title: string;
-  orders: OrderListItem[];
-  empty: string;
-  onOpen: (orderId: string) => void;
-}) {
-  const headingId = `order-group-${title.toLowerCase().replaceAll(" ", "-")}`;
-  return (
-    <section className="order-group" aria-labelledby={headingId}>
-      <div className="order-group-heading">
-        <h2 id={headingId}>{title}</h2>
-        <span>{orders.length} on this page</span>
-      </div>
-      {orders.length ? (
-        <div className="order-list">
-          {orders.map((order) => (
-            <OrderCard key={order.orderId} order={order} onOpen={onOpen} />
-          ))}
-        </div>
-      ) : (
-        <p className="order-page-empty">{empty}</p>
-      )}
-    </section>
   );
 }
 
@@ -169,6 +127,9 @@ export function OrdersScreen({
   onOpen: (orderId: string) => void;
   onBrowse: () => void;
 }) {
+  const [statusView, setStatusView] = useState<"current" | "history">(
+    "current",
+  );
   useEffect(() => {
     if (state.listPhase === "idle") void controller.load();
   }, [state.listPhase, controller]);
@@ -197,7 +158,7 @@ export function OrdersScreen({
       />
     );
   const page = state.page;
-  if (!page || page.data.length === 0)
+  if (!page || (page.data.length === 0 && page.meta.total === 0))
     return (
       <StateCard
         title="No orders yet"
@@ -213,16 +174,27 @@ export function OrdersScreen({
     (order) => !currentOrderStages.includes(order.customerStage),
   );
   return (
-    <div className="orders-stack">
-      <div className="orders-toolbar">
-        <p>
-          {page.meta.total} {page.meta.total === 1 ? "order" : "orders"}
-        </p>
+    <div className="orders-stack orders-stack--shopping">
+      <div
+        className="orders-status-tabs"
+        role="group"
+        aria-label="Order status"
+      >
         <button
-          className="order-refresh"
-          onClick={() => void controller.refresh()}
+          type="button"
+          aria-pressed={statusView === "current"}
+          onClick={() => setStatusView("current")}
         >
-          Refresh
+          Current orders ({current.length}
+          {page.meta.totalPages > 1 ? " on this page" : ""})
+        </button>
+        <button
+          type="button"
+          aria-pressed={statusView === "history"}
+          onClick={() => setStatusView("history")}
+        >
+          Order history ({history.length}
+          {page.meta.totalPages > 1 ? " on this page" : ""})
         </button>
       </div>
       {page.meta.totalPages > 1 && (
@@ -230,26 +202,32 @@ export function OrdersScreen({
           Showing orders on page {page.meta.page} of {page.meta.totalPages}.
         </p>
       )}
-      <OrderGroup
-        title="Current orders"
-        orders={current}
-        empty={
-          page.meta.totalPages > 1
-            ? "No current orders on this page. Other pages may still contain active orders."
-            : "No current orders."
-        }
-        onOpen={onOpen}
-      />
-      <OrderGroup
-        title="Order history"
-        orders={history}
-        empty={
-          page.meta.totalPages > 1
-            ? "No completed or cancelled orders on this page. Other pages may contain order history."
-            : "No completed or cancelled orders."
-        }
-        onOpen={onOpen}
-      />
+      <div className="order-list" hidden={statusView !== "current"}>
+        {current.length ? (
+          current.map((order) => (
+            <OrderCard key={order.orderId} order={order} onOpen={onOpen} />
+          ))
+        ) : (
+          <p className="order-page-empty">
+            {page.meta.totalPages > 1
+              ? "No current orders on this page. Other pages may still contain active orders."
+              : "No current orders."}
+          </p>
+        )}
+      </div>
+      <div className="order-list" hidden={statusView !== "history"}>
+        {history.length ? (
+          history.map((order) => (
+            <OrderCard key={order.orderId} order={order} onOpen={onOpen} />
+          ))
+        ) : (
+          <p className="order-page-empty">
+            {page.meta.totalPages > 1
+              ? "No completed or cancelled orders on this page. Other pages may contain order history."
+              : "No completed or cancelled orders."}
+          </p>
+        )}
+      </div>
       {page.meta.totalPages > 1 && (
         <nav className="order-pages" aria-label="Order pages">
           <button
@@ -271,6 +249,12 @@ export function OrdersScreen({
           </button>
         </nav>
       )}
+      <button
+        className="order-refresh"
+        onClick={() => void controller.refresh()}
+      >
+        Refresh orders
+      </button>
     </div>
   );
 }
@@ -337,7 +321,6 @@ export function OrderDetailScreen({
       />
     );
   const order = state.detail;
-  const stage = stagePresentation[order.customerStage];
   const currentStageIndex = progressStages.indexOf(
     order.customerStage as (typeof progressStages)[number],
   );
@@ -345,21 +328,13 @@ export function OrderDetailScreen({
   const activeOrder = currentOrderStages.includes(order.customerStage);
   const helpUrl = buildOrderSupportUrl(supportWhatsApp, order.orderNumber);
   return (
-    <div className="order-detail-stack">
+    <div className="order-detail-stack order-detail-stack--shopping">
       <section className="order-detail-hero">
-        <p className="order-eyebrow">{order.outletName}</p>
         <div>
-          <h2>{order.orderNumber}</h2>
+          <h2>#{order.orderNumber}</h2>
           <Status stage={order.customerStage} />
         </div>
         <p>Placed {malaysiaTime(order.createdAt)}</p>
-        <p className="order-stage-explanation">{stage.explanation}</p>
-        {activeOrder && (
-          <div className="order-eta-compact" aria-label="Estimated delivery">
-            <span>Estimated delivery</span>
-            <strong>Estimate unavailable</strong>
-          </div>
-        )}
       </section>
       <section className="order-section" aria-labelledby="order-progress-title">
         <div className="order-section-heading">
@@ -462,11 +437,6 @@ export function OrderDetailScreen({
           {order.destination.postcode} {order.destination.city},{" "}
           {order.destination.state}
         </address>
-        {order.destination.instructions && (
-          <p className="order-instructions">
-            Delivery note: {order.destination.instructions}
-          </p>
-        )}
       </section>
       {order.refund.refundRequired && (
         <section className="order-refund" role="status">

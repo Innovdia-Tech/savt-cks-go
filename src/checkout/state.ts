@@ -66,6 +66,8 @@ export type CartState = {
   error: string | null;
   canRetry: boolean;
   priceChanged: boolean;
+  payableTotalChanged: boolean;
+  previousPayableTotalMinor: number | null;
   paymentFrozen: boolean;
 };
 
@@ -80,6 +82,8 @@ const empty = (): CartState => ({
   error: null,
   canRetry: false,
   priceChanged: false,
+  payableTotalChanged: false,
+  previousPayableTotalMinor: null,
   paymentFrozen: false,
 });
 const safeAssignment = (
@@ -142,6 +146,7 @@ export class CartController {
       error: null,
       canRetry: false,
       priceChanged: false,
+      payableTotalChanged: false,
     });
   }
   private validateAssignment(
@@ -352,6 +357,8 @@ export class CartController {
       error: null,
       canRetry: false,
       priceChanged: false,
+      payableTotalChanged: false,
+      previousPayableTotalMinor: null,
     });
     this.update({
       assignment: pending.assignment,
@@ -407,6 +414,7 @@ export class CartController {
       error: null,
       canRetry: false,
       priceChanged: false,
+      payableTotalChanged: false,
     });
     try {
       const quote = await this.quoteApi.create(
@@ -426,11 +434,20 @@ export class CartController {
         (line) =>
           currentPrices.get(line.outletProductId) !== line.unitPriceMinor,
       );
+      const payableTotalChanged =
+        this.state.previousPayableTotalMinor !== null &&
+        quote.grandTotalMinor !== this.state.previousPayableTotalMinor;
       this.attempt = null;
       this.update({
         quote,
-        quotePhase: priceChanged ? "price-review" : "ready",
+        quotePhase:
+          priceChanged || payableTotalChanged ? "price-review" : "ready",
         priceChanged,
+        payableTotalChanged,
+        previousPayableTotalMinor:
+          priceChanged || payableTotalChanged
+            ? this.state.previousPayableTotalMinor
+            : null,
         error: null,
         canRetry: false,
       });
@@ -452,6 +469,7 @@ export class CartController {
         error: code,
         canRetry,
         priceChanged: false,
+        payableTotalChanged: false,
       });
     }
   }
@@ -487,6 +505,7 @@ export class CartController {
         quotePhase: "expired",
         canRetry: false,
         priceChanged: false,
+        payableTotalChanged: false,
       });
     };
     const delay = Date.parse(quote.quoteExpiresAt) - this.now();
@@ -514,6 +533,8 @@ export class CartController {
       })),
       quotePhase: "ready",
       priceChanged: false,
+      payableTotalChanged: false,
+      previousPayableTotalMinor: null,
     });
   }
 
@@ -531,6 +552,23 @@ export class CartController {
     this.quoteTimer = undefined;
     this.update({ paymentFrozen: true });
     return true;
+  }
+
+  recoverBasketAfterPayment() {
+    if (!this.state.paymentFrozen || !this.state.quote) return;
+    const previousPayableTotalMinor = this.state.quote.grandTotalMinor;
+    this.cancelQuoteWork();
+    this.attempt = null;
+    this.update({
+      quote: null,
+      quotePhase: "idle",
+      error: null,
+      canRetry: false,
+      priceChanged: false,
+      payableTotalChanged: false,
+      previousPayableTotalMinor,
+      paymentFrozen: false,
+    });
   }
 
   clear() {

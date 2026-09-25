@@ -1,5 +1,15 @@
 import type { Assignment, Category, Detail, Outlet } from "./contracts";
 import type { CustomerOrderStage, OrderListItem } from "../orders/contracts";
+import { developmentAppleUrl, developmentRiceUrl } from "./development-artwork";
+import {
+  referenceCategories,
+  referenceCategoryGrid,
+  referenceProductByKey,
+  referenceProducts,
+  referenceSample,
+  referenceScenario,
+  referenceId,
+} from "./reference-match/content";
 const id = (n: number) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const categories: Category[] = [
@@ -17,6 +27,7 @@ const failure = (status: number, code: string) =>
   );
 export const scenarios = [
   "success",
+  referenceScenario,
   "null-images",
   "long-price",
   "unavailable",
@@ -66,12 +77,30 @@ export const orderScenarios = [
   "malformed",
 ] as const;
 export type OrderScenario = (typeof orderScenarios)[number];
+type ReviewedOrder = {
+  quoteId: string;
+  confirmedAt: string;
+  items: Array<{
+    productNameSnapshot: string;
+    uomCodeSnapshot: string;
+    uomNameSnapshot: string;
+    quantity: number;
+    unitPriceMinor: number;
+    lineSubtotalMinor: number;
+  }>;
+  itemsSubtotalMinor: number;
+  finalDeliveryChargeMinor: number;
+  processingFeeMinor: number;
+  grandTotalMinor: number;
+};
 export class DevelopmentCatalogueAdapter {
   private scenario = "success";
   private serial = 0;
   private assignment: Assignment | null = null;
   private expiryUsed = false;
   private latestQuote: { quoteId: string; quoteToken: string } | null = null;
+  private reviewedQuote: Omit<ReviewedOrder, "confirmedAt"> | null = null;
+  private completedOrder: ReviewedOrder | null = null;
   private paymentIntent: {
     quoteId: string;
     paymentIntentId: string;
@@ -94,11 +123,16 @@ export class DevelopmentCatalogueAdapter {
     this.assignment = null;
     this.expiryUsed = false;
     this.latestQuote = null;
+    this.reviewedQuote = null;
+    this.completedOrder = null;
     this.paymentIntent = null;
     this.paymentResult = "pending";
     this.paymentCreates = 0;
     this.paymentResults = 0;
     this.orderScenario = "active";
+  }
+  currentScenario() {
+    return this.scenario;
   }
   expire() {
     this.assignment = null;
@@ -129,11 +163,17 @@ export class DevelopmentCatalogueAdapter {
     };
   }
   private products(): Detail[] {
+    if (this.scenario === referenceScenario) return referenceProducts;
     return Array.from({ length: 30 }, (_, i): Detail => ({
       productId: id(100 + i),
       outletProductId: id(200 + i),
       name: `${i % 2 ? "Rice" : "Apples"} ${String(i + 1).padStart(2, "0")}`,
-      imageUrl: null,
+      imageUrl:
+        this.scenario === "null-images"
+          ? null
+          : i % 2
+            ? developmentRiceUrl
+            : developmentAppleUrl,
       category: categories[i % 2],
       subcategory: null,
       brand: null,
@@ -151,7 +191,35 @@ export class DevelopmentCatalogueAdapter {
       description:
         "Synthetic catalogue item for local acceptance. Store as directed.",
       storageType: "AMBIENT",
-    })).sort((a, b) => a.name.localeCompare(b.name));
+    }));
+  }
+  private referenceOrder(): ReviewedOrder {
+    const items = referenceSample.sampleCart.lines.map((line) => {
+      const product = referenceProductByKey(line.key);
+      return {
+        productNameSnapshot: product.name,
+        uomCodeSnapshot: product.uom.code,
+        uomNameSnapshot: product.uom.name,
+        quantity: line.quantity,
+        unitPriceMinor: product.sellingPriceMinor,
+        lineSubtotalMinor: product.sellingPriceMinor * line.quantity,
+      };
+    });
+    const subtotal = items.reduce(
+      (sum, line) => sum + line.lineSubtotalMinor,
+      0,
+    );
+    const delivery = referenceSample.sampleQuote.deliveryFeeMinor;
+    const processing = referenceSample.sampleQuote.processingFeeMinor;
+    return {
+      quoteId: referenceId(900),
+      confirmedAt: "2026-09-23T01:41:00.000Z",
+      items,
+      itemsSubtotalMinor: subtotal,
+      finalDeliveryChargeMinor: delivery,
+      processingFeeMinor: processing,
+      grandTotalMinor: subtotal + delivery + processing,
+    };
   }
   private primaryOrderStage(): CustomerOrderStage {
     if (this.orderScenario === "cancelled") return "CANCELLED";
@@ -169,7 +237,13 @@ export class DevelopmentCatalogueAdapter {
     sequence = 1,
   ): OrderListItem {
     const orderId = id(991 - sequence);
-    const at = new Date(this.now() - 45 * 60_000).toISOString();
+    const reviewed =
+      sequence === 1
+        ? (this.completedOrder ??
+          (this.scenario === referenceScenario ? this.referenceOrder() : null))
+        : null;
+    const at =
+      reviewed?.confirmedAt ?? new Date(this.now() - 45 * 60_000).toISOString();
     const delivered = stage === "DELIVERED";
     const cancelled = stage === "CANCELLED";
     const outForDelivery = stage === "OUT_FOR_DELIVERY" || delivered;
@@ -177,7 +251,10 @@ export class DevelopmentCatalogueAdapter {
       this.orderScenario === "receipt-ready" && delivered;
     return {
       orderId,
-      orderNumber: `SYNTH-ORDER-${String(sequence).padStart(4, "0")}`,
+      orderNumber:
+        this.scenario === referenceScenario && sequence === 1
+          ? referenceSample.sampleOrder.orderNumber
+          : `SYNTH-ORDER-${String(sequence).padStart(4, "0")}`,
       createdAt: at,
       updatedAt: new Date(this.now()).toISOString(),
       customerStage: stage,
@@ -185,7 +262,7 @@ export class DevelopmentCatalogueAdapter {
       outletId: id(1),
       outletName: "Demo neighbourhood outlet",
       currency: "MYR" as const,
-      grandTotalMinor: 4590,
+      grandTotalMinor: reviewed?.grandTotalMinor ?? 4590,
       deliveryType: "NOW" as const,
       tracking: {
         currentState: outForDelivery ? stage : null,
@@ -217,6 +294,11 @@ export class DevelopmentCatalogueAdapter {
     return page === 1 ? [this.syntheticOrder()] : [];
   }
   private syntheticOrderDetail(summary = this.syntheticOrder()) {
+    const reviewed =
+      summary.orderId === id(990)
+        ? (this.completedOrder ??
+          (this.scenario === referenceScenario ? this.referenceOrder() : null))
+        : null;
     const delivered = summary.customerStage === "DELIVERED";
     const cancelled = summary.customerStage === "CANCELLED";
     const confirmedAt = delivered ? summary.updatedAt : null;
@@ -232,40 +314,54 @@ export class DevelopmentCatalogueAdapter {
       outletId: summary.outletId,
       outletName: summary.outletName,
       canCancel: summary.canCancel,
-      items: [
-        {
-          orderItemId: id(991),
-          skuCode: "SYNTH-SAFE-1",
-          productName: "Synthetic apples",
-          uomCode: "PACK",
-          uomName: "Pack",
-          orderedQuantity: 2,
-          fulfilledQuantity: delivered ? 2 : null,
-          unavailableQuantity: delivered ? 0 : null,
-          unitPriceMinor: 1800,
-          discountMinor: 100,
-          lineTotalMinor: 3500,
-        },
-      ],
+      items: reviewed
+        ? reviewed.items.map((item, index) => ({
+            orderItemId: id(991 + index),
+            skuCode: `SYNTH-REVIEWED-${index + 1}`,
+            productName: item.productNameSnapshot,
+            uomCode: item.uomCodeSnapshot,
+            uomName: item.uomNameSnapshot,
+            orderedQuantity: item.quantity,
+            fulfilledQuantity: delivered ? item.quantity : null,
+            unavailableQuantity: delivered ? 0 : null,
+            unitPriceMinor: item.unitPriceMinor,
+            discountMinor: 0,
+            lineTotalMinor: item.lineSubtotalMinor,
+          }))
+        : [
+            {
+              orderItemId: id(991),
+              skuCode: "SYNTH-SAFE-1",
+              productName: "Synthetic apples",
+              uomCode: "PACK",
+              uomName: "Pack",
+              orderedQuantity: 2,
+              fulfilledQuantity: delivered ? 2 : null,
+              unavailableQuantity: delivered ? 0 : null,
+              unitPriceMinor: 1800,
+              discountMinor: 100,
+              lineTotalMinor: 3500,
+            },
+          ],
       fulfilment: { fulfilmentConfirmed: delivered, confirmedAt },
       money: {
-        itemsSubtotalMinor: 3600,
-        discountAmountMinor: 100,
-        netItemsTotalMinor: 3500,
-        finalDeliveryChargeMinor: 990,
-        processingFeeMinor: 100,
-        grandTotalMinor: 4590,
+        itemsSubtotalMinor: reviewed?.itemsSubtotalMinor ?? 3600,
+        discountAmountMinor: reviewed ? 0 : 100,
+        netItemsTotalMinor: reviewed?.itemsSubtotalMinor ?? 3500,
+        finalDeliveryChargeMinor: reviewed?.finalDeliveryChargeMinor ?? 990,
+        processingFeeMinor: reviewed?.processingFeeMinor ?? 100,
+        grandTotalMinor: reviewed?.grandTotalMinor ?? 4590,
         currency: "MYR",
       },
       destination: {
-        recipientName: "Synthetic customer",
-        recipientPhoneE164: "+60123456789",
-        addressLine1: "1 Synthetic Street",
+        recipientName: reviewed ? "Synthetic recipient" : "Synthetic customer",
+        recipientPhoneE164: reviewed ? null : "+60123456789",
+        addressLine1: reviewed ? "1 Example Street" : "1 Synthetic Street",
         addressLine2: null,
-        city: "Kota Kinabalu",
+        city: reviewed ? "Demo City" : "Kota Kinabalu",
         state: "Sabah",
         postcode: "88000",
-        instructions: "Leave at reception",
+        instructions: reviewed ? null : "Leave at reception",
       },
       delivery: { deliveryType: summary.deliveryType, ...summary.tracking },
       milestones: {
@@ -303,8 +399,8 @@ export class DevelopmentCatalogueAdapter {
       },
       refund: {
         refundRequired: cancelled,
-        requiredAmountMinor: cancelled ? 4590 : 0,
-        totalRequiredAmountMinor: cancelled ? 4590 : 0,
+        requiredAmountMinor: cancelled ? summary.grandTotalMinor : 0,
+        totalRequiredAmountMinor: cancelled ? summary.grandTotalMinor : 0,
         requirementStatus: cancelled ? "REQUIRED" : null,
       },
       receipt: summary.receiptAvailable
@@ -475,6 +571,14 @@ export class DevelopmentCatalogueAdapter {
       const quoteId = id(900 + ++this.serial);
       const quoteToken = "Q".repeat(42) + String(this.serial % 10);
       this.latestQuote = { quoteId, quoteToken };
+      this.reviewedQuote = {
+        quoteId,
+        items: authoritative,
+        itemsSubtotalMinor,
+        finalDeliveryChargeMinor: baseDeliveryFeeMinor,
+        processingFeeMinor,
+        grandTotalMinor: processingFeeBasisMinor + processingFeeMinor,
+      };
       return Response.json({
         data: {
           quoteId,
@@ -595,6 +699,15 @@ export class DevelopmentCatalogueAdapter {
             : this.paymentResult === "failed"
               ? "FAILED"
               : "PENDING";
+      if (
+        status === "PAID" &&
+        this.paymentResult === "paid" &&
+        this.reviewedQuote?.quoteId === paymentIntent.quoteId
+      )
+        this.completedOrder ??= {
+          ...this.reviewedQuote,
+          confirmedAt: new Date(this.now()).toISOString(),
+        };
       return Response.json({
         data: {
           checkoutReference: paymentIntent.quoteId,
@@ -603,7 +716,10 @@ export class DevelopmentCatalogueAdapter {
             this.paymentResult === "paid"
               ? {
                   orderId: id(990),
-                  orderNumber: "SYNTH-ORDER-0001",
+                  orderNumber:
+                    this.scenario === referenceScenario
+                      ? referenceSample.sampleOrder.orderNumber
+                      : "SYNTH-ORDER-0001",
                   status: "CONFIRMED",
                 }
               : null,
@@ -705,7 +821,9 @@ export class DevelopmentCatalogueAdapter {
     const data = isCategories
       ? this.scenario === "empty-categories"
         ? []
-        : categories
+        : this.scenario === referenceScenario
+          ? referenceCategories
+          : categories
       : products
           .filter(
             (p) =>
@@ -722,6 +840,14 @@ export class DevelopmentCatalogueAdapter {
                 p.uom.code,
               ].some((s) => s?.toLowerCase().includes(q)),
           )
+          .sort((a, b) => {
+            if (this.scenario !== referenceScenario || !category) return 0;
+            const rank = (product: Detail) => {
+              const index = referenceCategoryGrid.indexOf(product);
+              return index === -1 ? referenceCategoryGrid.length : index;
+            };
+            return rank(a) - rank(b);
+          })
           .map(
             ({
               description: _description,

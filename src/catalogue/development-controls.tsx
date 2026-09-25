@@ -18,7 +18,7 @@ export function DevelopmentControls({
   customer: CustomerDataController;
   catalogue: CatalogueController;
 }) {
-  const [value, setValue] = useState("success");
+  const [value, setValue] = useState(adapter.currentScenario());
   const [paymentResult, setPaymentResult] =
     useState<PaymentResultScenario>("pending");
   const [orderResult, setOrderResult] = useState<OrderScenario>("active");
@@ -35,6 +35,11 @@ export function DevelopmentControls({
           setPaymentResult("pending");
           setOrderResult("active");
           adapter.reset(e.target.value);
+          const url = new URL(window.location.href);
+          if (e.target.value === "ux03-reference-match")
+            url.searchParams.set("scenario", e.target.value);
+          else url.searchParams.delete("scenario");
+          window.history.replaceState(null, "", url);
           void customer.load();
         }}
       >
@@ -79,10 +84,12 @@ export function DevelopmentControls({
         Expire context and renew
       </button>
       <p>
-        Local fixtures only. Payment create POSTs: {metrics.creates}; result
-        GETs: {metrics.results}; direct provider calls:{" "}
-        {metrics.directProviderCalls}; browser Order POSTs:{" "}
-        {metrics.browserOrderPosts}.
+        {value === "ux03-reference-match"
+          ? "Design preview — sample products and amounts. "
+          : "Local fixtures only. "}
+        Payment create POSTs: {metrics.creates}; result GETs: {metrics.results};
+        direct provider calls: {metrics.directProviderCalls}; browser Order
+        POSTs: {metrics.browserOrderPosts}.
       </p>
     </details>
   );

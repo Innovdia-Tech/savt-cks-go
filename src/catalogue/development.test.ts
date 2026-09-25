@@ -26,7 +26,7 @@ async function setup(scenario = "success") {
 }
 it("cannot construct a production fixture adapter", () =>
   expect(() => new DevelopmentCatalogueAdapter(true)).toThrow());
-it("supplies strict paginated data, null images and detail", async () => {
+it("supplies strict paginated data, development artwork URLs and detail", async () => {
   const { api } = await setup();
   const a = await api.assign(address);
   const p = await api.products(a, { page: 1 });
@@ -34,13 +34,86 @@ it("supplies strict paginated data, null images and detail", async () => {
   expect(p.data).toHaveLength(24);
   expect(p.meta.total).toBe(30);
   expect(next.data).toHaveLength(6);
-  expect(p.data[0].imageUrl).toBeNull();
+  expect(p.data[0].imageUrl).toMatch(
+    /^https:\/\/cks-go-development\.invalid\/artwork\//,
+  );
   expect((await api.categories(a)).data.length).toBeGreaterThan(0);
   expect(
     (await api.detail(a, p.data[0].outletProductId)).data.description,
   ).toBeTruthy();
   expect((await api.products(a, { page: 1, q: "no match" })).data).toEqual([]);
   expect((await api.products(a, { page: 1, q: "%" })).data).toEqual([]);
+});
+it("preserves the missing-image fixture for fallback review", async () => {
+  const { api } = await setup("null-images");
+  const assignment = await api.assign(address);
+  expect(
+    (await api.products(assignment, { page: 1 })).data[0].imageUrl,
+  ).toBeNull();
+});
+it("maps the supplied reference sample through the existing catalogue, quote and order contracts", async () => {
+  const { api, quote, orders } = await setup("ux03-reference-match");
+  const assignment = await api.assign(address);
+  const categories = await api.categories(assignment);
+  expect(categories.data.map((category) => category.name)).toEqual([
+    "Fruits & Vegetables",
+    "Meat & Seafood",
+    "Dairy & Chilled",
+    "Pantry Essentials",
+  ]);
+  const home = await api.products(assignment, { page: 1 });
+  expect(home.data.slice(0, 2).map((product) => product.name)).toEqual([
+    "Cavendish Banana",
+    "Red Apple",
+  ]);
+  expect(home.meta.total).toBe(7);
+  expect(home.data[1].imageUrl).toBe(
+    "https://cks-go-development.invalid/reference-match/red-apple.png",
+  );
+  const listing = await api.products(assignment, {
+    page: 1,
+    categoryId: categories.data[0].id,
+  });
+  expect(listing.data.slice(0, 6).map((product) => product.name)).toEqual([
+    "Red Apple",
+    "Orange",
+    "Broccoli",
+    "Carrot",
+    "Tomato",
+    "Potato",
+  ]);
+  const lines = ["Red Apple", "Carrot", "Potato"].map((name) => ({
+    outletProductId: home.data.find((product) => product.name === name)!
+      .outletProductId,
+    quantity: 1,
+  }));
+  const reviewed = await quote.create(
+    {
+      outletId: assignment.outlet.id,
+      customerAddressId: address.id,
+      deliveryType: "NOW",
+      items: lines,
+    },
+    crypto.randomUUID(),
+  );
+  expect([
+    reviewed.itemsSubtotalMinor,
+    reviewed.finalDeliveryChargeMinor,
+    reviewed.processingFeeMinor,
+    reviewed.grandTotalMinor,
+  ]).toEqual([1260, 490, 50, 1800]);
+  const listed = (await orders.list()).data[0];
+  const detail = await orders.detail(listed.orderId);
+  expect(listed).toMatchObject({
+    orderNumber: "CKS100123",
+    grandTotalMinor: 1800,
+  });
+  expect(detail.items.map((item) => item.productName)).toEqual([
+    "Red Apple",
+    "Carrot",
+    "Potato",
+  ]);
+  expect(detail.money.grandTotalMinor).toBe(reviewed.grandTotalMinor);
 });
 it.each([
   ["incomplete", "CUSTOMER_ASSIGNMENT_INCOMPLETE"],
@@ -176,7 +249,7 @@ it("returns a higher authoritative price in the price-change scenario", async ()
 });
 
 it("simulates payment only through the CKS Go endpoints and keeps finality observational", async () => {
-  const { adapter, api, quote, payment } = await setup();
+  const { adapter, api, quote, payment, orders } = await setup();
   const assignment = await api.assign(address);
   const item = (await api.products(assignment, { page: 1 })).data[0];
   const trusted = await quote.create(
@@ -213,6 +286,17 @@ it("simulates payment only through the CKS Go endpoints and keeps finality obser
     status: "PAID",
     order: { orderNumber: "SYNTH-ORDER-0001" },
   });
+  const completed = (await orders.list()).data[0];
+  const detail = await orders.detail(completed.orderId);
+  expect(completed.grandTotalMinor).toBe(trusted.grandTotalMinor);
+  expect(detail.money.grandTotalMinor).toBe(trusted.grandTotalMinor);
+  expect(detail.items).toMatchObject([
+    {
+      productName: item.name,
+      orderedQuantity: 1,
+      lineTotalMinor: trusted.items[0].lineSubtotalMinor,
+    },
+  ]);
   expect(adapter.paymentMetrics()).toEqual({
     creates: 1,
     results: 2,

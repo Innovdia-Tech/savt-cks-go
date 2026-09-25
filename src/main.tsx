@@ -57,6 +57,13 @@ async function start() {
             await import("./catalogue/development")
           ).DevelopmentCatalogueAdapter(production)
         : undefined;
+    if (
+      import.meta.env.DEV &&
+      catalogueDevelopment &&
+      new URLSearchParams(window.location.search).get("scenario") ===
+        "ux03-reference-match"
+    )
+      catalogueDevelopment.reset("ux03-reference-match");
     const DevelopmentControls =
       import.meta.env.DEV && config.developmentApi
         ? (await import("./catalogue/development-controls")).DevelopmentControls
@@ -88,7 +95,10 @@ async function start() {
       bridge,
       session,
       (quoteId) => checkout.freezeForPayment(quoteId),
-      () => checkout.clear(),
+      (preserveBasket) =>
+        preserveBasket
+          ? checkout.recoverBasketAfterPayment()
+          : checkout.clear(),
     );
     const orders = new OrdersController(
       new OrdersApi(config.apiOrigin, session, catalogueDevelopment?.fetch),

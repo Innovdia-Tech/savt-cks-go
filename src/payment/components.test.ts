@@ -32,7 +32,7 @@ describe("customer payment presentation", () => {
   it("starts only from the explicit proceed action", () => {
     const html = render(base);
     expect(html).toMatch(/Pay (?:RM|MYR).*23\.00/);
-    expect(html).toContain("handed securely to Savt");
+    expect(html).toContain("Secure checkout with Savt");
     expect(html).toContain(
       "Please check your items and delivery address before paying.",
     );

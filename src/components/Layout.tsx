@@ -23,6 +23,9 @@ type AppShellProps = {
   restoreScrollTop?: number;
   onScrollPositionChange?: (top: number) => void;
   headerContext?: ShellHeaderContext;
+  developmentFixture?: boolean;
+  title?: string;
+  onBack?: () => void;
 };
 
 export type ShellHeaderContext =
@@ -43,6 +46,9 @@ export function AppShell({
   restoreScrollTop,
   onScrollPositionChange,
   headerContext = screenKey === "home" ? "home" : "browse",
+  developmentFixture = false,
+  title,
+  onBack,
 }: AppShellProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -54,7 +60,7 @@ export function AppShell({
 
   return (
     <main className="app-viewport">
-      <section className="app-shell">
+      <section className="app-shell app-shell--shopping">
         <div
           ref={scrollRef}
           className={`app-shell__scroll ${sticky ? "pb-8" : "pb-6"}`}
@@ -65,9 +71,20 @@ export function AppShell({
           <DeliveryHeader
             context={headerContext}
             outlet={outlet}
+            title={title}
+            onBack={onBack}
+            onCart={() => onNavigate("cart")}
+            cartCount={cartCount}
             onLogout={onLogout}
             onManage={() => onNavigate("profile")}
           />
+          {import.meta.env.DEV &&
+            import.meta.env.VITE_CKS_GO_DEVELOPMENT_API === "true" &&
+            !developmentFixture && (
+              <p className="app-fixture-label">
+                Development preview · sample products, address and payment
+              </p>
+            )}
           {children}
         </div>
         {sticky}
@@ -87,17 +104,32 @@ export function DeliveryHeader({
   onManage,
   outlet,
   addressLink,
+  title,
+  onBack,
+  onCart,
+  cartCount = 0,
 }: {
   context: ShellHeaderContext;
   onLogout?: () => void;
   onManage: () => void;
   outlet?: Outlet | null;
   addressLink?: ReactNode;
+  title?: string;
+  onBack?: () => void;
+  onCart?: () => void;
+  cartCount?: number;
 }) {
   const shoppingContext = context === "home" || context === "browse";
   return (
     <header className={`app-header app-header--${context}`}>
-      <HeaderActions shopping={shoppingContext} onLogout={onLogout} />
+      <HeaderActions
+        context={context}
+        onLogout={onLogout}
+        title={title}
+        onBack={onBack}
+        onCart={onCart}
+        cartCount={cartCount}
+      />
       {shoppingContext &&
         (addressLink ?? <DeliveryAddressLink onManage={onManage} />)}
       {shoppingContext && outlet && (
@@ -121,39 +153,48 @@ export function AssignedOutletLine({ outlet }: { outlet: Outlet }) {
 }
 
 export function HeaderActions({
-  shopping,
   onLogout,
+  context,
+  title,
+  onBack,
+  onCart,
+  cartCount = 0,
 }: {
-  shopping: boolean;
   onLogout?: () => void;
+  context?: ShellHeaderContext;
+  title?: string;
+  onBack?: () => void;
+  onCart?: () => void;
+  cartCount?: number;
 }) {
-  return shopping ? (
-    <div className="app-header__shopping-actions">
-      <IconButton label="Back to Savt" onClick={() => window.history.back()}>
+  if (context === "home")
+    return (
+      <div className="app-header__shopping-actions app-header__shopping-actions--shopping">
+        <span className="app-header__brand">CKS Go</span>
+        <div className="app-header__shopping-controls">
+          <button type="button" onClick={onCart} aria-label="Open cart" className="app-header__cart">
+            <BagIcon className="h-5 w-5" />
+            {cartCount > 0 && <span>{cartCount}</span>}
+          </button>
+          <button type="button" aria-label="Close CKS Go" onClick={onLogout} className="app-header__exit">
+            ×
+          </button>
+        </div>
+      </div>
+    );
+  return (
+    <div className="app-header__bar">
+      <IconButton label="Back" onClick={onBack ?? (() => window.history.back())}>
         <ChevronLeftIcon className="h-4 w-4" />
       </IconButton>
+      <span className="app-header__brand">{title}</span>
       <button
         type="button"
         aria-label="Close CKS Go"
         onClick={onLogout}
         className="app-header__exit"
       >
-        Close
-      </button>
-    </div>
-  ) : (
-    <div className="app-header__bar">
-      <IconButton label="Back to Savt" onClick={() => window.history.back()}>
-        <ChevronLeftIcon className="h-4 w-4" />
-      </IconButton>
-      <span className="app-header__brand">CKS GO</span>
-      <button
-        type="button"
-        aria-label="Log out of CKS Go"
-        onClick={onLogout}
-        className="app-header__exit"
-      >
-        Exit
+        ×
       </button>
     </div>
   );

@@ -5,6 +5,8 @@ import {
   ProductTile,
   CatalogueStatus,
   ProductImage,
+  ProductDetailPurchase,
+  CatalogueProductPages,
   money,
   routeTitle,
 } from "./components";
@@ -33,7 +35,7 @@ it("renders approved price and enables real-cart add only for available products
   );
   expect(html).toContain("Rice");
   expect(html).toContain("12.34");
-  expect(html).toContain("ui-status--positive");
+  expect(html).not.toContain("ui-status--positive");
   expect(html).toContain("ui-button--primary");
   expect(html).not.toMatch(/<button[^>]+disabled[^>]*>Add/);
   expect(html).toContain("Image unavailable");
@@ -51,6 +53,7 @@ it("keeps add disabled for an unavailable outlet product", () => {
     }),
   );
   expect(html).toMatch(/<button[^>]+disabled[^>]*>Add/);
+  expect(html).toContain("catalogue-availability-row");
 });
 it("supports the shared image-led product-card composition", () => {
   const html = renderToStaticMarkup(
@@ -64,10 +67,10 @@ it("supports the shared image-led product-card composition", () => {
 
   expect(html).toContain("catalogue-tile--grid");
   expect(html).toContain('aria-label="Add Rice to cart"');
-  expect(html).toContain("Add to cart");
+  expect(html).toContain(">Add</button>");
   expect(html).toContain("line-clamp-2");
   expect(html).toContain("1 kg");
-  expect(html).toContain("catalogue-availability-row");
+  expect(html).not.toContain("catalogue-availability-row");
   expect(html).toMatch(/catalogue-price[^>]*>[^<]*12\.34/);
   expect(html).not.toMatch(/points|free delivery|popular/i);
 });
@@ -100,10 +103,52 @@ it("uses one quantity pattern after a detail product has been added", async () =
   expect(html).toContain('aria-label="Quantity for Rice"');
   expect(html).not.toContain("Add another");
   expect(html).not.toContain(">Add to cart<");
-  expect(html).toContain(
-    "Final prices and availability are checked when you review your order.",
-  );
+  expect(html).toContain("catalogue-detail-purchase--shopping");
+  expect(html).toContain("12.34");
 });
+
+it("uses the accepted detail purchase bar for ordinary catalogue data", () => {
+  const html = renderToStaticMarkup(
+    createElement(ProductDetailPurchase, {
+      product,
+      quantity: null,
+      orderingDisabled: false,
+      paymentFrozen: false,
+      onAdd: () => {},
+      onSetQuantity: () => {},
+    }),
+  );
+  expect(html).toContain("catalogue-detail-purchase--shopping");
+  expect(html).toContain("12.34");
+  expect(html).toContain("Add to Cart");
+  expect(html).not.toContain("Final prices and availability");
+});
+
+it.each([
+  [7, false],
+  [30, true],
+])(
+  "keeps shared product pagination for a server total of %i",
+  (total, hasNextPage) => {
+    const html = renderToStaticMarkup(
+      createElement(CatalogueProductPages, {
+        page: 1,
+        total,
+        hasNextPage,
+        onPage: () => {},
+      }),
+    );
+    expect(html).toContain("catalogue-pages");
+    expect(html).toContain(`Page 1 · ${total} products`);
+    expect(html).toContain("Previous");
+    expect(html).toContain("Next");
+    expect(html).toMatch(
+      hasNextPage
+        ? /<button>Next<\/button>/
+        : /<button disabled="">Next<\/button>/,
+    );
+  },
+);
 
 it("uses the reviewer-approved Home serviceability copy", () => {
   const unavailable = renderToStaticMarkup(

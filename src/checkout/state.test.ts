@@ -351,6 +351,59 @@ describe("trusted quote lifecycle", () => {
 });
 
 describe("payment quote freeze", () => {
+  it("keeps the basket after confirmed failure and requires acceptance when the new payable total changes", async () => {
+    const first = parseQuote(quoteEnvelope());
+    const nextEnvelope = quoteEnvelope();
+    const second = parseQuote({
+      ...nextEnvelope,
+      data: {
+        ...nextEnvelope.data,
+        processingFee: {
+          enabled: true,
+          feeType: "FIXED",
+          rate: null,
+          fixedAmountMinor: 142,
+        },
+        processingFeeMinor: 142,
+        grandTotalMinor: 1532,
+      },
+    });
+    const create = vi
+      .fn()
+      .mockResolvedValueOnce(first)
+      .mockResolvedValueOnce(second);
+    const controller = new CartController({ create }, { assign: vi.fn() }, () =>
+      Date.parse("2026-09-20T04:00:00.000Z"),
+    );
+    controller.syncAssignment(addressA, assignmentA);
+    controller.add(product(), assignmentA);
+    controller.setQuantity(id("2"), 2);
+    await controller.requestQuote();
+    expect(controller.freezeForPayment(first.quoteId)).toBe(true);
+
+    controller.recoverBasketAfterPayment();
+    expect(controller.getSnapshot()).toMatchObject({
+      lines: [{ quantity: 2 }],
+      paymentFrozen: false,
+      quote: null,
+      quotePhase: "idle",
+      previousPayableTotalMinor: 1432,
+    });
+    await controller.requestQuote();
+    expect(controller.getSnapshot()).toMatchObject({
+      quotePhase: "price-review",
+      priceChanged: false,
+      payableTotalChanged: true,
+    });
+    expect(controller.freezeForPayment(second.quoteId)).toBe(false);
+    controller.acceptPriceChanges();
+    expect(controller.getSnapshot()).toMatchObject({
+      quotePhase: "ready",
+      payableTotalChanged: false,
+      previousPayableTotalMinor: null,
+    });
+    controller.dispose();
+  });
   it("freezes only the current accepted and unexpired quote", async () => {
     const { controller } = fixture();
     controller.add(product(), assignmentA);

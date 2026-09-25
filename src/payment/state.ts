@@ -91,6 +91,7 @@ export class PaymentController {
   private checkoutReference: string | null = null;
   private checkoutUrl: string | null = null;
   private statusCheck: Promise<void> | null = null;
+  private returnObservation: Promise<void> | null = null;
   private generation = 0;
   private readonly unsubscribeSession: () => void;
   private sessionPhase: string;
@@ -100,9 +101,11 @@ export class PaymentController {
     private readonly bridge: PaymentBridgePort,
     private readonly session: SessionPort,
     private readonly freezeQuote: (quoteId: string) => boolean,
-    private readonly onRestart: () => void,
+    private readonly onRestart: (preserveBasket: boolean) => void,
     private readonly now = Date.now,
     private readonly newId = () => crypto.randomUUID(),
+    private readonly waitForReturnCheck = (ms: number) =>
+      new Promise<void>((resolve) => setTimeout(resolve, ms)),
   ) {
     this.sessionPhase = session.getSnapshot().phase;
     this.unsubscribeSession = session.subscribe(() => {
@@ -175,24 +178,61 @@ export class PaymentController {
     if (!this.state.paymentIntentId || !this.checkoutReference)
       return Promise.resolve();
     if (this.statusCheck) return this.statusCheck;
-    this.statusCheck = this.executeStatus().finally(() => {
-      this.statusCheck = null;
+    const check = this.executeStatus().finally(() => {
+      if (this.statusCheck === check) this.statusCheck = null;
     });
+    this.statusCheck = check;
     return this.statusCheck;
   }
 
   handleReturn(): Promise<void> {
-    return this.checkStatus();
+    if (this.returnObservation) return this.returnObservation;
+    if (!this.state.paymentIntentId) return Promise.resolve();
+    const generation = this.generation;
+    const paymentIntentId = this.state.paymentIntentId;
+    const observe = async () => {
+      for (let index = 0; index < 3; index += 1) {
+        if (
+          generation !== this.generation ||
+          this.state.paymentIntentId !== paymentIntentId ||
+          ["paid", "failed", "session-expired"].includes(this.state.phase)
+        )
+          return;
+        if (index > 0) await this.waitForReturnCheck(index === 1 ? 750 : 1500);
+        if (
+          generation !== this.generation ||
+          this.state.paymentIntentId !== paymentIntentId ||
+          ["paid", "failed", "session-expired"].includes(this.state.phase)
+        )
+          return;
+        await this.checkStatus();
+        if (!["pending", "paid-processing"].includes(this.state.phase)) return;
+      }
+    };
+    const observation = observe().finally(() => {
+      if (this.returnObservation === observation) this.returnObservation = null;
+    });
+    this.returnObservation = observation;
+    return this.returnObservation;
   }
 
   restart(): void {
-    if (
-      this.state.phase !== "failed" &&
-      !(this.state.phase === "error" && !this.state.canRetryInitiation)
-    )
-      return;
+    const confirmedFailed = this.state.phase === "failed";
+    const rejectedBeforeIntent =
+      this.state.phase === "error" &&
+      !this.state.canRetryInitiation &&
+      !this.state.paymentIntentId &&
+      !this.attempt;
+    if (!confirmedFailed && !rejectedBeforeIntent) return;
     this.clearPayment();
-    this.onRestart();
+    this.onRestart(true);
+    this.update(empty());
+  }
+
+  finishPaidOrder(): void {
+    if (this.state.phase !== "paid") return;
+    this.clearPayment();
+    this.onRestart(false);
     this.update(empty());
   }
 
@@ -332,6 +372,7 @@ export class PaymentController {
     this.checkoutReference = null;
     this.checkoutUrl = null;
     this.statusCheck = null;
+    this.returnObservation = null;
   }
 
   private update(state: PaymentState): void {
