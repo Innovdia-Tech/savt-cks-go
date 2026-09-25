@@ -26,7 +26,7 @@ async function setup(scenario = "success") {
 }
 it("cannot construct a production fixture adapter", () =>
   expect(() => new DevelopmentCatalogueAdapter(true)).toThrow());
-it("supplies strict paginated data, null images and detail", async () => {
+it("supplies strict paginated data, development artwork URLs and detail", async () => {
   const { api } = await setup();
   const a = await api.assign(address);
   const p = await api.products(a, { page: 1 });
@@ -34,13 +34,22 @@ it("supplies strict paginated data, null images and detail", async () => {
   expect(p.data).toHaveLength(24);
   expect(p.meta.total).toBe(30);
   expect(next.data).toHaveLength(6);
-  expect(p.data[0].imageUrl).toBeNull();
+  expect(p.data[0].imageUrl).toMatch(
+    /^https:\/\/cks-go-development\.invalid\/artwork\//,
+  );
   expect((await api.categories(a)).data.length).toBeGreaterThan(0);
   expect(
     (await api.detail(a, p.data[0].outletProductId)).data.description,
   ).toBeTruthy();
   expect((await api.products(a, { page: 1, q: "no match" })).data).toEqual([]);
   expect((await api.products(a, { page: 1, q: "%" })).data).toEqual([]);
+});
+it("preserves the missing-image fixture for fallback review", async () => {
+  const { api } = await setup("null-images");
+  const assignment = await api.assign(address);
+  expect(
+    (await api.products(assignment, { page: 1 })).data[0].imageUrl,
+  ).toBeNull();
 });
 it.each([
   ["incomplete", "CUSTOMER_ASSIGNMENT_INCOMPLETE"],

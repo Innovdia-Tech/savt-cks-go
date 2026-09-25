@@ -1,4 +1,5 @@
 import type { AdvertisingSlide } from "./AdvertisingCarousel";
+import { groceryBannerArtworkUrl } from "./development-artwork";
 
 export type DevelopmentAdvertisingScenario =
   "multiple" | "single" | "zero" | "failed-creative";
@@ -9,6 +10,7 @@ const primary: AdvertisingSlide = {
   title: "Everyday groceries, easy to find",
   description: "Browse the customer catalogue by category.",
   theme: "berry",
+  imageUrl: groceryBannerArtworkUrl,
   action: { label: "Shop categories", target: "categories" },
 };
 
@@ -18,6 +20,7 @@ const secondary: AdvertisingSlide = {
   title: "Restock the cupboard from one place",
   description: "Search the current outlet catalogue.",
   theme: "forest",
+  imageUrl: groceryBannerArtworkUrl,
 };
 
 const tertiary: AdvertisingSlide = {
@@ -26,6 +29,7 @@ const tertiary: AdvertisingSlide = {
   title: "Build your next grocery list",
   description: "Review availability before adding an item.",
   theme: "sunrise",
+  imageUrl: groceryBannerArtworkUrl,
 };
 
 export function developmentAdvertisingSlides(

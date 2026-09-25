@@ -33,7 +33,7 @@ it("renders approved price and enables real-cart add only for available products
   );
   expect(html).toContain("Rice");
   expect(html).toContain("12.34");
-  expect(html).toContain("ui-status--positive");
+  expect(html).not.toContain("ui-status--positive");
   expect(html).toContain("ui-button--primary");
   expect(html).not.toMatch(/<button[^>]+disabled[^>]*>Add/);
   expect(html).toContain("Image unavailable");
@@ -51,6 +51,7 @@ it("keeps add disabled for an unavailable outlet product", () => {
     }),
   );
   expect(html).toMatch(/<button[^>]+disabled[^>]*>Add/);
+  expect(html).toContain("catalogue-availability-row");
 });
 it("supports the shared image-led product-card composition", () => {
   const html = renderToStaticMarkup(
@@ -67,7 +68,7 @@ it("supports the shared image-led product-card composition", () => {
   expect(html).toContain(">Add</button>");
   expect(html).toContain("line-clamp-2");
   expect(html).toContain("1 kg");
-  expect(html).toContain("catalogue-availability-row");
+  expect(html).not.toContain("catalogue-availability-row");
   expect(html).toMatch(/catalogue-price[^>]*>[^<]*12\.34/);
   expect(html).not.toMatch(/points|free delivery|popular/i);
 });

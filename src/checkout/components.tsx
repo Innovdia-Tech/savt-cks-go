@@ -4,6 +4,7 @@ import { MAX_LINE_QUANTITY } from "./contracts";
 import type { CartController, CartState } from "./state";
 import { QuantitySelector } from "../components/QuantitySelector";
 import { BagIcon } from "../components/Icons";
+import { developmentArtworkFor } from "../catalogue/development-artwork";
 
 const money = (minor: number) =>
   new Intl.NumberFormat("en-MY", { style: "currency", currency: "MYR" }).format(
@@ -198,14 +199,6 @@ function QuoteSummary({
         <dd>{quote.estimatedTotalOrderMinutes} minutes</dd>
         <dt>Expires</dt>
         <dd>{malaysiaTime(quote.quoteExpiresAt)} (Malaysia time)</dd>
-        {state.assignment && (
-          <>
-            <dt>Address</dt>
-            <dd>{state.assignment.addressLabel}</dd>
-            <dt>Assigned outlet</dt>
-            <dd>{state.assignment.outletDisplayName}</dd>
-          </>
-        )}
       </dl>
       {state.quotePhase === "price-review" && (
         <button
@@ -238,12 +231,15 @@ function QuoteSummary({
 
 function CartProductImage({ url, name }: { url: string | null; name: string }) {
   const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [url]);
+  const source = import.meta.env.DEV
+    ? (developmentArtworkFor(url) ?? url)
+    : url;
+  useEffect(() => setFailed(false), [source]);
   return (
     <div className="cart-line-image">
-      {url && !failed ? (
+      {source && !failed ? (
         <img
-          src={url}
+          src={source}
           alt={name}
           loading="lazy"
           referrerPolicy="no-referrer"

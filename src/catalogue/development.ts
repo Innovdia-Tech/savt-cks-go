@@ -1,5 +1,6 @@
 import type { Assignment, Category, Detail, Outlet } from "./contracts";
 import type { CustomerOrderStage, OrderListItem } from "../orders/contracts";
+import { developmentAppleUrl, developmentRiceUrl } from "./development-artwork";
 const id = (n: number) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const categories: Category[] = [
@@ -153,7 +154,12 @@ export class DevelopmentCatalogueAdapter {
       productId: id(100 + i),
       outletProductId: id(200 + i),
       name: `${i % 2 ? "Rice" : "Apples"} ${String(i + 1).padStart(2, "0")}`,
-      imageUrl: null,
+      imageUrl:
+        this.scenario === "null-images"
+          ? null
+          : i % 2
+            ? developmentRiceUrl
+            : developmentAppleUrl,
       category: categories[i % 2],
       subcategory: null,
       brand: null,
@@ -171,7 +177,7 @@ export class DevelopmentCatalogueAdapter {
       description:
         "Synthetic catalogue item for local acceptance. Store as directed.",
       storageType: "AMBIENT",
-    })).sort((a, b) => a.name.localeCompare(b.name));
+    }));
   }
   private primaryOrderStage(): CustomerOrderStage {
     if (this.orderScenario === "cancelled") return "CANCELLED";

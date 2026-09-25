@@ -1,5 +1,6 @@
 import { guardHistoryNavigation } from "./navigation";
 import { useEffect, useRef, useState } from "react";
+import { developmentArtworkFor } from "./development-artwork";
 import { AppShell } from "../components/Layout";
 import { CustomerProfileScreen, CheckoutAddress } from "../customer/components";
 import { useCustomer } from "../customer/context";
@@ -48,12 +49,15 @@ export function ProductImage({
   name: string;
 }) {
   const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [url]);
+  const source = import.meta.env.DEV
+    ? (developmentArtworkFor(url) ?? url)
+    : url;
+  useEffect(() => setFailed(false), [source]);
   return (
     <div className="catalogue-image">
-      {url && !failed ? (
+      {source && !failed ? (
         <img
-          src={url}
+          src={source}
           alt={name}
           loading="lazy"
           referrerPolicy="no-referrer"
@@ -117,9 +121,11 @@ export function ProductTile({
               {money(product.sellingPriceMinor)}
             </strong>
           </div>
-          <div className="catalogue-availability-row">
-            <StatusBadge status={product.availability} />
-          </div>
+          {product.availability !== "AVAILABLE" && (
+            <div className="catalogue-availability-row">
+              <StatusBadge status={product.availability} />
+            </div>
+          )}
         </>
       )}
       {quantity !== null && onSetQuantity ? (
