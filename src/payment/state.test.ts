@@ -177,6 +177,38 @@ describe("PaymentController", () => {
     expect(controller.getSnapshot().phase).toBe("pending");
   });
 
+  it("ignores repeated Pay while one create is in flight and after handoff", async () => {
+    const { api, controller } = fixture();
+    let resolveCreate!: (value: PaymentCreate) => void;
+    api.create.mockImplementationOnce(
+      () => new Promise((resolve) => (resolveCreate = resolve)),
+    );
+    const first = controller.initiate();
+    await controller.initiate();
+    expect(api.create).toHaveBeenCalledOnce();
+    resolveCreate(pendingCreate);
+    await first;
+    expect(controller.getSnapshot().phase).toBe("pending");
+    await controller.initiate();
+    expect(api.create).toHaveBeenCalledOnce();
+  });
+
+  it("retries a failed status GET without creating or reopening payment", async () => {
+    const { api, bridge, controller } = fixture();
+    await controller.initiate();
+    api.result.mockRejectedValueOnce(new PaymentError("NETWORK_ERROR"));
+    await controller.checkStatus();
+    expect(controller.getSnapshot()).toMatchObject({
+      phase: "error",
+      paymentIntentId,
+    });
+    await controller.checkStatus();
+    expect(controller.getSnapshot().phase).toBe("pending");
+    expect(api.result).toHaveBeenCalledTimes(2);
+    expect(api.create).toHaveBeenCalledOnce();
+    expect(bridge.requestPaymentHandoff).toHaveBeenCalledOnce();
+  });
+
   it.each([
     ["PENDING", "pending"],
     ["FAILED", "failed"],
@@ -228,6 +260,20 @@ describe("PaymentController", () => {
     expect(controller.getSnapshot().phase).toBe("pending");
     expect(api.result).toHaveBeenCalledTimes(3);
     expect(bridge.requestPaymentHandoff).toHaveBeenCalledOnce();
+  });
+
+  it("settles unresolved paid-processing after bounded return checks", async () => {
+    const { api, bridge, controller } = fixture();
+    await controller.initiate();
+    api.result.mockResolvedValue(result("PAID_PROCESSING"));
+    await controller.handleReturn();
+    expect(api.result).toHaveBeenCalledTimes(3);
+    expect(api.create).toHaveBeenCalledOnce();
+    expect(bridge.requestPaymentHandoff).toHaveBeenCalledOnce();
+    expect(controller.getSnapshot()).toMatchObject({
+      phase: "paid-processing",
+      order: null,
+    });
   });
 
   it("stops bounded return checks as soon as backend finality is verified", async () => {

@@ -83,7 +83,6 @@ export function PaymentPanel({
           Returning from the payment page does not confirm payment. Your order
           will appear only after payment is confirmed.
         </p>
-        <PaymentObservationActions controller={controller} reopen />
       </section>
     );
   if (state.phase === "checking")
@@ -100,10 +99,9 @@ export function PaymentPanel({
         <p className="quote-eyebrow">Order confirmation in progress</p>
         <h2>Payment received — finalising your order</h2>
         <p>
-          Payment was received, but the order is still being finalised. Keep
-          this page open and check again shortly.
+          Payment is still processing and the order is not confirmed yet.
+          Returning to CKS Go later will check the result again.
         </p>
-        <PaymentObservationActions controller={controller} />
       </section>
     );
   if (state.phase === "handoff-error")
@@ -112,10 +110,12 @@ export function PaymentPanel({
         <p className="quote-eyebrow">Payment remains pending</p>
         <h2>Could not open secure payment</h2>
         <p>
-          The existing payment was kept. Reopen it through Savt or check its
-          backend status; do not start another payment.
+          The existing payment attempt was kept. Continue that same attempt in
+          the secure page; no new payment will be created.
         </p>
-        <PaymentObservationActions controller={controller} reopen />
+        <button className={action} onClick={() => void controller.reopen()}>
+          Continue secure payment
+        </button>
       </section>
     );
   if (state.phase === "failed")
@@ -144,15 +144,21 @@ export function PaymentPanel({
       <p className="quote-eyebrow">Safe recovery</p>
       <h2>Payment unavailable</h2>
       <p>
-        CKS Go could not safely confirm this payment response. No order has been
-        confirmed.
+        {state.paymentIntentId
+          ? "CKS Go could not verify the latest payment status. No order has been confirmed."
+          : "CKS Go could not safely confirm this payment response. No order has been confirmed."}
       </p>
       {state.canRetryInitiation ? (
         <button className={action} onClick={() => void controller.initiate()}>
           Retry payment initiation
         </button>
       ) : state.paymentIntentId ? (
-        <PaymentObservationActions controller={controller} />
+        <button
+          className={action}
+          onClick={() => void controller.checkStatus()}
+        >
+          Retry status check
+        </button>
       ) : (
         <button className={action} onClick={() => controller.restart()}>
           Review basket
@@ -177,29 +183,5 @@ function PaymentNotice({
       <p>{message}</p>
       {busy && <span className="payment-progress" aria-hidden="true" />}
     </section>
-  );
-}
-
-function PaymentObservationActions({
-  controller,
-  reopen = false,
-}: {
-  controller: PaymentActions;
-  reopen?: boolean;
-}) {
-  return (
-    <div className="payment-actions">
-      <button className={action} onClick={() => void controller.checkStatus()}>
-        Check payment status
-      </button>
-      {reopen && (
-        <button
-          className="customer-button payment-action"
-          onClick={() => void controller.reopen()}
-        >
-          Reopen secure payment
-        </button>
-      )}
-    </div>
   );
 }

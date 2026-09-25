@@ -62,15 +62,49 @@ describe("customer payment presentation", () => {
     expect(html).not.toContain("Payment successful");
   });
 
-  it("offers status observation and handoff reopening without another payment action", () => {
+  it("keeps unresolved pending and processing states static after bounded observation", () => {
     const pending = render({
       ...base,
       phase: "pending",
       paymentIntentId: "intent-redacted",
     });
-    expect(pending).toContain("Check payment status");
-    expect(pending).toContain("Reopen secure payment");
-    expect(pending).not.toMatch(/Pay (?:RM|MYR)/);
+    const processing = render({
+      ...base,
+      phase: "paid-processing",
+      paymentIntentId: "intent-redacted",
+    });
+    for (const html of [pending, processing]) {
+      expect(html).not.toContain("Check payment status");
+      expect(html).not.toContain("Reopen secure payment");
+      expect(html).not.toContain("payment-progress");
+      expect(html).not.toMatch(/Pay (?:RM|MYR)/);
+      expect(html).not.toContain("Order confirmed");
+    }
+  });
+
+  it("offers only same-attempt recovery for a failed handoff", () => {
+    const html = render({
+      ...base,
+      phase: "handoff-error",
+      paymentIntentId: "intent-redacted",
+      error: "PAYMENT_HANDOFF_UNAVAILABLE",
+    });
+    expect(html).toContain("Continue secure payment");
+    expect(html).not.toContain("Check payment status");
+    expect(html).not.toContain("Reopen secure payment");
+    expect(html.match(/<button/g) ?? []).toHaveLength(1);
+  });
+
+  it("retries only the status request after a failed status check", () => {
+    const html = render({
+      ...base,
+      phase: "error",
+      paymentIntentId: "intent-redacted",
+      error: "NETWORK_ERROR",
+    });
+    expect(html).toContain("Retry status check");
+    expect(html).not.toContain("Reopen secure payment");
+    expect(html.match(/<button/g) ?? []).toHaveLength(1);
   });
 
   it("shows Order Confirmed only with a backend-projected Order", () => {

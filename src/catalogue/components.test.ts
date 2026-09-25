@@ -43,7 +43,7 @@ it("renders approved price and enables real-cart add only for available products
     /cashback|reward|member price|original price|bestseller|ETA|savings|flash sale/i,
   );
 });
-it("keeps add disabled for an unavailable outlet product", () => {
+it("uses the shared action slot for an unavailable outlet product", () => {
   const html = renderToStaticMarkup(
     createElement(ProductTile, {
       product: { ...product, availability: "UNAVAILABLE" },
@@ -52,8 +52,37 @@ it("keeps add disabled for an unavailable outlet product", () => {
       orderingDisabled: false,
     }),
   );
-  expect(html).toMatch(/<button[^>]+disabled[^>]*>Add/);
-  expect(html).toContain("catalogue-availability-row");
+  expect(html).toMatch(/<button[^>]+disabled[^>]*>Unavailable<\/button>/);
+  expect(html).toContain("catalogue-tile-action");
+  expect(html).not.toContain("catalogue-availability-row");
+});
+it("does not call a read-only available product unavailable", () => {
+  const html = renderToStaticMarkup(
+    createElement(ProductTile, {
+      product,
+      onOpen: () => {},
+      onAdd: () => {},
+      orderingDisabled: true,
+    }),
+  );
+  expect(html).toMatch(/<button[^>]+disabled[^>]*>Add<\/button>/);
+  expect(html).not.toContain(">Unavailable</button>");
+  expect(html).toContain('aria-label="Add Rice to cart"');
+});
+
+it("keeps decrement available and increment disabled for an unavailable basket line", () => {
+  const html = renderToStaticMarkup(
+    createElement(ProductTile, {
+      product: { ...product, availability: "UNAVAILABLE" },
+      onOpen: () => {},
+      quantity: 2,
+      onSetQuantity: () => {},
+    }),
+  );
+  expect(html).toContain("catalogue-tile-action");
+  expect(html).toMatch(/aria-label="Decrease quantity"(?![^>]*disabled)/);
+  expect(html).toMatch(/aria-label="Increase quantity"[^>]*disabled/);
+  expect(html).not.toContain(">Unavailable</button>");
 });
 it("supports the shared image-led product-card composition", () => {
   const html = renderToStaticMarkup(

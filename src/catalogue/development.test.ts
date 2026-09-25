@@ -51,6 +51,14 @@ it("preserves the missing-image fixture for fallback review", async () => {
     (await api.products(assignment, { page: 1 })).data[0].imageUrl,
   ).toBeNull();
 });
+it("provides a development-only mixed card alignment scenario", async () => {
+  const { api } = await setup("card-alignment");
+  const assignment = await api.assign(address);
+  const products = (await api.products(assignment, { page: 1 })).data;
+  expect(products[0].name).toBe("Synthetic long-name apples sample pack");
+  expect(products[1].name).toBe("Rice 02");
+  expect(products[3].availability).toBe("UNAVAILABLE");
+});
 it("maps the supplied reference sample through the existing catalogue, quote and order contracts", async () => {
   const { api, quote, orders } = await setup("ux03-reference-match");
   const assignment = await api.assign(address);

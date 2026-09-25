@@ -27,6 +27,7 @@ const failure = (status: number, code: string) =>
   );
 export const scenarios = [
   "success",
+  "card-alignment",
   referenceScenario,
   "null-images",
   "long-price",
@@ -167,7 +168,10 @@ export class DevelopmentCatalogueAdapter {
     return Array.from({ length: 30 }, (_, i): Detail => ({
       productId: id(100 + i),
       outletProductId: id(200 + i),
-      name: `${i % 2 ? "Rice" : "Apples"} ${String(i + 1).padStart(2, "0")}`,
+      name:
+        this.scenario === "card-alignment" && i === 0
+          ? "Synthetic long-name apples sample pack"
+          : `${i % 2 ? "Rice" : "Apples"} ${String(i + 1).padStart(2, "0")}`,
       imageUrl:
         this.scenario === "null-images"
           ? null
