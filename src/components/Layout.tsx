@@ -246,7 +246,7 @@ export function BottomNavigation({
             <span className="bottom-navigation__icon" aria-hidden="true">
               <Icon className="h-5 w-5" />
             </span>
-            <span>{item.label}</span>
+            <span className="bottom-navigation__label">{item.label}</span>
             {!!item.count && item.label === "Cart" && (
               <span className="bottom-navigation__badge" aria-hidden="true">
                 {item.count}

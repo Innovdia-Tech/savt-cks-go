@@ -95,7 +95,39 @@ export function ProductTile({
   variant?: "grid" | "list";
 }) {
   const canAdd =
-    product.availability === "AVAILABLE" && !orderingDisabled && !!onAdd;
+    product.availability === "AVAILABLE" &&
+    !orderingDisabled &&
+    !paymentFrozen &&
+    !!onAdd;
+  const actionControl =
+    quantity !== null && onSetQuantity ? (
+      <QuantitySelector
+        className="catalogue-tile-quantity"
+        label={`Quantity for ${product.name}`}
+        quantity={quantity}
+        minimum={0}
+        maximum={MAX_LINE_QUANTITY}
+        disabled={paymentFrozen}
+        incrementDisabled={
+          orderingDisabled || product.availability !== "AVAILABLE"
+        }
+        onDecrement={() => onSetQuantity(quantity - 1)}
+        onIncrement={() => onSetQuantity(quantity + 1)}
+      />
+    ) : (
+      <Button
+        className="catalogue-add"
+        disabled={!canAdd}
+        onClick={onAdd}
+        aria-label={
+          product.availability === "UNAVAILABLE"
+            ? `${product.name} unavailable`
+            : `Add ${product.name} to cart`
+        }
+      >
+        {product.availability === "UNAVAILABLE" ? "Unavailable" : "Add"}
+      </Button>
+    );
   return (
     <article className={`catalogue-tile catalogue-tile--${variant}`}>
       <button
@@ -104,7 +136,7 @@ export function ProductTile({
         aria-label={`View ${product.name}`}
       >
         <ProductImage url={product.imageUrl} name={product.name} />
-        <span className="catalogue-name line-clamp-2">{product.name}</span>
+        <span className="catalogue-name">{product.name}</span>
         <span className="catalogue-unit">
           {product.packSize || product.uom.name}
         </span>
@@ -124,40 +156,12 @@ export function ProductTile({
               {money(product.sellingPriceMinor)}
             </strong>
           </div>
-          {product.availability !== "AVAILABLE" && (
-            <div className="catalogue-availability-row">
-              <StatusBadge status={product.availability} />
-            </div>
-          )}
         </>
       )}
-      {quantity !== null && onSetQuantity ? (
-        <QuantitySelector
-          className="catalogue-tile-quantity"
-          label={`Quantity for ${product.name}`}
-          quantity={quantity}
-          minimum={0}
-          maximum={MAX_LINE_QUANTITY}
-          disabled={paymentFrozen}
-          incrementDisabled={
-            orderingDisabled || product.availability !== "AVAILABLE"
-          }
-          onDecrement={() => onSetQuantity(quantity - 1)}
-          onIncrement={() => onSetQuantity(quantity + 1)}
-        />
+      {variant === "grid" ? (
+        <div className="catalogue-tile-action">{actionControl}</div>
       ) : (
-        <Button
-          className="catalogue-add"
-          disabled={!canAdd}
-          onClick={onAdd}
-          aria-label={
-            canAdd
-              ? `Add ${product.name} to cart`
-              : `Add ${product.name} — unavailable`
-          }
-        >
-          Add
-        </Button>
+        actionControl
       )}
     </article>
   );

@@ -370,17 +370,18 @@
   flex-direction: column;
   box-shadow: none;
 }
+.catalogue-tile--grid {
+  display: grid;
+  grid-row: span 3;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: subgrid;
+  row-gap: 0;
+}
 .catalogue-price-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-}
-.catalogue-availability-row {
-  display: flex;
-  min-height: 28px;
-  align-items: center;
-  margin-top: 2px;
 }
 .catalogue-open {
   text-align: left;
@@ -419,6 +420,7 @@
   font-weight: 700;
   margin-top: 8px;
   min-height: 20px;
+  overflow-wrap: anywhere;
 }
 .catalogue-unit {
   display: block;
@@ -443,6 +445,35 @@
   border-radius: var(--radius-button);
   font-weight: 700;
   margin-top: 7px;
+}
+.catalogue-tile--grid .catalogue-open {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+.catalogue-tile-action {
+  display: flex;
+  min-height: 3.125rem;
+  align-items: flex-end;
+  margin-top: 7px;
+}
+.catalogue-tile-action > .catalogue-add,
+.catalogue-tile-action > .catalogue-tile-quantity {
+  width: 100%;
+  margin-top: 0;
+}
+.catalogue-tile-action > .catalogue-add {
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.catalogue-tile--grid .catalogue-tile-quantity {
+  min-width: 0;
+  padding: 0;
+}
+.catalogue-tile--grid .catalogue-tile-quantity > span {
+  min-width: 1.5rem;
 }
 .catalogue-tile-quantity {
   align-self: stretch;
@@ -766,11 +797,7 @@
     margin: 2px 0 4px;
   }
 
-  .catalogue-root--home .catalogue-tile--grid .catalogue-availability-row {
-    min-height: 24px;
-  }
-
-  .catalogue-root--home .catalogue-tile--grid .catalogue-add {
+  .catalogue-root--home .catalogue-tile--grid .catalogue-tile-action {
     margin-top: 6px;
   }
 }
