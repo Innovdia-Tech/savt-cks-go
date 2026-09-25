@@ -66,12 +66,30 @@ export const orderScenarios = [
   "malformed",
 ] as const;
 export type OrderScenario = (typeof orderScenarios)[number];
+type ReviewedOrder = {
+  quoteId: string;
+  confirmedAt: string;
+  items: Array<{
+    productNameSnapshot: string;
+    uomCodeSnapshot: string;
+    uomNameSnapshot: string;
+    quantity: number;
+    unitPriceMinor: number;
+    lineSubtotalMinor: number;
+  }>;
+  itemsSubtotalMinor: number;
+  finalDeliveryChargeMinor: number;
+  processingFeeMinor: number;
+  grandTotalMinor: number;
+};
 export class DevelopmentCatalogueAdapter {
   private scenario = "success";
   private serial = 0;
   private assignment: Assignment | null = null;
   private expiryUsed = false;
   private latestQuote: { quoteId: string; quoteToken: string } | null = null;
+  private reviewedQuote: Omit<ReviewedOrder, "confirmedAt"> | null = null;
+  private completedOrder: ReviewedOrder | null = null;
   private paymentIntent: {
     quoteId: string;
     paymentIntentId: string;
@@ -94,6 +112,8 @@ export class DevelopmentCatalogueAdapter {
     this.assignment = null;
     this.expiryUsed = false;
     this.latestQuote = null;
+    this.reviewedQuote = null;
+    this.completedOrder = null;
     this.paymentIntent = null;
     this.paymentResult = "pending";
     this.paymentCreates = 0;
@@ -169,7 +189,9 @@ export class DevelopmentCatalogueAdapter {
     sequence = 1,
   ): OrderListItem {
     const orderId = id(991 - sequence);
-    const at = new Date(this.now() - 45 * 60_000).toISOString();
+    const reviewed = sequence === 1 ? this.completedOrder : null;
+    const at =
+      reviewed?.confirmedAt ?? new Date(this.now() - 45 * 60_000).toISOString();
     const delivered = stage === "DELIVERED";
     const cancelled = stage === "CANCELLED";
     const outForDelivery = stage === "OUT_FOR_DELIVERY" || delivered;
@@ -185,7 +207,7 @@ export class DevelopmentCatalogueAdapter {
       outletId: id(1),
       outletName: "Demo neighbourhood outlet",
       currency: "MYR" as const,
-      grandTotalMinor: 4590,
+      grandTotalMinor: reviewed?.grandTotalMinor ?? 4590,
       deliveryType: "NOW" as const,
       tracking: {
         currentState: outForDelivery ? stage : null,
@@ -217,6 +239,7 @@ export class DevelopmentCatalogueAdapter {
     return page === 1 ? [this.syntheticOrder()] : [];
   }
   private syntheticOrderDetail(summary = this.syntheticOrder()) {
+    const reviewed = summary.orderId === id(990) ? this.completedOrder : null;
     const delivered = summary.customerStage === "DELIVERED";
     const cancelled = summary.customerStage === "CANCELLED";
     const confirmedAt = delivered ? summary.updatedAt : null;
@@ -232,40 +255,54 @@ export class DevelopmentCatalogueAdapter {
       outletId: summary.outletId,
       outletName: summary.outletName,
       canCancel: summary.canCancel,
-      items: [
-        {
-          orderItemId: id(991),
-          skuCode: "SYNTH-SAFE-1",
-          productName: "Synthetic apples",
-          uomCode: "PACK",
-          uomName: "Pack",
-          orderedQuantity: 2,
-          fulfilledQuantity: delivered ? 2 : null,
-          unavailableQuantity: delivered ? 0 : null,
-          unitPriceMinor: 1800,
-          discountMinor: 100,
-          lineTotalMinor: 3500,
-        },
-      ],
+      items: reviewed
+        ? reviewed.items.map((item, index) => ({
+            orderItemId: id(991 + index),
+            skuCode: `SYNTH-REVIEWED-${index + 1}`,
+            productName: item.productNameSnapshot,
+            uomCode: item.uomCodeSnapshot,
+            uomName: item.uomNameSnapshot,
+            orderedQuantity: item.quantity,
+            fulfilledQuantity: delivered ? item.quantity : null,
+            unavailableQuantity: delivered ? 0 : null,
+            unitPriceMinor: item.unitPriceMinor,
+            discountMinor: 0,
+            lineTotalMinor: item.lineSubtotalMinor,
+          }))
+        : [
+            {
+              orderItemId: id(991),
+              skuCode: "SYNTH-SAFE-1",
+              productName: "Synthetic apples",
+              uomCode: "PACK",
+              uomName: "Pack",
+              orderedQuantity: 2,
+              fulfilledQuantity: delivered ? 2 : null,
+              unavailableQuantity: delivered ? 0 : null,
+              unitPriceMinor: 1800,
+              discountMinor: 100,
+              lineTotalMinor: 3500,
+            },
+          ],
       fulfilment: { fulfilmentConfirmed: delivered, confirmedAt },
       money: {
-        itemsSubtotalMinor: 3600,
-        discountAmountMinor: 100,
-        netItemsTotalMinor: 3500,
-        finalDeliveryChargeMinor: 990,
-        processingFeeMinor: 100,
-        grandTotalMinor: 4590,
+        itemsSubtotalMinor: reviewed?.itemsSubtotalMinor ?? 3600,
+        discountAmountMinor: reviewed ? 0 : 100,
+        netItemsTotalMinor: reviewed?.itemsSubtotalMinor ?? 3500,
+        finalDeliveryChargeMinor: reviewed?.finalDeliveryChargeMinor ?? 990,
+        processingFeeMinor: reviewed?.processingFeeMinor ?? 100,
+        grandTotalMinor: reviewed?.grandTotalMinor ?? 4590,
         currency: "MYR",
       },
       destination: {
-        recipientName: "Synthetic customer",
-        recipientPhoneE164: "+60123456789",
-        addressLine1: "1 Synthetic Street",
+        recipientName: reviewed ? "Synthetic recipient" : "Synthetic customer",
+        recipientPhoneE164: reviewed ? null : "+60123456789",
+        addressLine1: reviewed ? "1 Example Street" : "1 Synthetic Street",
         addressLine2: null,
-        city: "Kota Kinabalu",
+        city: reviewed ? "Demo City" : "Kota Kinabalu",
         state: "Sabah",
         postcode: "88000",
-        instructions: "Leave at reception",
+        instructions: reviewed ? null : "Leave at reception",
       },
       delivery: { deliveryType: summary.deliveryType, ...summary.tracking },
       milestones: {
@@ -303,8 +340,8 @@ export class DevelopmentCatalogueAdapter {
       },
       refund: {
         refundRequired: cancelled,
-        requiredAmountMinor: cancelled ? 4590 : 0,
-        totalRequiredAmountMinor: cancelled ? 4590 : 0,
+        requiredAmountMinor: cancelled ? summary.grandTotalMinor : 0,
+        totalRequiredAmountMinor: cancelled ? summary.grandTotalMinor : 0,
         requirementStatus: cancelled ? "REQUIRED" : null,
       },
       receipt: summary.receiptAvailable
@@ -475,6 +512,14 @@ export class DevelopmentCatalogueAdapter {
       const quoteId = id(900 + ++this.serial);
       const quoteToken = "Q".repeat(42) + String(this.serial % 10);
       this.latestQuote = { quoteId, quoteToken };
+      this.reviewedQuote = {
+        quoteId,
+        items: authoritative,
+        itemsSubtotalMinor,
+        finalDeliveryChargeMinor: baseDeliveryFeeMinor,
+        processingFeeMinor,
+        grandTotalMinor: processingFeeBasisMinor + processingFeeMinor,
+      };
       return Response.json({
         data: {
           quoteId,
@@ -595,6 +640,15 @@ export class DevelopmentCatalogueAdapter {
             : this.paymentResult === "failed"
               ? "FAILED"
               : "PENDING";
+      if (
+        status === "PAID" &&
+        this.paymentResult === "paid" &&
+        this.reviewedQuote?.quoteId === paymentIntent.quoteId
+      )
+        this.completedOrder ??= {
+          ...this.reviewedQuote,
+          confirmedAt: new Date(this.now()).toISOString(),
+        };
       return Response.json({
         data: {
           checkoutReference: paymentIntent.quoteId,

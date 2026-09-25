@@ -80,6 +80,7 @@ const fixture = () => {
     restart,
     () => now,
     () => key,
+    async () => {},
   );
   controller.syncQuote(quote(), "ready");
   return { api, bridge, session, freeze, restart, controller };
@@ -211,7 +212,7 @@ describe("PaymentController", () => {
   });
 
   it("treats browser return as a GET-only observation and coalesces overlap", async () => {
-    const { api, controller } = fixture();
+    const { api, bridge, controller } = fixture();
     await controller.initiate();
     let resolve!: (value: PaymentResult) => void;
     api.result.mockImplementationOnce(
@@ -225,6 +226,25 @@ describe("PaymentController", () => {
     resolve(result("PENDING"));
     await Promise.all([first, second]);
     expect(controller.getSnapshot().phase).toBe("pending");
+    expect(api.result).toHaveBeenCalledTimes(3);
+    expect(bridge.requestPaymentHandoff).toHaveBeenCalledOnce();
+  });
+
+  it("stops bounded return checks as soon as backend finality is verified", async () => {
+    const { api, bridge, controller } = fixture();
+    await controller.initiate();
+    api.result
+      .mockResolvedValueOnce(result("PENDING"))
+      .mockResolvedValueOnce(result("PAID_PROCESSING"))
+      .mockResolvedValueOnce(result("PAID"));
+    await controller.handleReturn();
+    expect(api.result).toHaveBeenCalledTimes(3);
+    expect(api.create).toHaveBeenCalledOnce();
+    expect(bridge.requestPaymentHandoff).toHaveBeenCalledOnce();
+    expect(controller.getSnapshot()).toMatchObject({
+      phase: "paid",
+      order: { orderId },
+    });
   });
 
   it("never lets a late native handoff downgrade newer backend finality", async () => {
@@ -342,11 +362,22 @@ describe("PaymentController", () => {
     await controller.initiate();
     expect(controller.getSnapshot().phase).toBe("failed");
     controller.restart();
-    expect(restart).toHaveBeenCalledOnce();
+    expect(restart).toHaveBeenCalledWith(true);
     expect(controller.getSnapshot().phase).toBe("idle");
   });
 
-  it("restarts an unrecoverable payment error as a fresh cart journey", async () => {
+  it("clears the completed basket only when leaving a verified paid order", async () => {
+    const { api, restart, controller } = fixture();
+    await controller.initiate();
+    api.result.mockResolvedValueOnce(result("PAID"));
+    await controller.checkStatus();
+    expect(controller.getSnapshot().phase).toBe("paid");
+    controller.finishPaidOrder();
+    expect(restart).toHaveBeenCalledWith(false);
+    expect(controller.getSnapshot().phase).toBe("idle");
+  });
+
+  it("keeps the basket after an authoritative payment initiation rejection", async () => {
     const { api, restart, controller } = fixture();
     api.create.mockRejectedValueOnce(new PaymentError("QUOTE_TOKEN_INVALID"));
     await controller.initiate();
@@ -355,7 +386,21 @@ describe("PaymentController", () => {
       canRetryInitiation: false,
     });
     controller.restart();
-    expect(restart).toHaveBeenCalledOnce();
+    expect(restart).toHaveBeenCalledWith(true);
     expect(controller.getSnapshot().phase).toBe("idle");
+  });
+
+  it("cannot restart while a payment intent has an unverified result", async () => {
+    const { api, restart, controller } = fixture();
+    await controller.initiate();
+    api.result.mockRejectedValueOnce(new PaymentError("NETWORK_ERROR"));
+    await controller.checkStatus();
+    expect(controller.getSnapshot()).toMatchObject({
+      phase: "error",
+      paymentIntentId,
+    });
+    controller.restart();
+    expect(restart).not.toHaveBeenCalled();
+    expect(controller.getSnapshot().paymentIntentId).toBe(paymentIntentId);
   });
 });

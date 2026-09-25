@@ -462,11 +462,6 @@ export function OrderDetailScreen({
           {order.destination.postcode} {order.destination.city},{" "}
           {order.destination.state}
         </address>
-        {order.destination.instructions && (
-          <p className="order-instructions">
-            Delivery note: {order.destination.instructions}
-          </p>
-        )}
       </section>
       {order.refund.refundRequired && (
         <section className="order-refund" role="status">

@@ -52,10 +52,8 @@ export function PaymentPanel({
     );
   if (state.phase === "ready")
     return (
-      <section className="payment-card" aria-labelledby="payment-title">
-        <p className="quote-eyebrow">Secure checkout</p>
-        <h2 id="payment-title">Ready for payment</h2>
-        <p>Your reviewed total will be handed securely to Savt for payment.</p>
+      <section className="payment-card" aria-label="Secure checkout">
+        <p className="quote-eyebrow">Secure checkout with Savt</p>
         <p className="payment-final-notice">
           Please check your items and delivery address before paying.
           <br />
@@ -126,11 +124,11 @@ export function PaymentPanel({
         <p className="quote-eyebrow">Payment result</p>
         <h2>Payment failed</h2>
         <p>
-          This payment did not complete. Restart checkout to clear the cart and
-          request a fresh quote.
+          This payment did not complete. Your basket is saved. Review it and
+          request a fresh quote before paying again.
         </p>
         <button className={action} onClick={() => controller.restart()}>
-          Restart checkout
+          Review basket
         </button>
       </section>
     );
@@ -157,7 +155,7 @@ export function PaymentPanel({
         <PaymentObservationActions controller={controller} />
       ) : (
         <button className={action} onClick={() => controller.restart()}>
-          Restart checkout
+          Review basket
         </button>
       )}
     </section>

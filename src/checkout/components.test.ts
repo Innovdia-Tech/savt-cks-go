@@ -180,8 +180,8 @@ describe("real cart and trusted quote presentation", () => {
         onBrowse: () => {},
       } as never),
     );
-    expect(html).toContain("Review price changes");
-    expect(html).toContain("Accept updated prices");
+    expect(html).toContain("Review updated total");
+    expect(html).toContain("Accept updated total");
     expect(html).not.toMatch(/pay|confirm order/i);
   });
 

@@ -11,7 +11,7 @@
   border-radius: 18px;
   background: white;
   padding: 14px;
-  box-shadow: 0 12px 34px rgb(15 23 42 / 6%);
+  box-shadow: 0 2px 8px rgb(15 23 42 / 3%);
 }
 .cart-delivery {
   display: grid;
@@ -178,6 +178,14 @@
 .quote-action {
   width: 100%;
   margin-top: 14px;
+}
+.quote-card .payment-card {
+  margin-top: 14px;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 14px 0 0;
 }
 .quote-loading {
   min-height: 52px;

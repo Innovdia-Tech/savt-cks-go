@@ -176,7 +176,7 @@ it("returns a higher authoritative price in the price-change scenario", async ()
 });
 
 it("simulates payment only through the CKS Go endpoints and keeps finality observational", async () => {
-  const { adapter, api, quote, payment } = await setup();
+  const { adapter, api, quote, payment, orders } = await setup();
   const assignment = await api.assign(address);
   const item = (await api.products(assignment, { page: 1 })).data[0];
   const trusted = await quote.create(
@@ -213,6 +213,17 @@ it("simulates payment only through the CKS Go endpoints and keeps finality obser
     status: "PAID",
     order: { orderNumber: "SYNTH-ORDER-0001" },
   });
+  const completed = (await orders.list()).data[0];
+  const detail = await orders.detail(completed.orderId);
+  expect(completed.grandTotalMinor).toBe(trusted.grandTotalMinor);
+  expect(detail.money.grandTotalMinor).toBe(trusted.grandTotalMinor);
+  expect(detail.items).toMatchObject([
+    {
+      productName: item.name,
+      orderedQuantity: 1,
+      lineTotalMinor: trusted.items[0].lineSubtotalMinor,
+    },
+  ]);
   expect(adapter.paymentMetrics()).toEqual({
     creates: 1,
     results: 2,

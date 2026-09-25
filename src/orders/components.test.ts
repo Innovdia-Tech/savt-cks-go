@@ -140,6 +140,19 @@ const progressStep = (html: string, label: string) => {
 };
 
 describe("customer orders presentation", () => {
+  it("omits delivery-note display while preserving the order record", () => {
+    const html = renderToStaticMarkup(
+      createElement(OrderDetailScreen, {
+        state: state({ detail }),
+        controller,
+        onBack: () => {},
+      } as never),
+    );
+    expect(detail.destination.instructions).toBe("Leave at reception");
+    expect(html).not.toContain("Leave at reception");
+    expect(html).not.toContain("Delivery note");
+  });
+
   it("never offers cancellation from stale backend capability or retry state", () => {
     const html = renderToStaticMarkup(
       createElement(OrderDetailScreen, {
@@ -379,7 +392,6 @@ describe("customer orders presentation", () => {
       "Apples",
       "Grand total",
       "Demo Customer",
-      "Leave at reception",
       "Get help with this order",
     ])
       expect(html).toContain(copy);

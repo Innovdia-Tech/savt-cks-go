@@ -72,12 +72,18 @@ export function ProductTile({
   product,
   onOpen,
   onAdd,
+  quantity = null,
+  onSetQuantity,
+  paymentFrozen = false,
   orderingDisabled = false,
   variant = "grid",
 }: {
   product: Product;
   onOpen: () => void;
   onAdd?: () => void;
+  quantity?: number | null;
+  onSetQuantity?: (quantity: number) => void;
+  paymentFrozen?: boolean;
   orderingDisabled?: boolean;
   variant?: "grid" | "list";
 }) {
@@ -116,25 +122,34 @@ export function ProductTile({
           </div>
         </>
       )}
-      <Button
-        className="catalogue-add"
-        disabled={!canAdd}
-        onClick={onAdd}
-        aria-label={
-          canAdd
-            ? `Add ${product.name} to cart`
-            : `Add ${product.name} — unavailable`
-        }
-      >
-        {variant === "list" ? (
-          <>
-            <span aria-hidden="true">+</span>
-            <span className="sr-only">Add to cart</span>
-          </>
-        ) : (
-          "Add to cart"
-        )}
-      </Button>
+      {quantity !== null && onSetQuantity ? (
+        <QuantitySelector
+          className="catalogue-tile-quantity"
+          label={`Quantity for ${product.name}`}
+          quantity={quantity}
+          minimum={0}
+          maximum={MAX_LINE_QUANTITY}
+          disabled={paymentFrozen}
+          incrementDisabled={
+            orderingDisabled || product.availability !== "AVAILABLE"
+          }
+          onDecrement={() => onSetQuantity(quantity - 1)}
+          onIncrement={() => onSetQuantity(quantity + 1)}
+        />
+      ) : (
+        <Button
+          className="catalogue-add"
+          disabled={!canAdd}
+          onClick={onAdd}
+          aria-label={
+            canAdd
+              ? `Add ${product.name} to cart`
+              : `Add ${product.name} — unavailable`
+          }
+        >
+          Add
+        </Button>
+      )}
     </article>
   );
 }
@@ -474,6 +489,8 @@ export function CatalogueApp({
     else orders.controller.closeDetail();
   }, [orderDetailId, orders.controller]);
   const navigate = (next: string) => {
+    if (payment.state.phase === "paid" && next !== "cart")
+      payment.controller.finishPaidOrder();
     const currentScroll =
       document.querySelector<HTMLElement>(".app-shell__scroll")?.scrollTop;
     if (currentScroll !== undefined)
@@ -535,10 +552,11 @@ export function CatalogueApp({
               ? "Orders"
               : "Home"
       }
-      cartCount={checkout.state.lines.reduce(
-        (sum, line) => sum + line.quantity,
-        0,
-      )}
+      cartCount={
+        payment.state.phase === "paid"
+          ? 0
+          : checkout.state.lines.reduce((sum, line) => sum + line.quantity, 0)
+      }
       onNavigate={nav}
       onLogout={onLogout}
       screenKey={route}
@@ -881,6 +899,20 @@ export function CatalogueApp({
                           <ProductTile
                             key={product.outletProductId}
                             product={product}
+                            quantity={
+                              checkout.state.lines.find(
+                                (line) =>
+                                  line.outletProductId ===
+                                  product.outletProductId,
+                              )?.quantity ?? null
+                            }
+                            paymentFrozen={checkout.state.paymentFrozen}
+                            onSetQuantity={(quantity) =>
+                              checkout.controller.setQuantity(
+                                product.outletProductId,
+                                quantity,
+                              )
+                            }
                             variant="grid"
                             onOpen={() => openProduct(product.outletProductId)}
                             orderingDisabled={

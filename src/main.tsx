@@ -88,7 +88,10 @@ async function start() {
       bridge,
       session,
       (quoteId) => checkout.freezeForPayment(quoteId),
-      () => checkout.clear(),
+      (preserveBasket) =>
+        preserveBasket
+          ? checkout.recoverBasketAfterPayment()
+          : checkout.clear(),
     );
     const orders = new OrdersController(
       new OrdersApi(config.apiOrigin, session, catalogueDevelopment?.fetch),

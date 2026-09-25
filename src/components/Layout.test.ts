@@ -45,7 +45,7 @@ describe("HeaderActions", () => {
     expect(html).toContain('aria-label="Back to Savt"');
     expect(html).toContain('aria-label="Close CKS Go"');
     expect(html).toContain("Close");
-    expect(html).not.toContain("app-header__brand");
+    expect(html).toContain('<span class="app-header__brand">CKS GO</span>');
   });
 
   it("presents the valid outlet assignment as quiet informational text", async () => {
@@ -129,7 +129,7 @@ describe("HeaderActions", () => {
     expect(browse).toContain('aria-label="Close CKS Go"');
     expect(browse).not.toContain("Delivery available");
     expect(browse).not.toContain("DEMO-01");
-    expect(browse).not.toContain("app-header__brand");
+    expect(browse).toContain('<span class="app-header__brand">CKS GO</span>');
     expect(orders).not.toContain("Selected address");
     expect(orders).not.toContain("Demo neighbourhood outlet");
     expect(orders).toContain("app-header__brand");

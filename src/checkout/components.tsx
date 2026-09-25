@@ -115,9 +115,11 @@ export function AddressTransitionError({ error }: { error: string | null }) {
 function QuoteSummary({
   state,
   controller,
+  payment,
 }: {
   state: CartState;
   controller: CartController;
+  payment?: ComponentProps<typeof PaymentPanel>;
 }) {
   const quote = state.quote;
   if (!quote) return null;
@@ -138,10 +140,12 @@ function QuoteSummary({
       </div>
       {state.quotePhase === "price-review" && (
         <div className="quote-warning" role="alert">
-          <h3>Review price changes</h3>
+          <h3>Review updated total</h3>
           <p>
-            One or more confirmed prices differ from the prices shown when you
-            built the cart.
+            {state.payableTotalChanged &&
+            state.previousPayableTotalMinor !== null
+              ? `The payable total changed from ${money(state.previousPayableTotalMinor)} to ${money(quote.grandTotalMinor)}. Check the items and fees before accepting.`
+              : "One or more confirmed item prices changed. Check the items and fees before accepting."}
           </p>
         </div>
       )}
@@ -154,28 +158,31 @@ function QuoteSummary({
           </p>
         </div>
       )}
-      <ul className="quote-lines" aria-label="Confirmed order lines">
-        {quote.items.map((line) => {
-          const previous = cartPrices.get(line.outletProductId);
-          return (
-            <li key={line.outletProductId}>
-              <div>
-                <strong>{line.productNameSnapshot}</strong>
-                <span>
-                  {line.quantity} × {line.uomNameSnapshot}
-                </span>
-                {previous !== undefined && previous !== line.unitPriceMinor && (
-                  <span className="quote-price-change">
-                    Previously {money(previous)} → confirmed{" "}
-                    {money(line.unitPriceMinor)}
+      {state.quotePhase === "price-review" && (
+        <ul className="quote-lines" aria-label="Confirmed order lines">
+          {quote.items.map((line) => {
+            const previous = cartPrices.get(line.outletProductId);
+            return (
+              <li key={line.outletProductId}>
+                <div>
+                  <strong>{line.productNameSnapshot}</strong>
+                  <span>
+                    {line.quantity} × {line.uomNameSnapshot}
                   </span>
-                )}
-              </div>
-              <strong>{money(line.lineSubtotalMinor)}</strong>
-            </li>
-          );
-        })}
-      </ul>
+                  {previous !== undefined &&
+                    previous !== line.unitPriceMinor && (
+                      <span className="quote-price-change">
+                        Previously {money(previous)} → confirmed{" "}
+                        {money(line.unitPriceMinor)}
+                      </span>
+                    )}
+                </div>
+                <strong>{money(line.lineSubtotalMinor)}</strong>
+              </li>
+            );
+          })}
+        </ul>
+      )}
       <dl className="quote-totals">
         <dt>Merchandise subtotal</dt>
         <dd>{money(quote.itemsSubtotalMinor)}</dd>
@@ -205,7 +212,7 @@ function QuoteSummary({
           className="customer-button customer-primary quote-action"
           onClick={() => controller.acceptPriceChanges()}
         >
-          Accept updated prices
+          Accept updated total
         </button>
       )}
       {state.quotePhase === "expired" && (
@@ -221,6 +228,9 @@ function QuoteSummary({
           Prices, stock and delivery are confirmed for this review. Payment
           begins only when you use the button below.
         </p>
+      )}
+      {payment?.state.phase === "ready" && (
+        <PaymentPanel {...payment} acceptedTotalMinor={quote.grandTotalMinor} />
       )}
     </section>
   );
@@ -400,8 +410,8 @@ export function CartScreen({
           )}
         </section>
       )}
-      <QuoteSummary state={state} controller={controller} />
-      {payment && (
+      <QuoteSummary state={state} controller={controller} payment={payment} />
+      {payment && payment.state.phase !== "ready" && (
         <PaymentPanel
           {...payment}
           acceptedTotalMinor={state.quote?.grandTotalMinor}
