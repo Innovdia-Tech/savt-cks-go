@@ -117,12 +117,10 @@ function QuoteSummary({
   state,
   controller,
   payment,
-  referencePreview = false,
 }: {
   state: CartState;
   controller: CartController;
   payment?: ComponentProps<typeof PaymentPanel>;
-  referencePreview?: boolean;
 }) {
   const quote = state.quote;
   if (!quote) return null;
@@ -136,13 +134,7 @@ function QuoteSummary({
     <section className="quote-card" aria-labelledby="quote-title">
       <div className="quote-card-heading">
         <div>
-          {!referencePreview && (
-            <p className="quote-eyebrow">Checkout review</p>
-          )}
-          <h2
-            id="quote-title"
-            className={referencePreview ? "sr-only" : undefined}
-          >
+          <h2 id="quote-title" className="sr-only">
             Review your order
           </h2>
         </div>
@@ -200,19 +192,18 @@ function QuoteSummary({
         <dd>{money(quote.finalDeliveryChargeMinor)}</dd>
         <dt>Processing fee</dt>
         <dd>{money(quote.processingFeeMinor)}</dd>
-        <dt className="quote-grand">
-          {referencePreview ? "Total" : "Grand total"}
-        </dt>
+        <dt className="quote-grand">Total</dt>
         <dd className="quote-grand">{money(quote.grandTotalMinor)}</dd>
       </dl>
-      {!referencePreview && (
+      <details className="quote-evidence-details">
+        <summary>Quote details</summary>
         <dl className="quote-evidence">
           <dt>Estimated delivery</dt>
           <dd>{quote.estimatedTotalOrderMinutes} minutes</dd>
           <dt>Expires</dt>
           <dd>{malaysiaTime(quote.quoteExpiresAt)} (Malaysia time)</dd>
         </dl>
-      )}
+      </details>
       {state.quotePhase === "price-review" && (
         <button
           className="customer-button customer-primary quote-action"
@@ -231,9 +222,7 @@ function QuoteSummary({
       )}
       {state.quotePhase === "ready" && (
         <p className="quote-safe-note">
-          {referencePreview
-            ? "Prices and fees are confirmed for this review."
-            : "Prices, stock and delivery are confirmed for this review. Payment begins only when you use the button below."}
+          Prices and fees are confirmed for this review.
         </p>
       )}
       {payment?.state.phase === "ready" && (
@@ -273,7 +262,6 @@ export function CartScreen({
   onBrowse,
   deliveryAddress,
   onChangeAddress,
-  referencePreview = false,
 }: {
   state: CartState;
   controller: CartController;
@@ -281,7 +269,6 @@ export function CartScreen({
   onBrowse: () => void;
   deliveryAddress?: string;
   onChangeAddress?: () => void;
-  referencePreview?: boolean;
 }) {
   if (!state.lines.length)
     return (
@@ -304,30 +291,29 @@ export function CartScreen({
       ])
     : null;
   return (
-    <div
-      className={`cart-stack ${referencePreview ? "cart-stack--reference" : ""}`}
-    >
+    <div className="cart-stack cart-stack--shopping">
       {state.assignment && (
         <section
           className="cart-delivery"
           aria-labelledby="cart-delivery-title"
         >
           <div>
-            <p className="quote-eyebrow">
-              {referencePreview ? "Deliver to" : "Delivery address"}
-            </p>
+            <p className="quote-eyebrow">Deliver to</p>
             <h2 id="cart-delivery-title">
               {deliveryAddress || state.assignment.addressLabel}
             </h2>
           </div>
           {onChangeAddress && (
-            <button className="cart-change-address" onClick={onChangeAddress}>
-              {referencePreview ? "Change" : "Change address"}
+            <button
+              className="cart-change-address"
+              aria-label="Change delivery address"
+              onClick={onChangeAddress}
+            >
+              Change
             </button>
           )}
           <p>
-            {referencePreview ? "From " : "Fulfilled by "}
-            <strong>{state.assignment.outletDisplayName}</strong>
+            From <strong>{state.assignment.outletDisplayName}</strong>
           </p>
         </section>
       )}
@@ -336,11 +322,6 @@ export function CartScreen({
           <h2 id="cart-lines-title" className="sr-only">
             Cart items
           </h2>
-          {!referencePreview && (
-            <strong>
-              {state.lines.length} {state.lines.length === 1 ? "item" : "items"}
-            </strong>
-          )}
         </div>
         {state.lines.map((line) => (
           <article className="cart-line" key={line.outletProductId}>
@@ -351,10 +332,7 @@ export function CartScreen({
             <div className="cart-line-copy">
               <h3>{line.product.name}</h3>
               <p>{line.product.packSize || line.product.uom.name}</p>
-              <strong>
-                {money(line.displayedUnitPriceMinor)}
-                {referencePreview ? "" : " each"}
-              </strong>
+              <strong>{money(line.displayedUnitPriceMinor)}</strong>
             </div>
             <QuantitySelector
               className="cart-quantity"
@@ -378,7 +356,7 @@ export function CartScreen({
             >
               Remove
             </button>
-            {(!referencePreview || line.quantity > 1) && (
+            {line.quantity > 1 && (
               <p className="cart-line-subtotal">
                 <span>Line subtotal</span>
                 <strong>
@@ -436,12 +414,7 @@ export function CartScreen({
           )}
         </section>
       )}
-      <QuoteSummary
-        state={state}
-        controller={controller}
-        payment={payment}
-        referencePreview={referencePreview}
-      />
+      <QuoteSummary state={state} controller={controller} payment={payment} />
       {payment && payment.state.phase !== "ready" && (
         <PaymentPanel
           {...payment}

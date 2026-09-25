@@ -302,6 +302,25 @@ describe("customer orders presentation", () => {
     expect(html).toContain("Browse products");
   });
 
+  it("keeps navigation when a loaded page is empty but server total is nonzero", () => {
+    const html = renderToStaticMarkup(
+      createElement(OrdersScreen, {
+        state: state({
+          page: {
+            data: [],
+            meta: { page: 2, pageSize: 25, total: 26, totalPages: 2 },
+          },
+        }),
+        controller,
+        onOpen: () => {},
+        onBrowse: () => {},
+      } as never),
+    );
+    expect(html).toContain("No current orders on this page");
+    expect(html).toContain("Previous page");
+    expect(html).not.toContain("No orders yet");
+  });
+
   it("renders safe list evidence and bounded pagination without internal tracking state", () => {
     const html = renderToStaticMarkup(
       createElement(OrdersScreen, {
@@ -323,6 +342,23 @@ describe("customer orders presentation", () => {
     expect(html).toContain("Next page");
     expect(html).not.toContain("RIDER_INTERNAL_STATE");
     expect(html).not.toContain(orderId);
+  });
+
+  it("uses accepted compact order presentation with ordinary paginated data", () => {
+    const html = renderToStaticMarkup(
+      createElement(OrdersScreen, {
+        state: state(),
+        controller,
+        onOpen: () => {},
+        onBrowse: () => {},
+      } as never),
+    );
+    expect(html).toContain("orders-stack--shopping");
+    expect(html).toContain("orders-status-tabs");
+    expect(html).toContain("CKS-20260921-0001");
+    expect(html).toContain("Showing orders on page 1 of 2");
+    expect(html).toContain("Next page");
+    expect(html).not.toContain("CKS100123");
   });
 
   it("separates current and history entries without dropping either from the loaded page", () => {
@@ -388,7 +424,6 @@ describe("customer orders presentation", () => {
       "Pick &amp; Pack",
       "Out for delivery",
       "Delivered",
-      "Estimate unavailable",
       "Apples",
       "Grand total",
       "Demo Customer",
@@ -424,7 +459,7 @@ describe("customer orders presentation", () => {
     );
     expect(html).toContain("Download receipt");
     expect(html).not.toContain(receipt.receipt.downloadPath!);
-    expect(html).toContain("Estimate unavailable");
+    expect(html).not.toContain("Estimate unavailable");
   });
 
   it("does not invent a live ETA for delivered history", () => {

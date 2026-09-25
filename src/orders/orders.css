@@ -63,27 +63,27 @@
   font-size: 13px;
   font-weight: 800;
 }
-.orders-stack--reference {
+.orders-stack--shopping {
   gap: 12px;
   margin-top: 8px;
 }
-.orders-reference-tabs {
+.orders-status-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
   border-bottom: 1px solid #dce5eb;
 }
-.orders-reference-tabs button {
+.orders-status-tabs button {
   min-height: 48px;
   border-bottom: 2px solid transparent;
   color: #475569;
   font-size: 12px;
   font-weight: 700;
 }
-.orders-reference-tabs button[aria-selected="true"] {
+.orders-status-tabs button[aria-pressed="true"] {
   border-color: var(--color-cks-primary);
   color: var(--color-cks-primary);
 }
-.order-card.order-card--reference {
+.order-card.order-card--shopping {
   position: relative;
   display: grid;
   min-height: 120px;
@@ -95,34 +95,33 @@
   border-color: #dce5eb;
   border-radius: 12px;
 }
-.order-card--reference > strong,
-.order-card--reference > span:not(.ui-status):not(.order-card--reference-arrow),
-.order-card--reference > b {
+.order-card--shopping > strong,
+.order-card--shopping > span:not(.ui-status):not(.order-card--shopping-arrow),
+.order-card--shopping > b {
   grid-column: 1;
 }
-.order-card--reference > strong {
+.order-card--shopping > strong {
   font-size: 14px;
 }
-.order-card--reference
-  > span:not(.ui-status):not(.order-card--reference-arrow) {
+.order-card--shopping > span:not(.ui-status):not(.order-card--shopping-arrow) {
   color: #475569;
   font-size: 11px;
 }
-.order-card--reference > b {
+.order-card--shopping > b {
   font-size: 13px;
 }
-.order-card--reference .ui-status {
+.order-card--shopping .ui-status {
   grid-column: 2;
   grid-row: 1;
   white-space: nowrap;
 }
-.order-card--reference-arrow {
+.order-card--shopping-arrow {
   grid-column: 3;
   grid-row: 1 / 4;
   color: #475569;
   font-size: 24px;
 }
-.orders-stack--reference .order-refresh {
+.orders-stack--shopping .order-refresh {
   justify-self: end;
   min-height: 44px;
   font-size: 11px;
@@ -130,6 +129,9 @@
 .order-list {
   display: grid;
   gap: 8px;
+}
+.order-list[hidden] {
+  display: none;
 }
 .order-card {
   width: 100%;
@@ -272,19 +274,19 @@
   padding: 12px;
   color: var(--color-text);
 }
-.order-detail-stack--reference .order-detail-hero {
+.order-detail-stack--shopping .order-detail-hero {
   border: 0;
   border-radius: 0;
   padding: 4px 0 8px;
 }
-.order-detail-stack--reference .order-detail-hero h2 {
+.order-detail-stack--shopping .order-detail-hero h2 {
   font-size: 17px;
 }
-.order-detail-stack--reference .order-section {
+.order-detail-stack--shopping .order-section {
   border-color: #dce5eb;
   border-radius: 12px;
 }
-.order-detail-stack--reference .order-section-heading .order-eyebrow {
+.order-detail-stack--shopping .order-section-heading .order-eyebrow {
   display: none;
 }
 .order-detail-hero .order-eyebrow,

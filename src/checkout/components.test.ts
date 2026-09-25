@@ -54,6 +54,25 @@ const controller = {
 };
 
 describe("real cart and trusted quote presentation", () => {
+  it("uses accepted checkout rows and server totals with ordinary data", () => {
+    const quote = parseQuote(quoteEnvelope());
+    const html = renderToStaticMarkup(
+      createElement(CartScreen, {
+        state: { ...base, quote, quotePhase: "ready" },
+        controller,
+        onBrowse: () => {},
+        deliveryAddress: "Real saved address",
+        onChangeAddress: () => {},
+      } as never),
+    );
+    expect(html).toContain("cart-stack--shopping");
+    expect(html).toContain("Deliver to");
+    expect(html).toContain("Real saved address");
+    expect(html).toContain("Total");
+    expect(html).toContain("14.32");
+    expect(html).not.toContain("1 Example Street");
+  });
+
   it("shows product snapshots and displayed subtotal with an explicit quote action only", () => {
     const html = renderToStaticMarkup(
       createElement(CartScreen, {
@@ -68,9 +87,9 @@ describe("real cart and trusted quote presentation", () => {
     expect(html).toContain("Estimated subtotal");
     expect(html).toMatch(/(?:RM|MYR).*9\.00/);
     expect(html).toContain("Review order");
-    expect(html).toContain("Delivery address");
+    expect(html).toContain("Deliver to");
     expect(html).toContain("1 Example Street, Demo City, Sabah");
-    expect(html).toContain("Change address");
+    expect(html).toContain('aria-label="Change delivery address"');
     expect(html).toContain("Demo outlet");
     expect(html).toContain("Line subtotal");
     expect(html).toContain("Remove Rice");
@@ -98,7 +117,7 @@ describe("real cart and trusted quote presentation", () => {
       "Merchandise subtotal",
       "Delivery fee",
       "Processing fee",
-      "Grand total",
+      "Total",
       "Estimated delivery",
       "Expires",
       "Home",

@@ -170,7 +170,6 @@ export function ProductDetailPurchase({
   paymentFrozen,
   onAdd,
   onSetQuantity,
-  referencePreview = false,
 }: {
   product: Product;
   quantity: number | null;
@@ -178,20 +177,17 @@ export function ProductDetailPurchase({
   paymentFrozen: boolean;
   onAdd: () => void;
   onSetQuantity: (quantity: number) => void;
-  referencePreview?: boolean;
 }) {
   return (
-    <div
-      className={`catalogue-detail-purchase ${referencePreview ? "catalogue-detail-purchase--reference" : ""}`}
-    >
-      {referencePreview && <strong>{money(product.sellingPriceMinor)}</strong>}
+    <div className="catalogue-detail-purchase catalogue-detail-purchase--shopping">
+      <strong>{money(product.sellingPriceMinor)}</strong>
       {quantity === null ? (
         <Button
           className="catalogue-add"
           disabled={orderingDisabled || paymentFrozen}
           onClick={onAdd}
         >
-          {referencePreview ? "Add to Cart" : "Add to cart"}
+          Add to Cart
         </Button>
       ) : (
         <div className="catalogue-detail-quantity">
@@ -207,11 +203,6 @@ export function ProductDetailPurchase({
             onIncrement={() => onSetQuantity(quantity + 1)}
           />
         </div>
-      )}
-      {!referencePreview && (
-        <p className="catalogue-caption">
-          Final prices and availability are checked when you review your order.
-        </p>
       )}
     </div>
   );
@@ -406,6 +397,32 @@ export function routeTitle(route: string) {
   return `${page} | CKS Go`;
 }
 
+export function CatalogueProductPages({
+  page,
+  total,
+  hasNextPage,
+  onPage,
+}: {
+  page: number;
+  total: number;
+  hasNextPage: boolean;
+  onPage: (page: number) => void;
+}) {
+  return (
+    <nav className="catalogue-pages" aria-label="Product pages">
+      <button disabled={page <= 1} onClick={() => onPage(page - 1)}>
+        Previous
+      </button>
+      <span role="status">
+        Page {page} · {total} products
+      </span>
+      <button disabled={!hasNextPage} onClick={() => onPage(page + 1)}>
+        Next
+      </button>
+    </nav>
+  );
+}
+
 export function CatalogueApp({
   onLogout,
   supportWhatsApp = "",
@@ -430,7 +447,6 @@ export function CatalogueApp({
         ? "reference"
         : "multiple",
     );
-  const [referenceFilter, setReferenceFilter] = useState("All");
   const [referenceSample, setReferenceSample] =
     useState<ReferenceSample | null>(null);
   const [advertisingSlides, setAdvertisingSlides] = useState<
@@ -440,16 +456,17 @@ export function CatalogueApp({
     search = useRef<HTMLInputElement>(null);
   const productOrigin = useRef<"home" | "categories">("home");
   const browseOrigin = useRef<"home" | "categories">("home");
+  const referenceCategoryLoaded = useRef(false);
   const referenceBasketLoaded = useRef(false);
-  const referenceMatch =
+  const referenceFixture =
     import.meta.env.DEV &&
     new URLSearchParams(window.location.search).get("scenario") ===
       "ux03-reference-match";
   useEffect(() => {
-    if (referenceMatch) setAdvertisingScenario("reference");
-  }, [referenceMatch]);
+    if (referenceFixture) setAdvertisingScenario("reference");
+  }, [referenceFixture]);
   useEffect(() => {
-    if (!referenceMatch) return;
+    if (!referenceFixture) return;
     let active = true;
     void import("./reference-match/content").then(({ referenceSample }) => {
       if (active) setReferenceSample(referenceSample);
@@ -457,13 +474,13 @@ export function CatalogueApp({
     return () => {
       active = false;
     };
-  }, [referenceMatch]);
+  }, [referenceFixture]);
   const scrollPositions = useRef(new Map<string, number>());
   useEffect(() => {
-    document.title = referenceMatch
+    document.title = referenceFixture
       ? `Design preview | ${routeTitle(route)}`
       : routeTitle(route);
-  }, [route, referenceMatch]);
+  }, [route, referenceFixture]);
   useEffect(() => {
     const change = () =>
       guardHistoryNavigation(
@@ -499,16 +516,18 @@ export function CatalogueApp({
   }, [route, state.categoryId, controller]);
   useEffect(() => {
     if (
-      !referenceMatch ||
+      !referenceFixture ||
+      referenceCategoryLoaded.current ||
       route !== "categories" ||
       state.phase !== "ready" ||
       state.categoryId ||
       !state.categories[0]
     )
       return;
+    referenceCategoryLoaded.current = true;
     void controller.category(state.categories[0].id);
   }, [
-    referenceMatch,
+    referenceFixture,
     route,
     state.phase,
     state.categoryId,
@@ -517,7 +536,7 @@ export function CatalogueApp({
   ]);
   useEffect(() => {
     if (
-      !referenceMatch ||
+      !referenceFixture ||
       referenceBasketLoaded.current ||
       new URLSearchParams(window.location.search).get("basket") !==
         "reference" ||
@@ -543,7 +562,7 @@ export function CatalogueApp({
       for (let index = 0; index < line.quantity; index++)
         checkout.controller.add(line.product!, state.assignment);
   }, [
-    referenceMatch,
+    referenceFixture,
     referenceSample,
     state.phase,
     state.assignment,
@@ -626,7 +645,6 @@ export function CatalogueApp({
   const detailPurchase = p ? (
     <ProductDetailPurchase
       product={p}
-      referencePreview={referenceMatch}
       quantity={
         checkout.state.lines.find(
           (line) => line.outletProductId === p.outletProductId,
@@ -647,12 +665,10 @@ export function CatalogueApp({
       }
     />
   ) : null;
-  const visibleProducts =
-    referenceMatch && route === "categories" && referenceFilter !== "All"
-      ? (state.products?.data.filter(
-          (product) => product.subcategory?.name === referenceFilter,
-        ) ?? [])
-      : (state.products?.data ?? []);
+  const visibleProducts = state.products?.data ?? [];
+  const selectedCategoryName = state.categories.find(
+    (category) => category.id === state.categoryId,
+  )?.name;
   const selectedAddress = customer.controller.selectedAddress();
   const cartDeliveryAddress = selectedAddress
     ? [
@@ -692,10 +708,10 @@ export function CatalogueApp({
       onLogout={onLogout}
       screenKey={route}
       headerContext={headerContext}
-      referencePreview={referenceMatch}
-      referenceTitle={
+      developmentFixture={referenceFixture}
+      title={
         route === "categories"
-          ? "Fruits & Vegetables"
+          ? (selectedCategoryName ?? "Categories")
           : route === "orders"
             ? "My Orders"
             : orderDetailId
@@ -704,7 +720,7 @@ export function CatalogueApp({
                 : "Order details"
               : ""
       }
-      referenceBack={() =>
+      onBack={() =>
         navigate(
           detailId
             ? productOrigin.current
@@ -715,7 +731,7 @@ export function CatalogueApp({
                 : "home",
         )
       }
-      sticky={referenceMatch && detailId ? detailPurchase : undefined}
+      sticky={detailId ? detailPurchase : undefined}
       outlet={state.assignment?.outlet}
       restoreScrollTop={scrollPositions.current.get(route) ?? 0}
       onScrollPositionChange={(top) => {
@@ -728,7 +744,7 @@ export function CatalogueApp({
       }}
     >
       <div
-        className={`catalogue-root ${route === "home" ? "catalogue-root--home" : ""} ${referenceMatch ? "catalogue-root--reference" : ""}`}
+        className={`catalogue-root catalogue-root--shopping ${route === "home" ? "catalogue-root--home" : ""}`}
       >
         {route === "profile" ? (
           <>
@@ -756,11 +772,10 @@ export function CatalogueApp({
                 tabIndex={-1}
                 className={
                   route === "home" ||
-                  (referenceMatch &&
-                    (route === "categories" ||
-                      route === "orders" ||
-                      Boolean(detailId) ||
-                      Boolean(orderDetailId)))
+                  route === "categories" ||
+                  route === "orders" ||
+                  Boolean(detailId) ||
+                  Boolean(orderDetailId)
                     ? "sr-only"
                     : undefined
                 }
@@ -768,15 +783,11 @@ export function CatalogueApp({
                 {route === "home"
                   ? "CKS Go home"
                   : route === "categories"
-                    ? referenceMatch
-                      ? "Fruits & Vegetables"
-                      : "Categories"
+                    ? (selectedCategoryName ?? "Categories")
                     : detailId
                       ? "Product details"
                       : route === "cart"
-                        ? referenceMatch
-                          ? `Your Cart (${checkout.state.lines.length})`
-                          : "Cart"
+                        ? `Your Cart (${checkout.state.lines.length})`
                         : orderDetailId
                           ? "Order details"
                           : "Orders"}
@@ -805,7 +816,6 @@ export function CatalogueApp({
             )}
             {route === "cart" ? (
               <CartScreen
-                referencePreview={referenceMatch}
                 state={checkout.state}
                 controller={checkout.controller}
                 payment={{
@@ -818,7 +828,6 @@ export function CatalogueApp({
               />
             ) : route === "orders" ? (
               <OrdersScreen
-                referencePreview={referenceMatch}
                 state={orders.state}
                 controller={orders.controller}
                 onOpen={(orderId) => navigate(`order/${orderId}`)}
@@ -826,7 +835,6 @@ export function CatalogueApp({
               />
             ) : orderDetailId ? (
               <OrderDetailScreen
-                referencePreview={referenceMatch}
                 state={orders.state}
                 controller={orders.controller}
                 onBack={() => navigate("orders")}
@@ -843,11 +851,9 @@ export function CatalogueApp({
                     maxLength={200}
                     value={query}
                     placeholder={
-                      referenceMatch
-                        ? route === "categories"
-                          ? "Search in Fruits & Vegetables…"
-                          : "Search for products, brands…"
-                        : "Search products"
+                      route === "categories" && selectedCategoryName
+                        ? `Search in ${selectedCategoryName}…`
+                        : "Search products…"
                     }
                     onCompositionStart={() => setComposing(true)}
                     onCompositionEnd={() => setComposing(false)}
@@ -875,32 +881,16 @@ export function CatalogueApp({
                     aria-labelledby="home-categories-title"
                   >
                     <div className="catalogue-section-heading">
-                      <h2 id="home-categories-title">
-                        {referenceMatch ? "Categories" : "Shop by category"}
-                      </h2>
+                      <h2 id="home-categories-title">Categories</h2>
                       <button
                         type="button"
                         className="catalogue-link"
                         onClick={() => navigate("categories")}
                       >
-                        {referenceMatch ? "See all" : "View all categories"}
+                        See all
                       </button>
                     </div>
                     <div className="catalogue-category-tiles">
-                      {!referenceMatch && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            void controller.category();
-                            navigate("categories");
-                          }}
-                        >
-                          <span aria-hidden="true">
-                            <CategoryArtwork />
-                          </span>
-                          <span>All</span>
-                        </button>
-                      )}
                       {state.categories.slice(0, 4).map((category) => (
                         <button
                           type="button"
@@ -923,38 +913,21 @@ export function CatalogueApp({
                   (state.categories.length > 0 || state.categoryPage > 1) && (
                     <section aria-label="Product categories">
                       <div className="catalogue-categories">
-                        {referenceMatch ? (
-                          (
-                            referenceSample?.categoryFilterLabelsShownInBoard ??
-                            []
-                          ).map((label) => (
-                            <button
-                              key={label}
-                              aria-pressed={referenceFilter === label}
-                              onClick={() => setReferenceFilter(label)}
-                            >
-                              {label}
-                            </button>
-                          ))
-                        ) : (
-                          <>
-                            <button
-                              aria-pressed={!state.categoryId}
-                              onClick={() => void controller.category()}
-                            >
-                              All products
-                            </button>
-                            {state.categories.map((c) => (
-                              <button
-                                key={c.id}
-                                aria-pressed={state.categoryId === c.id}
-                                onClick={() => void controller.category(c.id)}
-                              >
-                                {c.name}
-                              </button>
-                            ))}
-                          </>
-                        )}
+                        <button
+                          aria-pressed={!state.categoryId}
+                          onClick={() => void controller.category()}
+                        >
+                          All products
+                        </button>
+                        {state.categories.map((c) => (
+                          <button
+                            key={c.id}
+                            aria-pressed={state.categoryId === c.id}
+                            onClick={() => void controller.category(c.id)}
+                          >
+                            {c.name}
+                          </button>
+                        ))}
                       </div>
                       {(state.categoryPage > 1 || state.categoryHasNext) && (
                         <div className="catalogue-pages">
@@ -997,13 +970,7 @@ export function CatalogueApp({
                       <h2>{p.name}</h2>
                       <p>{p.packSize || p.uom.name}</p>
                       <strong>{money(p.sellingPriceMinor)}</strong>
-                      {(!referenceMatch || p.availability !== "AVAILABLE") && (
-                        <p>
-                          {p.availability === "AVAILABLE"
-                            ? "Available"
-                            : "Unavailable"}
-                        </p>
-                      )}
+                      {p.availability !== "AVAILABLE" && <p>Unavailable</p>}
                       {p.description && <p>{p.description}</p>}
                       <dl>
                         <dt>Category</dt>
@@ -1025,7 +992,6 @@ export function CatalogueApp({
                         <dt>Storage</dt>
                         <dd>{p.storageType.toLowerCase()}</dd>
                       </dl>
-                      {!referenceMatch && detailPurchase}
                     </article>
                   )
                 ) : (
@@ -1039,9 +1005,9 @@ export function CatalogueApp({
                       <div>
                         <h2>
                           {route === "home"
-                            ? referenceMatch
+                            ? referenceFixture
                               ? "Featured for You"
-                              : "Shop groceries"
+                              : "Products"
                             : state.categoryId
                               ? (state.categories.find(
                                   (category) =>
@@ -1051,9 +1017,7 @@ export function CatalogueApp({
                         </h2>
                         {route === "categories" && (
                           <p className="catalogue-caption">
-                            {referenceMatch
-                              ? `${visibleProducts.length} products`
-                              : `${state.products?.meta.total ?? 0} products from your assigned outlet`}
+                            {state.products?.meta.total ?? 0} products
                           </p>
                         )}
                       </div>
@@ -1063,7 +1027,7 @@ export function CatalogueApp({
                           className="catalogue-link"
                           onClick={() => navigate("categories")}
                         >
-                          {referenceMatch ? "See all" : "View all products"}
+                          See all
                         </button>
                       )}
                     </div>
@@ -1124,35 +1088,17 @@ export function CatalogueApp({
                         }
                       />
                     )}
-                    {state.products &&
-                      route === "categories" &&
-                      !referenceMatch && (
-                        <div className="catalogue-pages">
-                          <button
-                            disabled={state.page <= 1}
-                            onClick={() =>
-                              void controller.nextPage(state.page - 1)
-                            }
-                          >
-                            Previous
-                          </button>
-                          <span role="status">
-                            Page {state.page} · {state.products.meta.total}{" "}
-                            products
-                          </span>
-                          <button
-                            disabled={!state.products.meta.hasNextPage}
-                            onClick={() =>
-                              void controller.nextPage(state.page + 1)
-                            }
-                          >
-                            Next
-                          </button>
-                        </div>
-                      )}
+                    {state.products && route === "categories" && (
+                      <CatalogueProductPages
+                        page={state.page}
+                        total={state.products.meta.total}
+                        hasNextPage={state.products.meta.hasNextPage}
+                        onPage={(page) => void controller.nextPage(page)}
+                      />
+                    )}
                   </>
                 )}
-                {controls && (
+                {controls && !referenceFixture && (
                   <div className="catalogue-dev-tools">
                     {controls}
                     <details className="catalogue-dev">

@@ -59,10 +59,7 @@
       "artwork": "sample-artwork/potato.png"
     }
   ],
-  "homeFirstRow": [
-    "banana",
-    "red-apple"
-  ],
+  "homeFirstRow": ["banana", "red-apple"],
   "categoryVisibleGrid": [
     "red-apple",
     "orange",
