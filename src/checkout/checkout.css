@@ -438,3 +438,162 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Compact, single-page presentation for the supplied UX03 comparison fixture. */
+.cart-stack--reference {
+  gap: 0;
+  margin-top: 0;
+}
+.cart-stack--reference .cart-delivery {
+  margin-bottom: 14px;
+  border-color: #dce5eb;
+  border-radius: 12px;
+  background: #f6fafc;
+  padding: 12px;
+}
+.cart-stack--reference .cart-delivery h2 {
+  font-size: 13px;
+  line-height: 1.3;
+}
+.cart-stack--reference .cart-delivery > p {
+  font-size: 11px;
+}
+.cart-stack--reference .cart-delivery > p strong {
+  font-weight: 500;
+}
+.cart-stack--reference .quote-eyebrow {
+  color: #1c6a4c;
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.cart-stack--reference .cart-lines,
+.cart-stack--reference .quote-card {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+.cart-stack--reference .cart-section-heading {
+  display: none;
+}
+.cart-stack--reference .cart-line {
+  position: relative;
+  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-rows: 64px;
+  gap: 0 10px;
+  min-height: 100px;
+  padding: 12px 0;
+}
+.cart-stack--reference .cart-line:first-of-type {
+  border-top: 0;
+  margin-top: 0;
+}
+.cart-stack--reference .cart-line-image {
+  width: 64px;
+  height: 64px;
+  border: 1px solid #dce5eb;
+  background: white;
+  grid-row: 1;
+}
+.cart-stack--reference .cart-line-copy {
+  grid-column: 2;
+  grid-row: 1;
+}
+.cart-stack--reference .cart-line-copy h3 {
+  font-size: 13px;
+}
+.cart-stack--reference .cart-line-copy p,
+.cart-stack--reference .cart-line-copy strong {
+  color: #374151;
+  font-size: 11px;
+}
+.cart-stack--reference .cart-line-copy strong {
+  margin-top: 10px;
+  color: #111827;
+  font-weight: 800;
+}
+.cart-stack--reference .cart-remove {
+  position: absolute;
+  top: 8px;
+  right: 0;
+  width: 64px;
+  grid-column: auto;
+  grid-row: auto;
+  min-height: 44px;
+  color: var(--color-cks-primary);
+  font-size: 11px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.cart-stack--reference .cart-quantity {
+  position: absolute;
+  right: 0;
+  bottom: 8px;
+  grid-column: auto;
+  grid-row: auto;
+  grid-template-columns: 44px 36px 44px;
+  border-color: #dce5eb;
+  border-radius: 9px;
+  background: #f7fafb;
+}
+.cart-stack--reference .cart-quantity button {
+  min-height: 44px;
+}
+.cart-stack--reference .cart-line-subtotal {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+}
+.cart-stack--reference .cart-display-total {
+  font-size: 13px;
+}
+.cart-stack--reference .catalogue-caption {
+  font-size: 12px;
+}
+.cart-stack--reference .quote-card {
+  margin-top: 8px;
+}
+.cart-stack--reference .quote-card-heading {
+  justify-content: flex-end;
+}
+.cart-stack--reference .quote-currency {
+  display: none;
+}
+.cart-stack--reference .quote-totals {
+  border-top: 1px solid #dce5eb;
+  gap: 10px 12px;
+  padding-top: 16px;
+  font-size: 13px;
+}
+.cart-stack--reference .quote-grand {
+  color: #111827;
+  font-size: 17px;
+}
+.cart-stack--reference .quote-safe-note {
+  margin-top: 10px;
+  border-radius: 0;
+  background: transparent;
+  padding: 4px 0;
+  font-size: 11px;
+}
+.cart-stack--reference .quote-card .payment-card {
+  margin-top: 12px;
+  padding-top: 12px;
+}
+.cart-stack--reference .payment-final-notice {
+  border-left: 0;
+  padding-left: 0;
+  font-size: 11px;
+}
+.cart-stack--reference .payment-action {
+  margin-top: 12px;
+}
+@media (max-width: 359px) {
+  .cart-stack--reference .cart-line {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+  .cart-stack--reference .cart-line-image {
+    width: 56px;
+    height: 56px;
+  }
+}

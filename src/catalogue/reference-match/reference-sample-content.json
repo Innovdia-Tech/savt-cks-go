@@ -1,0 +1,136 @@
+{
+  "purpose": "Design-reference sample content only. Map into the EXISTING development adapter. This is not an API response, a product feed, a production seed, a fee policy, or payment acceptance evidence.",
+  "scenarioName": "ux03-reference-match",
+  "productionUse": false,
+  "currency": "MYR",
+  "outsidePreviewLabel": "Design preview — sample products and amounts",
+  "sampleAddress": {
+    "summary": "1 Example Street, Demo City, Sabah",
+    "outletDisplayName": "Demo neighbourhood outlet"
+  },
+  "catalogue": [
+    {
+      "key": "banana",
+      "name": "Cavendish Banana",
+      "displayUnit": "1 kg (5–6 pcs)",
+      "sellingPriceMinor": 450,
+      "artwork": "sample-artwork/banana.png"
+    },
+    {
+      "key": "red-apple",
+      "name": "Red Apple",
+      "displayUnit": "1 kg (±5 pcs)",
+      "sellingPriceMinor": 590,
+      "artwork": "sample-artwork/red-apple.png"
+    },
+    {
+      "key": "orange",
+      "name": "Orange",
+      "displayUnit": "1 kg (5–6 pcs)",
+      "sellingPriceMinor": 650,
+      "artwork": "sample-artwork/orange.png"
+    },
+    {
+      "key": "broccoli",
+      "name": "Broccoli",
+      "displayUnit": "1 pc (±250 g)",
+      "sellingPriceMinor": 490,
+      "artwork": "sample-artwork/broccoli.png"
+    },
+    {
+      "key": "carrot",
+      "name": "Carrot",
+      "displayUnit": "1 kg",
+      "sellingPriceMinor": 350,
+      "artwork": "sample-artwork/carrot.png"
+    },
+    {
+      "key": "tomato",
+      "name": "Tomato",
+      "displayUnit": "1 kg",
+      "sellingPriceMinor": 420,
+      "artwork": "sample-artwork/tomato.png"
+    },
+    {
+      "key": "potato",
+      "name": "Potato",
+      "displayUnit": "1 kg",
+      "sellingPriceMinor": 320,
+      "artwork": "sample-artwork/potato.png"
+    }
+  ],
+  "homeFirstRow": [
+    "banana",
+    "red-apple"
+  ],
+  "categoryVisibleGrid": [
+    "red-apple",
+    "orange",
+    "broccoli",
+    "carrot",
+    "tomato",
+    "potato"
+  ],
+  "sampleCart": {
+    "lines": [
+      {
+        "key": "red-apple",
+        "quantity": 1,
+        "lineTotalMinor": 590
+      },
+      {
+        "key": "carrot",
+        "quantity": 1,
+        "lineTotalMinor": 350
+      },
+      {
+        "key": "potato",
+        "quantity": 1,
+        "lineTotalMinor": 320
+      }
+    ],
+    "lineCount": 3,
+    "totalUnits": 3
+  },
+  "sampleQuote": {
+    "itemsSubtotalMinor": 1260,
+    "discountAmountMinor": 0,
+    "deliveryFeeMinor": 490,
+    "processingFeeMinor": 50,
+    "grandTotalMinor": 1800
+  },
+  "sampleOrder": {
+    "orderNumber": "CKS100123",
+    "displayOrderNumber": "#CKS100123",
+    "placedDisplay": "23 Sept 2026, 9:41 AM",
+    "totalMinor": 1800,
+    "instruction": "Use valid existing internal identifiers/timestamps. Correlate simulated confirmation/history/detail to the same sample cart and quote. No browser-order creation authority is introduced."
+  },
+  "categoryLabelsShownInBoard": [
+    "Fruits & Vegetables",
+    "Meat & Seafood",
+    "Dairy & Chilled",
+    "Pantry Essentials"
+  ],
+  "categoryFilterLabelsShownInBoard": [
+    "All",
+    "Fruits",
+    "Vegetables",
+    "Fresh Herbs"
+  ],
+  "sampleCampaign": {
+    "headline": "Fresh Picks\nFor a Healthier You",
+    "body": "Quality groceries delivered to your door.",
+    "action": "Shop Now",
+    "artwork": "sample-artwork/campaign-produce-basket.png",
+    "localDesignSampleOnly": true
+  },
+  "notes": [
+    "Products, example amounts and neutral labels are transcribed from the supplied board. Unit spacing is normalized for readability; the generated board is not a commercial product specification.",
+    "Counts must describe actual fixture data; do not hardcode the board's 32 products or two current orders when the dataset has fewer. Do not invent extra products/orders merely to copy a badge.",
+    "The second historical/current sample order in the board shows RM25.40, but its itemization is not supplied; this package does not fabricate its line items.",
+    "Keep initial browse and after-add capture states explicit. Card steppers and badges must agree with the actual sample cart, even where individual board snapshots are inconsistent.",
+    "Expected RM18.00 is a computed test expectation. On quantity/address/quote changes, use the existing calculations/requote behavior; never pin the UI to the sample total.",
+    "No support phone number is supplied. No generated retailer logo, certification, Fresh/Local Supplier/Quality Assured badge, provider page, or real payment result is supplied."
+  ]
+}

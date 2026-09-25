@@ -1,6 +1,15 @@
 import type { Assignment, Category, Detail, Outlet } from "./contracts";
 import type { CustomerOrderStage, OrderListItem } from "../orders/contracts";
 import { developmentAppleUrl, developmentRiceUrl } from "./development-artwork";
+import {
+  referenceCategories,
+  referenceCategoryGrid,
+  referenceProductByKey,
+  referenceProducts,
+  referenceSample,
+  referenceScenario,
+  referenceId,
+} from "./reference-match/content";
 const id = (n: number) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const categories: Category[] = [
@@ -18,6 +27,7 @@ const failure = (status: number, code: string) =>
   );
 export const scenarios = [
   "success",
+  referenceScenario,
   "null-images",
   "long-price",
   "unavailable",
@@ -121,6 +131,9 @@ export class DevelopmentCatalogueAdapter {
     this.paymentResults = 0;
     this.orderScenario = "active";
   }
+  currentScenario() {
+    return this.scenario;
+  }
   expire() {
     this.assignment = null;
   }
@@ -150,6 +163,7 @@ export class DevelopmentCatalogueAdapter {
     };
   }
   private products(): Detail[] {
+    if (this.scenario === referenceScenario) return referenceProducts;
     return Array.from({ length: 30 }, (_, i): Detail => ({
       productId: id(100 + i),
       outletProductId: id(200 + i),
@@ -179,6 +193,34 @@ export class DevelopmentCatalogueAdapter {
       storageType: "AMBIENT",
     }));
   }
+  private referenceOrder(): ReviewedOrder {
+    const items = referenceSample.sampleCart.lines.map((line) => {
+      const product = referenceProductByKey(line.key);
+      return {
+        productNameSnapshot: product.name,
+        uomCodeSnapshot: product.uom.code,
+        uomNameSnapshot: product.uom.name,
+        quantity: line.quantity,
+        unitPriceMinor: product.sellingPriceMinor,
+        lineSubtotalMinor: product.sellingPriceMinor * line.quantity,
+      };
+    });
+    const subtotal = items.reduce(
+      (sum, line) => sum + line.lineSubtotalMinor,
+      0,
+    );
+    const delivery = referenceSample.sampleQuote.deliveryFeeMinor;
+    const processing = referenceSample.sampleQuote.processingFeeMinor;
+    return {
+      quoteId: referenceId(900),
+      confirmedAt: "2026-09-23T01:41:00.000Z",
+      items,
+      itemsSubtotalMinor: subtotal,
+      finalDeliveryChargeMinor: delivery,
+      processingFeeMinor: processing,
+      grandTotalMinor: subtotal + delivery + processing,
+    };
+  }
   private primaryOrderStage(): CustomerOrderStage {
     if (this.orderScenario === "cancelled") return "CANCELLED";
     if (
@@ -195,7 +237,11 @@ export class DevelopmentCatalogueAdapter {
     sequence = 1,
   ): OrderListItem {
     const orderId = id(991 - sequence);
-    const reviewed = sequence === 1 ? this.completedOrder : null;
+    const reviewed =
+      sequence === 1
+        ? (this.completedOrder ??
+          (this.scenario === referenceScenario ? this.referenceOrder() : null))
+        : null;
     const at =
       reviewed?.confirmedAt ?? new Date(this.now() - 45 * 60_000).toISOString();
     const delivered = stage === "DELIVERED";
@@ -205,7 +251,10 @@ export class DevelopmentCatalogueAdapter {
       this.orderScenario === "receipt-ready" && delivered;
     return {
       orderId,
-      orderNumber: `SYNTH-ORDER-${String(sequence).padStart(4, "0")}`,
+      orderNumber:
+        this.scenario === referenceScenario && sequence === 1
+          ? referenceSample.sampleOrder.orderNumber
+          : `SYNTH-ORDER-${String(sequence).padStart(4, "0")}`,
       createdAt: at,
       updatedAt: new Date(this.now()).toISOString(),
       customerStage: stage,
@@ -245,7 +294,11 @@ export class DevelopmentCatalogueAdapter {
     return page === 1 ? [this.syntheticOrder()] : [];
   }
   private syntheticOrderDetail(summary = this.syntheticOrder()) {
-    const reviewed = summary.orderId === id(990) ? this.completedOrder : null;
+    const reviewed =
+      summary.orderId === id(990)
+        ? (this.completedOrder ??
+          (this.scenario === referenceScenario ? this.referenceOrder() : null))
+        : null;
     const delivered = summary.customerStage === "DELIVERED";
     const cancelled = summary.customerStage === "CANCELLED";
     const confirmedAt = delivered ? summary.updatedAt : null;
@@ -663,7 +716,10 @@ export class DevelopmentCatalogueAdapter {
             this.paymentResult === "paid"
               ? {
                   orderId: id(990),
-                  orderNumber: "SYNTH-ORDER-0001",
+                  orderNumber:
+                    this.scenario === referenceScenario
+                      ? referenceSample.sampleOrder.orderNumber
+                      : "SYNTH-ORDER-0001",
                   status: "CONFIRMED",
                 }
               : null,
@@ -765,7 +821,9 @@ export class DevelopmentCatalogueAdapter {
     const data = isCategories
       ? this.scenario === "empty-categories"
         ? []
-        : categories
+        : this.scenario === referenceScenario
+          ? referenceCategories
+          : categories
       : products
           .filter(
             (p) =>
@@ -782,6 +840,14 @@ export class DevelopmentCatalogueAdapter {
                 p.uom.code,
               ].some((s) => s?.toLowerCase().includes(q)),
           )
+          .sort((a, b) => {
+            if (this.scenario !== referenceScenario || !category) return 0;
+            const rank = (product: Detail) => {
+              const index = referenceCategoryGrid.indexOf(product);
+              return index === -1 ? referenceCategoryGrid.length : index;
+            };
+            return rank(a) - rank(b);
+          })
           .map(
             ({
               description: _description,

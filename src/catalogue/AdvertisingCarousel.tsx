@@ -17,7 +17,7 @@ export type AdvertisingSlide = {
   title: string;
   description?: string;
   imageUrl?: string;
-  theme?: "berry" | "forest" | "sunrise";
+  theme?: "berry" | "forest" | "sunrise" | "reference";
   action?: {
     label: string;
     target: AdvertisingTarget;

@@ -51,6 +51,70 @@ it("preserves the missing-image fixture for fallback review", async () => {
     (await api.products(assignment, { page: 1 })).data[0].imageUrl,
   ).toBeNull();
 });
+it("maps the supplied reference sample through the existing catalogue, quote and order contracts", async () => {
+  const { api, quote, orders } = await setup("ux03-reference-match");
+  const assignment = await api.assign(address);
+  const categories = await api.categories(assignment);
+  expect(categories.data.map((category) => category.name)).toEqual([
+    "Fruits & Vegetables",
+    "Meat & Seafood",
+    "Dairy & Chilled",
+    "Pantry Essentials",
+  ]);
+  const home = await api.products(assignment, { page: 1 });
+  expect(home.data.slice(0, 2).map((product) => product.name)).toEqual([
+    "Cavendish Banana",
+    "Red Apple",
+  ]);
+  expect(home.meta.total).toBe(7);
+  expect(home.data[1].imageUrl).toBe(
+    "https://cks-go-development.invalid/reference-match/red-apple.png",
+  );
+  const listing = await api.products(assignment, {
+    page: 1,
+    categoryId: categories.data[0].id,
+  });
+  expect(listing.data.slice(0, 6).map((product) => product.name)).toEqual([
+    "Red Apple",
+    "Orange",
+    "Broccoli",
+    "Carrot",
+    "Tomato",
+    "Potato",
+  ]);
+  const lines = ["Red Apple", "Carrot", "Potato"].map((name) => ({
+    outletProductId: home.data.find((product) => product.name === name)!
+      .outletProductId,
+    quantity: 1,
+  }));
+  const reviewed = await quote.create(
+    {
+      outletId: assignment.outlet.id,
+      customerAddressId: address.id,
+      deliveryType: "NOW",
+      items: lines,
+    },
+    crypto.randomUUID(),
+  );
+  expect([
+    reviewed.itemsSubtotalMinor,
+    reviewed.finalDeliveryChargeMinor,
+    reviewed.processingFeeMinor,
+    reviewed.grandTotalMinor,
+  ]).toEqual([1260, 490, 50, 1800]);
+  const listed = (await orders.list()).data[0];
+  const detail = await orders.detail(listed.orderId);
+  expect(listed).toMatchObject({
+    orderNumber: "CKS100123",
+    grandTotalMinor: 1800,
+  });
+  expect(detail.items.map((item) => item.productName)).toEqual([
+    "Red Apple",
+    "Carrot",
+    "Potato",
+  ]);
+  expect(detail.money.grandTotalMinor).toBe(reviewed.grandTotalMinor);
+});
 it.each([
   ["incomplete", "CUSTOMER_ASSIGNMENT_INCOMPLETE"],
   ["no-service", "CUSTOMER_NO_SERVICEABLE_OUTLET"],

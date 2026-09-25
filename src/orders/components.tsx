@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type {
   CustomerOrderStage,
   OrderDetail,
@@ -92,10 +92,28 @@ const stagePresentation: Record<
 function OrderCard({
   order,
   onOpen,
+  referencePreview = false,
 }: {
   order: OrderListItem;
   onOpen: (orderId: string) => void;
+  referencePreview?: boolean;
 }) {
+  if (referencePreview)
+    return (
+      <button
+        className="order-card order-card--reference"
+        onClick={() => onOpen(order.orderId)}
+        aria-label={`View order ${order.orderNumber}`}
+      >
+        <strong>#{order.orderNumber}</strong>
+        <Status stage={order.customerStage} />
+        <span>{malaysiaTime(order.createdAt)}</span>
+        <b>{money(order.grandTotalMinor)}</b>
+        <span className="order-card--reference-arrow" aria-hidden="true">
+          ›
+        </span>
+      </button>
+    );
   return (
     <button
       className="order-card"
@@ -163,12 +181,17 @@ export function OrdersScreen({
   controller,
   onOpen,
   onBrowse,
+  referencePreview = false,
 }: {
   state: OrdersState;
   controller: Actions;
   onOpen: (orderId: string) => void;
   onBrowse: () => void;
+  referencePreview?: boolean;
 }) {
+  const [referenceTab, setReferenceTab] = useState<"current" | "history">(
+    "current",
+  );
   useEffect(() => {
     if (state.listPhase === "idle") void controller.load();
   }, [state.listPhase, controller]);
@@ -212,6 +235,59 @@ export function OrdersScreen({
   const history = page.data.filter(
     (order) => !currentOrderStages.includes(order.customerStage),
   );
+  if (referencePreview) {
+    const selected = referenceTab === "current" ? current : history;
+    return (
+      <div className="orders-stack orders-stack--reference">
+        <div
+          className="orders-reference-tabs"
+          role="tablist"
+          aria-label="Order status"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={referenceTab === "current"}
+            onClick={() => setReferenceTab("current")}
+          >
+            Current Orders ({current.length})
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={referenceTab === "history"}
+            onClick={() => setReferenceTab("history")}
+          >
+            Order History ({history.length})
+          </button>
+        </div>
+        <div className="order-list" role="tabpanel">
+          {selected.length ? (
+            selected.map((order) => (
+              <OrderCard
+                key={order.orderId}
+                order={order}
+                onOpen={onOpen}
+                referencePreview
+              />
+            ))
+          ) : (
+            <p className="order-page-empty">
+              {referenceTab === "current"
+                ? "No current orders."
+                : "No completed or cancelled orders."}
+            </p>
+          )}
+        </div>
+        <button
+          className="order-refresh"
+          onClick={() => void controller.refresh()}
+        >
+          Refresh orders
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="orders-stack">
       <div className="orders-toolbar">
@@ -306,11 +382,13 @@ export function OrderDetailScreen({
   controller,
   onBack,
   supportWhatsApp = "",
+  referencePreview = false,
 }: {
   state: OrdersState;
   controller: Actions;
   onBack: () => void;
   supportWhatsApp?: string;
+  referencePreview?: boolean;
 }) {
   if (state.detailPhase === "idle" || state.detailPhase === "loading")
     return (
@@ -345,16 +423,24 @@ export function OrderDetailScreen({
   const activeOrder = currentOrderStages.includes(order.customerStage);
   const helpUrl = buildOrderSupportUrl(supportWhatsApp, order.orderNumber);
   return (
-    <div className="order-detail-stack">
+    <div
+      className={`order-detail-stack ${referencePreview ? "order-detail-stack--reference" : ""}`}
+    >
       <section className="order-detail-hero">
-        <p className="order-eyebrow">{order.outletName}</p>
+        {!referencePreview && (
+          <p className="order-eyebrow">{order.outletName}</p>
+        )}
         <div>
-          <h2>{order.orderNumber}</h2>
+          <h2>
+            {referencePreview ? `#${order.orderNumber}` : order.orderNumber}
+          </h2>
           <Status stage={order.customerStage} />
         </div>
         <p>Placed {malaysiaTime(order.createdAt)}</p>
-        <p className="order-stage-explanation">{stage.explanation}</p>
-        {activeOrder && (
+        {!referencePreview && (
+          <p className="order-stage-explanation">{stage.explanation}</p>
+        )}
+        {activeOrder && !referencePreview && (
           <div className="order-eta-compact" aria-label="Estimated delivery">
             <span>Estimated delivery</span>
             <strong>Estimate unavailable</strong>

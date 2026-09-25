@@ -1,8 +1,22 @@
 import type { AdvertisingSlide } from "./AdvertisingCarousel";
 import { groceryBannerArtworkUrl } from "./development-artwork";
+import { campaignArtworkUrl } from "./reference-match/artwork";
+import { referenceSample } from "./reference-match/content";
 
 export type DevelopmentAdvertisingScenario =
-  "multiple" | "single" | "zero" | "failed-creative";
+  "multiple" | "single" | "zero" | "failed-creative" | "reference";
+
+const reference: AdvertisingSlide = {
+  id: "reference-picks",
+  title: referenceSample.sampleCampaign.headline,
+  description: referenceSample.sampleCampaign.body,
+  theme: "reference",
+  imageUrl: campaignArtworkUrl,
+  action: {
+    label: referenceSample.sampleCampaign.action,
+    target: "categories",
+  },
+};
 
 const primary: AdvertisingSlide = {
   id: "weekly-shop",
@@ -36,6 +50,7 @@ export function developmentAdvertisingSlides(
   scenario: DevelopmentAdvertisingScenario,
 ): AdvertisingSlide[] {
   if (scenario === "zero") return [];
+  if (scenario === "reference") return [reference];
   if (scenario === "single") return [primary];
   if (scenario === "failed-creative")
     return [
