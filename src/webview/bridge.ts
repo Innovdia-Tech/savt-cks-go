@@ -186,6 +186,7 @@ export class FlutterBridgeAdapter implements NativeBridgePort {
 export class DevelopmentBridgeAdapter implements NativeBridgePort {
   private readonly attemptedRequestIds = new Set<string>();
   private readonly paymentHandoffs: string[] = [];
+  private failNextPayment = false;
 
   constructor(
     private readonly enabled: boolean,
@@ -208,7 +209,15 @@ export class DevelopmentBridgeAdapter implements NativeBridgePort {
   async requestPaymentHandoff(checkoutUrl: string): Promise<void> {
     if (!isSafeCheckoutUrl(checkoutUrl)) throw new BridgeError("invalid");
     if (!this.enabled || this.production) throw new BridgeError("unavailable");
+    if (this.failNextPayment) {
+      this.failNextPayment = false;
+      throw new BridgeError("unavailable");
+    }
     this.paymentHandoffs.push(checkoutUrl);
+  }
+
+  failNextPaymentHandoff(): void {
+    this.failNextPayment = true;
   }
 
   getPaymentHandoffs(): readonly string[] {

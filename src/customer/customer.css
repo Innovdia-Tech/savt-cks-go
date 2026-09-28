@@ -28,7 +28,7 @@
 .delivery-address-link__copy > strong {
   max-width: 100%;
   font-size: 13px;
-  line-height: 18px;
+  line-height: 1.2;
   overflow-wrap: anywhere;
 }
 .delivery-address-link__chevron {

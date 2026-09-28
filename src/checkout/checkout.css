@@ -176,14 +176,18 @@
   display: none;
 }
 .cart-display-total {
+  flex-wrap: wrap;
   border-top: 1px solid #d7e5da;
   padding-top: 12px;
   font-size: 14px;
   font-weight: 800;
+  line-height: 1.2;
 }
 .cart-display-total strong {
   color: var(--color-text);
   font-size: 18px;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 .quote-action {
   width: 100%;
@@ -271,6 +275,7 @@
   border-top: 1px solid #d7e5da;
   padding-top: 14px;
   font-size: 12px;
+  line-height: 1.25;
 }
 .quote-totals dd,
 .quote-evidence dd {
@@ -288,6 +293,10 @@
   color: var(--color-cks-primary);
   font-size: 15px;
   font-weight: 900;
+  line-height: 1.2;
+}
+.quote-evidence-details {
+  margin-top: 12px;
 }
 .quote-safe-note {
   margin-top: 14px;
@@ -477,11 +486,10 @@
   display: none;
 }
 .cart-stack--shopping .cart-line {
-  position: relative;
   grid-template-columns: 64px minmax(0, 1fr);
-  grid-template-rows: 64px;
-  gap: 0 10px;
-  min-height: 100px;
+  grid-template-rows: auto auto auto;
+  gap: 8px 10px;
+  min-height: 0;
   padding: 12px 0;
 }
 .cart-stack--shopping .cart-line:first-of-type {
@@ -513,12 +521,10 @@
   font-weight: 800;
 }
 .cart-stack--shopping .cart-remove {
-  position: absolute;
-  top: 8px;
-  right: 0;
+  grid-column: 1;
+  grid-row: 2;
+  justify-self: start;
   width: 64px;
-  grid-column: auto;
-  grid-row: auto;
   min-height: 44px;
   color: var(--color-cks-primary);
   font-size: 11px;
@@ -526,11 +532,9 @@
   white-space: nowrap;
 }
 .cart-stack--shopping .cart-quantity {
-  position: absolute;
-  right: 0;
-  bottom: 8px;
-  grid-column: auto;
-  grid-row: auto;
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
   grid-template-columns: 44px 36px 44px;
   border-color: #dce5eb;
   border-radius: 9px;
@@ -541,8 +545,8 @@
 }
 .cart-stack--shopping .cart-line-subtotal {
   grid-column: 2;
-  grid-row: 1;
-  align-self: end;
+  grid-row: 3;
+  align-self: start;
 }
 .cart-stack--shopping .cart-display-total {
   font-size: 13px;
@@ -595,5 +599,15 @@
   .cart-stack--shopping .cart-line-image {
     width: 56px;
     height: 56px;
+  }
+  .cart-stack--shopping .quote-totals {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px;
+  }
+  .cart-stack--shopping .quote-totals dt:not(:first-child) {
+    margin-top: 10px;
+  }
+  .cart-stack--shopping .quote-totals dd {
+    text-align: left;
   }
 }

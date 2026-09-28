@@ -118,6 +118,12 @@ async function start() {
                     adapter={catalogueDevelopment}
                     customer={customer}
                     catalogue={catalogue}
+                    payment={payment}
+                    bridge={
+                      bridge instanceof DevelopmentBridgeAdapter
+                        ? bridge
+                        : undefined
+                    }
                   />
                 ) : undefined
               }

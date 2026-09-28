@@ -8,8 +8,8 @@ import { QuoteApi } from "../checkout/api";
 import { PaymentApi } from "../payment/api";
 import { OrdersApi } from "../orders/api";
 const address = { id: "22222222-2222-4222-8222-222222222222", rowVersion: 1 };
-async function setup(scenario = "success") {
-  const adapter = new DevelopmentCatalogueAdapter(false);
+async function setup(scenario = "success", now = Date.now) {
+  const adapter = new DevelopmentCatalogueAdapter(false, now);
   adapter.reset(scenario);
   const session = new CustomerSessionController(
     new DevelopmentCustomerApi(false),
@@ -356,6 +356,48 @@ it("provides strict customer order history and detail fixtures", async () => {
   expect(JSON.stringify(order)).not.toContain("riderPhone");
 });
 
+it("can show recovery after a failed synthetic payment status request", async () => {
+  const { adapter, api, quote, payment } = await setup();
+  const assignment = await api.assign(address);
+  const item = (await api.products(assignment, { page: 1 })).data[0];
+  const trusted = await quote.create(
+    {
+      outletId: assignment.outlet.id,
+      customerAddressId: address.id,
+      deliveryType: "NOW",
+      items: [{ outletProductId: item.outletProductId, quantity: 1 }],
+    },
+    crypto.randomUUID(),
+  );
+  const created = await payment.create(
+    trusted.quoteId,
+    trusted.quoteToken,
+    crypto.randomUUID(),
+  );
+  adapter.setPaymentResult("status-error");
+  await expect(
+    payment.result(created.payment.paymentIntentId),
+  ).rejects.toMatchObject({
+    code: "INVALID_RESPONSE",
+  });
+  adapter.setPaymentResult("pending");
+  await expect(
+    payment.result(created.payment.paymentIntentId),
+  ).resolves.toMatchObject({
+    status: "PENDING",
+  });
+});
+
+it("keeps synthetic order times stable between history and detail", async () => {
+  let now = Date.parse("2026-09-28T05:00:00.000Z");
+  const { orders } = await setup("success", () => now);
+  const summary = (await orders.list()).data[0];
+  now += 60_000;
+  const detail = await orders.detail(summary.orderId);
+  expect(detail.createdAt).toBe(summary.createdAt);
+  expect(detail.updatedAt).toBe(summary.updatedAt);
+});
+
 it("provides empty, delivered, and receipt-ready order acceptance states", async () => {
   const { adapter, orders } = await setup();
   adapter.setOrderScenario("empty");
@@ -392,6 +434,15 @@ it("provides explicit customer-stage and paginated order review fixtures", async
   expect(first.meta.totalPages).toBe(2);
   expect(first.data[0].customerStage).toBe("DELIVERED");
   expect(second.data[0].customerStage).toBe("OUT_FOR_DELIVERY");
+});
+
+it("keeps order totals accurate when a requested page is now empty", async () => {
+  const { adapter, orders } = await setup();
+  adapter.setOrderScenario("cancelled");
+  const page = await orders.list(2, 25);
+  expect(page.data).toEqual([]);
+  expect(page.meta.total).toBe(1);
+  expect(page.meta.totalPages).toBe(1);
 });
 
 it("keeps historical cancelled Orders readable without a customer cancel command", async () => {

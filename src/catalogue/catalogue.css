@@ -18,6 +18,7 @@
   font-size: 21px;
   font-weight: 900;
   letter-spacing: -0.04em;
+  line-height: 1.2;
 }
 .catalogue-heading h1:focus {
   outline: none;
@@ -171,6 +172,7 @@
   padding: 3px 4px;
   font-size: 10px;
   font-weight: 800;
+  line-height: 1.2;
 }
 .advertising-carousel__dots {
   display: flex;
@@ -224,10 +226,6 @@
   overflow-x: auto;
   padding: 2px 2px 8px;
   scroll-snap-type: x proximity;
-  scrollbar-width: none;
-}
-.catalogue-category-tiles::-webkit-scrollbar {
-  display: none;
 }
 .catalogue-category-tiles button {
   display: grid;
@@ -242,7 +240,7 @@
   background: transparent;
   font-size: 12px;
   font-weight: 700;
-  line-height: 16px;
+  line-height: 1.25;
   scroll-snap-align: start;
 }
 .catalogue-category-tiles button > span:first-child {
@@ -300,10 +298,6 @@
   gap: 8px;
   overflow-x: auto;
   padding: 10px 0 12px;
-  scrollbar-width: none;
-}
-.catalogue-categories::-webkit-scrollbar {
-  display: none;
 }
 .catalogue-categories button {
   min-height: 44px;
@@ -1047,6 +1041,7 @@
   color: #111827;
   font-size: 21px;
   font-weight: 800;
+  line-height: 1.2;
 }
 .catalogue-detail-purchase--shopping .catalogue-add {
   min-height: 48px;
@@ -1055,6 +1050,58 @@
 .catalogue-detail-purchase--shopping .catalogue-detail-quantity {
   min-height: 48px;
   margin: 0;
+}
+@media (max-width: 430px) {
+  .catalogue-root--shopping .advertising-carousel {
+    aspect-ratio: auto;
+    height: auto;
+  }
+  .advertising-carousel__track,
+  .advertising-carousel__slide,
+  .advertising-carousel__content {
+    height: auto;
+  }
+  .advertising-carousel__slide {
+    min-height: 170px;
+  }
+  .advertising-carousel__content {
+    min-height: 170px;
+    grid-template-rows: auto auto auto;
+    padding-bottom: 60px;
+  }
+  .advertising-carousel__content h2 {
+    line-height: 1.2;
+  }
+  .catalogue-detail-purchase--shopping {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .catalogue-detail-purchase--shopping .catalogue-add {
+    width: 100%;
+    line-height: 1.2;
+  }
+  .catalogue-root--shopping .catalogue-detail h2,
+  .catalogue-root--shopping .catalogue-detail strong {
+    line-height: 1.2;
+  }
+}
+@media (max-width: 359px) {
+  .advertising-carousel__controls {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    grid-template-rows: 44px auto;
+  }
+  .advertising-carousel__controls .advertising-carousel__arrow:last-child {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .advertising-carousel__play {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: end;
+  }
+  .advertising-carousel__content {
+    padding-bottom: 102px;
+  }
 }
 @media (max-width: 359px) {
   .catalogue-root--shopping .catalogue-grid {

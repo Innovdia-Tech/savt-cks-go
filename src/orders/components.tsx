@@ -160,12 +160,20 @@ export function OrdersScreen({
   const page = state.page;
   if (!page || (page.data.length === 0 && page.meta.total === 0))
     return (
-      <StateCard
-        title="No orders yet"
-        message="Completed checkout orders will appear here after CKS Go confirms payment and Order identity."
-        action={onBrowse}
-        actionLabel="Browse products"
-      />
+      <>
+        <StateCard
+          title="No orders yet"
+          message="Completed checkout orders will appear here after CKS Go confirms payment and Order identity."
+          action={onBrowse}
+          actionLabel="Browse products"
+        />
+        <button
+          className="order-refresh"
+          onClick={() => void controller.refresh()}
+        >
+          Refresh orders
+        </button>
+      </>
     );
   const current = page.data.filter((order) =>
     currentOrderStages.includes(order.customerStage),

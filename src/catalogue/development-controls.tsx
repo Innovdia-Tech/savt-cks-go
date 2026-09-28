@@ -9,19 +9,28 @@ import {
 } from "./development";
 import type { CustomerDataController } from "../customer/state";
 import type { CatalogueController } from "./state";
+import type { PaymentController } from "../payment/state";
+import type { DevelopmentBridgeAdapter } from "../webview/bridge";
 export function DevelopmentControls({
   adapter,
   customer,
   catalogue,
+  payment,
+  bridge,
 }: {
   adapter: DevelopmentCatalogueAdapter;
   customer: CustomerDataController;
   catalogue: CatalogueController;
+  payment: PaymentController;
+  bridge?: DevelopmentBridgeAdapter;
 }) {
   const [value, setValue] = useState(adapter.currentScenario());
-  const [paymentResult, setPaymentResult] =
-    useState<PaymentResultScenario>("pending");
-  const [orderResult, setOrderResult] = useState<OrderScenario>("active");
+  const [paymentResult, setPaymentResult] = useState<PaymentResultScenario>(
+    adapter.currentPaymentResult(),
+  );
+  const [orderResult, setOrderResult] = useState<OrderScenario>(
+    adapter.currentOrderScenario(),
+  );
   const metrics = adapter.paymentMetrics();
   return (
     <details className="catalogue-dev">
@@ -83,6 +92,14 @@ export function DevelopmentControls({
       >
         Expire context and renew
       </button>
+      <button onClick={() => void payment.handleReturn()}>
+        Simulate return from payment
+      </button>
+      {bridge && (
+        <button onClick={() => bridge.failNextPaymentHandoff()}>
+          Fail next secure-payment handoff
+        </button>
+      )}
       <p>
         {value === "ux03-reference-match"
           ? "Design preview — sample products and amounts. "

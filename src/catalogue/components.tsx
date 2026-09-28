@@ -418,7 +418,7 @@ export function CatalogueProductPages({
         Previous
       </button>
       <span role="status">
-        Page {page} · {total} products
+        Page {page} · {total} product{total === 1 ? "" : "s"}
       </span>
       <button disabled={!hasNextPage} onClick={() => onPage(page + 1)}>
         Next
@@ -719,9 +719,7 @@ export function CatalogueApp({
           : route === "orders"
             ? "My Orders"
             : orderDetailId
-              ? orders.state.detail
-                ? `Order #${orders.state.detail.orderNumber}`
-                : "Order details"
+              ? "Order details"
               : ""
       }
       onBack={() =>
@@ -791,7 +789,9 @@ export function CatalogueApp({
                     : detailId
                       ? "Product details"
                       : route === "cart"
-                        ? `Your Cart (${checkout.state.lines.length})`
+                        ? payment.state.phase === "paid"
+                          ? "Order confirmed"
+                          : `Your Cart (${checkout.state.lines.reduce((sum, line) => sum + line.quantity, 0)})`
                         : orderDetailId
                           ? "Order details"
                           : "Orders"}
@@ -1021,7 +1021,8 @@ export function CatalogueApp({
                         </h2>
                         {route === "categories" && (
                           <p className="catalogue-caption">
-                            {state.products?.meta.total ?? 0} products
+                            {state.products?.meta.total ?? 0} product
+                            {state.products?.meta.total === 1 ? "" : "s"}
                           </p>
                         )}
                       </div>

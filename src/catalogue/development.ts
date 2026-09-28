@@ -62,6 +62,7 @@ export const paymentResultScenarios = [
   "paid",
   "failed",
   "paid-no-order",
+  "status-error",
 ] as const;
 export type PaymentResultScenario = (typeof paymentResultScenarios)[number];
 export const orderScenarios = [
@@ -95,6 +96,7 @@ type ReviewedOrder = {
   grandTotalMinor: number;
 };
 export class DevelopmentCatalogueAdapter {
+  private readonly fixtureTime: number;
   private scenario = "success";
   private serial = 0;
   private assignment: Assignment | null = null;
@@ -118,6 +120,7 @@ export class DevelopmentCatalogueAdapter {
   ) {
     if (production)
       throw new Error("Development catalogue is unavailable in production.");
+    this.fixtureTime = this.now();
   }
   reset(scenario: string) {
     this.scenario = scenario;
@@ -141,8 +144,14 @@ export class DevelopmentCatalogueAdapter {
   setPaymentResult(result: PaymentResultScenario) {
     this.paymentResult = result;
   }
+  currentPaymentResult() {
+    return this.paymentResult;
+  }
   setOrderScenario(result: OrderScenario) {
     this.orderScenario = result;
+  }
+  currentOrderScenario() {
+    return this.orderScenario;
   }
   paymentMetrics() {
     return {
@@ -247,7 +256,8 @@ export class DevelopmentCatalogueAdapter {
           (this.scenario === referenceScenario ? this.referenceOrder() : null))
         : null;
     const at =
-      reviewed?.confirmedAt ?? new Date(this.now() - 45 * 60_000).toISOString();
+      reviewed?.confirmedAt ??
+      new Date(this.fixtureTime - 45 * 60_000).toISOString();
     const delivered = stage === "DELIVERED";
     const cancelled = stage === "CANCELLED";
     const outForDelivery = stage === "OUT_FOR_DELIVERY" || delivered;
@@ -260,7 +270,8 @@ export class DevelopmentCatalogueAdapter {
           ? referenceSample.sampleOrder.orderNumber
           : `SYNTH-ORDER-${String(sequence).padStart(4, "0")}`,
       createdAt: at,
-      updatedAt: new Date(this.now()).toISOString(),
+      updatedAt:
+        reviewed?.confirmedAt ?? new Date(this.fixtureTime).toISOString(),
       customerStage: stage,
       paymentStatus: "PAID" as const,
       outletId: id(1),
@@ -273,7 +284,8 @@ export class DevelopmentCatalogueAdapter {
         assignedAt: outForDelivery ? at : null,
         pickedUpAt: outForDelivery ? at : null,
         deliveredAt: delivered
-          ? new Date(this.now() - 5 * 60_000).toISOString()
+          ? (reviewed?.confirmedAt ??
+            new Date(this.fixtureTime - 5 * 60_000).toISOString())
           : null,
       },
       receiptAvailable,
@@ -694,6 +706,8 @@ export class DevelopmentCatalogueAdapter {
       )
         return failure(404, "CHECKOUT_PAYMENT_NOT_FOUND");
       ++this.paymentResults;
+      if (this.paymentResult === "status-error")
+        return failure(503, "CHECKOUT_PAYMENT_UNAVAILABLE");
       const status =
         this.paymentResult === "processing"
           ? "PAID_PROCESSING"
@@ -747,7 +761,7 @@ export class DevelopmentCatalogueAdapter {
           ? 2
           : this.orderScenario === "mixed"
             ? 2
-            : data.length;
+            : this.syntheticOrders(1).length;
       const totalPages =
         this.orderScenario === "multi-page" ? 2 : total > 0 ? 1 : 0;
       return Response.json({
