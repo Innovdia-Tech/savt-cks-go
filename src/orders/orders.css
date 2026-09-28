@@ -295,7 +295,8 @@
 }
 .order-detail-hero > div {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 12px;
   margin: 5px 0 7px;
@@ -307,6 +308,12 @@
 .order-detail-hero h2 {
   font-size: 20px;
   font-weight: 900;
+  line-height: 1.2;
+}
+.order-progress li strong,
+.order-section h3,
+.order-status {
+  line-height: 1.2;
 }
 .order-detail-hero .order-status {
   background: var(--color-info-soft);
@@ -477,7 +484,14 @@
 .order-items li div {
   display: grid;
   min-width: 0;
+  flex: 1;
   gap: 2px;
+  overflow-wrap: anywhere;
+}
+.order-items li > strong {
+  flex-shrink: 0;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 .order-money {
   display: grid;

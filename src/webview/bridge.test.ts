@@ -216,4 +216,16 @@ describe("DevelopmentBridgeAdapter", () => {
       ),
     ).rejects.toEqual(new BridgeError("unavailable"));
   });
+
+  it("can fail one synthetic payment handoff and recover the same attempt", async () => {
+    const bridge = new DevelopmentBridgeAdapter(true, false);
+    bridge.failNextPaymentHandoff();
+    const url = "https://payments.example.test/checkout/approved";
+    await expect(bridge.requestPaymentHandoff(url)).rejects.toEqual(
+      new BridgeError("unavailable"),
+    );
+    expect(bridge.getPaymentHandoffs()).toEqual([]);
+    await expect(bridge.requestPaymentHandoff(url)).resolves.toBeUndefined();
+    expect(bridge.getPaymentHandoffs()).toEqual([url]);
+  });
 });

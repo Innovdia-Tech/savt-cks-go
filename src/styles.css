@@ -251,10 +251,13 @@ a[href] {
   }
 
   .app-header__brand {
+    min-width: 0;
+    overflow-wrap: anywhere;
     text-align: center;
     font-size: 16px;
     font-weight: 900;
     letter-spacing: 0.03em;
+    line-height: 1.2;
   }
 
   .app-header__exit {

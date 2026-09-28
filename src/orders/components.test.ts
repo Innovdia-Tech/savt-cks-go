@@ -300,6 +300,7 @@ describe("customer orders presentation", () => {
     );
     expect(html).toContain("No orders yet");
     expect(html).toContain("Browse products");
+    expect(html).toContain("Refresh orders");
   });
 
   it("keeps navigation when a loaded page is empty but server total is nonzero", () => {
