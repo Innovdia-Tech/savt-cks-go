@@ -51,6 +51,25 @@ If npm is blocked by a local certificate error such as `UNABLE_TO_VERIFY_LEAF_SI
 
 ## Verification
 
+### Same-origin customer API runtime (CKS-MEMBER-E2E04)
+
+Deployable builds require `VITE_CUSTOMER_API_ORIGIN` to be empty or unset. The API client still supports an explicit origin for development, and its empty-origin behavior remains relative `/api/v1/...`. A build with a nonempty browser API origin fails instead of silently retaining cross-site traffic.
+
+`npm run preview` now runs a small Node static + reverse-proxy server with no runtime dependencies beyond Node (use the project's Node 24 baseline). It serves `dist` and forwards `/api` and `/api/*` to the fixed server-only `CKS_GO_API_PROXY_TARGET` origin. This replaces Vite preview because [Vite documents preview as a local preview tool, not a production server](https://vite.dev/guide/static-deploy). The existing runtime command remains compatible:
+
+```bash
+npm run build
+CKS_GO_API_PROXY_TARGET=https://cks-api.example.com npm run preview -- --host 0.0.0.0 --port "$PORT"
+```
+
+The target must be an HTTP(S) origin without credentials, path, query or fragment. HTTP permits private service networking and local fixtures; use HTTPS for a public upstream. Supply this variable in the server process environment; the runtime does not load Vite `.env` files. A missing or invalid target prevents startup. `--port` takes precedence over `PORT`, then defaults to 4173; host defaults to loopback. Hosting TLS terminates in front of the runtime. No Railway configuration is changed by this local patch; a later authorized rollout must clear the old browser-origin build variable, set the server target, rebuild and restart.
+
+Browser-visible requests stay on the customer web origin. The proxy preserves method, raw body/query, Content-Type, Accept, Cookie, browser Origin, `x-cks-csrf`, `Idempotency-Key` and `If-Match`. It forwards each Set-Cookie unchanged: no Domain rewriting, no JavaScript cookie access, no change to HttpOnly, Secure, SameSite=Lax, Path=/ or the `__Host-` prefix. Backend Origin validation and CSRF enforcement remain authoritative.
+
+Request and response headers are allowlisted. Client Authorization/forwarding headers and upstream infrastructure headers are not propagated. API responses are `no-store`. API redirects fail with safe 502 rather than leaking an upstream Location or following another destination. The runtime logs startup status only, never request URLs, bodies, cookies, Authorization or CSRF. A fixed 12-second deadline covers the entire upstream response: failures return a generic 502, deadline expiry returns 504, and an already-started partial response is terminated. There are no automatic mutation retries. WebSocket/CONNECT tunneling is unsupported.
+
+Focused proof: `npm run test:proxy` exercises the real HTTP runtime against local fixture APIs, plus the relative API client and production build configuration. After building, run `npm run test:proxy:browser` with an existing Playwright installation available through Node module resolution (or `NODE_PATH`). Set `CKS_GO_TEST_BROWSER_CHANNEL=msedge` to use installed Edge, or omit it for Playwright Chromium. This optional acceptance harness starts the actual preview entrypoint and a local fixture, proves bootstrap stores the secure HttpOnly launch cookie and exchange sends its name through the same-origin runtime, and closes its processes. It prints only statuses, cookie names and security flags. Loopback is a browser-trusted context for this local Secure-cookie proof; production still requires HTTPS. This proves the proxy/browser boundary, not the native Savt handoff or a production WebView rollout.
+
 Customer-session API operations have a 15-second deadline covering fetch and successful/error JSON body parsing, including logout handling. Deadline expiry is retryable (`REQUEST_TIMEOUT`); ordinary network rejection remains offline (`NETWORK_ERROR`).
 
 Run `npm ci`, `npm run format:check`, `npm run typecheck`, `npm test`, and `npm run build`.
