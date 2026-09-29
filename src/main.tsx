@@ -134,6 +134,7 @@ async function start() {
                     <App
                       onLogout={() => void session.logout()}
                       supportWhatsApp={config.supportWhatsApp}
+                      embeddedHost={Boolean(window.SavtCksGoBridge)}
                     />
                   </OrdersProvider>
                 </PaymentProvider>
