@@ -1172,8 +1172,8 @@ export function CatalogueApp({
                         <option value="failed-creative">Failed creative</option>
                       </select>
                       <p>
-                        Development-only previews. Production stays empty until
-                        a compatible customer merchandising feed is connected.
+                        Development-only carousel state controls. Production
+                        uses the curated CKS Go merchandising slides.
                       </p>
                     </details>
                   </div>
