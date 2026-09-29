@@ -8,35 +8,55 @@ import {
 } from "./contracts";
 import { useCustomer } from "../customer/context";
 const labels = {
-  label: "Address label",
-  recipientName: "Recipient name",
-  recipientPhoneE164: "Recipient phone (optional)",
-  addressLine1: "Address line 1",
-  addressLine2: "Address line 2 (optional)",
+  label: "Save as",
+  recipientName: "Recipient",
+  recipientPhoneE164: "Phone (optional)",
+  addressLine1: "Address / street",
+  addressLine2: "Unit / Floor / Building (optional)",
   city: "City",
   state: "State",
   postcode: "Postcode (optional)",
   deliveryInstructions: "Delivery instructions (optional)",
-  latitude: "Latitude (optional)",
-  longitude: "Longitude (optional)",
+};
+
+export type AddressLocationInput = {
+  latitude: number;
+  longitude: number;
+  addressLine1?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
 };
 export function AddressForm({
   address,
+  location,
   onDone,
 }: {
   address?: Address;
+  location?: AddressLocationInput;
   onDone: () => void;
 }) {
   const { controller, state, setDirty, guardNavigation } = useCustomer();
   const form = useRef<HTMLFormElement>(null);
-  const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(
-      Object.keys(labels).map((k) => [
-        k,
-        String(address?.[k as keyof Address] ?? ""),
-      ]),
-    ),
-  );
+  const [values, setValues] = useState<Record<string, string>>(() => {
+    const profile = state.profile;
+    const suggested: Record<string, string> = {
+      label: String(address?.label ?? "Home"),
+      recipientName: String(address?.recipientName ?? profile?.nameSnapshot ?? ""),
+      recipientPhoneE164: String(
+        address?.recipientPhoneE164 ?? profile?.phoneE164Snapshot ?? "",
+      ),
+      addressLine1: String(
+        address?.addressLine1 ?? location?.addressLine1 ?? "",
+      ),
+      addressLine2: String(address?.addressLine2 ?? ""),
+      city: String(address?.city ?? location?.city ?? ""),
+      state: String(address?.state ?? location?.state ?? ""),
+      postcode: String(address?.postcode ?? location?.postcode ?? ""),
+      deliveryInstructions: String(address?.deliveryInstructions ?? ""),
+    };
+    return suggested;
+  });
   const [isDefault, setDefault] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   useEffect(() => {
@@ -55,8 +75,8 @@ export function AddressForm({
     const input = {
       ...values,
       countryCode: "MY",
-      latitude: values.latitude.trim() ? Number(values.latitude) : null,
-      longitude: values.longitude.trim() ? Number(values.longitude) : null,
+      latitude: location?.latitude ?? address?.latitude ?? null,
+      longitude: location?.longitude ?? address?.longitude ?? null,
       ...(!address ? { isDefault } : {}),
     } as AddressInput;
     const invalid = validateAddressInput(input);
@@ -83,10 +103,10 @@ export function AddressForm({
       aria-busy={state.busy}
     >
       <h2 className="text-xl font-black">
-        {address ? "Edit address" : "Add address"}
+        {address ? "Delivery details" : "Delivery details"}
       </h2>
       <p className="text-sm text-slate-600">
-        Malaysia only. Optional fields may be left blank.
+        Confirm the delivery details below. Your exact location is saved securely in the background.
       </p>
       {Object.entries(labels).map(([key, label]) => (
         <div key={key}>
@@ -115,11 +135,7 @@ export function AddressForm({
               name={key}
               className="customer-input"
               type={key === "recipientPhoneE164" ? "tel" : "text"}
-              inputMode={
-                key === "latitude" || key === "longitude"
-                  ? "decimal"
-                  : undefined
-              }
+              inputMode={key === "recipientPhoneE164" ? "tel" : undefined}
               maxLength={fieldLimits[key as keyof typeof fieldLimits]}
               disabled={blocked}
               value={values[key]}
