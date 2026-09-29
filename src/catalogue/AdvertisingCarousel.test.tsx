@@ -50,8 +50,14 @@ const loadCarousel = async () =>
 describe("Home advertising carousel", () => {
   it("ships curated production slides without development-only claims or external destinations", () => {
     expect(productionAdvertisingSlides.length).toBeGreaterThan(0);
-    expect(productionAdvertisingSlides.every((slide) => slide.action?.target === "categories")).toBe(true);
-    expect(JSON.stringify(productionAdvertisingSlides)).not.toMatch(/Development preview|https?:\/\//i);
+    expect(
+      productionAdvertisingSlides.every(
+        (slide) => slide.action?.target === "categories",
+      ),
+    ).toBe(true);
+    expect(JSON.stringify(productionAdvertisingSlides)).not.toMatch(
+      /Development preview|https?:\/\//i,
+    );
   });
 
   it("renders multiple slides with accessible manual and autoplay controls", async () => {

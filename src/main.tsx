@@ -106,7 +106,10 @@ async function start() {
     );
     root.render(
       <React.StrictMode>
-        <CustomerSessionBoundary controller={session}>
+        <CustomerSessionBoundary
+          controller={session}
+          embeddedHost={Boolean(window.SavtCksGoBridge)}
+        >
           <CustomerDataProvider controller={customer} development={development}>
             <CatalogueProvider
               controller={catalogue}

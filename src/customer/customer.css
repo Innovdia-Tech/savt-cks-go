@@ -129,7 +129,6 @@
   resize: none;
 }
 
-
 .delivery-setup {
   min-height: 100dvh;
   max-width: var(--app-max-width);
@@ -323,7 +322,6 @@
   line-height: 1.5;
 }
 
-
 .address-save-as {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -343,4 +341,21 @@
   border-color: var(--color-cks-primary);
   color: var(--color-cks-primary);
   background: var(--color-cks-primary-soft);
+}
+
+.delivery-setup {
+  overflow-wrap: anywhere;
+}
+.delivery-setup__primary,
+.delivery-setup__secondary {
+  padding-block: 12px;
+}
+.delivery-setup__search > div:focus-within {
+  outline: 2px solid var(--color-cks-primary);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .delivery-setup__spinner {
+    animation: none;
+  }
 }

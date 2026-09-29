@@ -1,4 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { Address } from "../addresses/contracts";
+import { DataFeedback } from "./components";
+import { useCheckout } from "../checkout/context";
+import { StoreLoading } from "../components/session/SessionStatus";
 import { AddressForm } from "../addresses/AddressForm";
 import { PinIcon, SearchIcon } from "../components/Icons";
 import {
@@ -16,13 +20,62 @@ const locationCopy = (location: DeliveryLocation) =>
     .join(", ") ||
   "Location found";
 
-export function DeliveryLocationSetup({ onDone }: { onDone: () => void }) {
-  const { state, controller } = useCustomer();
-  const selected = controller.selectedAddress();
+export function DeliveryLocationSetup({
+  onDone,
+  address,
+  onCancel,
+}: {
+  onDone: () => void;
+  address?: Address | null;
+  onCancel?: () => void;
+}) {
+  const { state, controller, guardNavigation } = useCustomer();
+  const checkout = useCheckout();
+  const originalIds = useRef(new Set(state.addresses.map((item) => item.id)));
+  const selected =
+    address === undefined ? controller.selectedAddress() : address;
+  const done = async () => {
+    const savedId =
+      selected?.id ??
+      controller
+        .getSnapshot()
+        .addresses.find((item) => !originalIds.current.has(item.id))?.id;
+    if (!selected && savedId && savedId !== controller.selectedAddress()?.id)
+      await checkout.selectAddress(savedId);
+    onDone();
+  };
   const repairing = Boolean(selected && !hasDeliveryCoordinates(selected));
   const [port] = useState(() => new BrowserDeliveryLocationPort());
   const [location, setLocation] = useState<DeliveryLocation | null>(null);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(() =>
+    selected
+      ? [
+          selected.addressLine1,
+          selected.city,
+          selected.state,
+          selected.postcode,
+        ]
+          .filter(Boolean)
+          .join(", ")
+      : "",
+  );
+  useEffect(() => {
+    if (selected)
+      setQuery(
+        [
+          selected.addressLine1,
+          selected.city,
+          selected.state,
+          selected.postcode,
+        ]
+          .filter(Boolean)
+          .join(", "),
+      );
+  }, [selected?.id]);
+  const pending = useRef(false);
+  const feedback = useRef<HTMLDivElement>(null);
+  const locationFeedback = useRef<HTMLElement>(null);
+  const search = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<DeliveryLocationError | null>(null);
   const [details, setDetails] = useState(false);
@@ -30,8 +83,10 @@ export function DeliveryLocationSetup({ onDone }: { onDone: () => void }) {
   useEffect(() => () => port.dispose(), [port]);
 
   const resolve = async (operation: () => Promise<DeliveryLocation>) => {
-    if (busy) return;
+    if (pending.current || state.readOnly) return;
+    pending.current = true;
     setBusy(true);
+    setLocation(null);
     setError(null);
     try {
       setLocation(await operation());
@@ -42,25 +97,50 @@ export function DeliveryLocationSetup({ onDone }: { onDone: () => void }) {
           : new DeliveryLocationError("unavailable"),
       );
     } finally {
+      pending.current = false;
       setBusy(false);
     }
   };
 
+  useEffect(() => {
+    if (error?.kind === "denied") search.current?.focus();
+    else if (error) locationFeedback.current?.focus();
+    else if (state.error) feedback.current?.focus();
+  }, [error, state.error]);
+
+  const dataFeedback = (
+    <div ref={feedback} tabIndex={-1}>
+      <DataFeedback
+        onReload={() =>
+          guardNavigation(() => {
+            setDetails(false);
+            void controller.load();
+          })
+        }
+        onRetried={() => void done()}
+      />
+    </div>
+  );
   if (
-    state.profilePhase !== "ready" ||
-    state.listPhase === "loading"
-  ) {
+    !details &&
+    (state.profilePhase === "loading" || state.listPhase === "loading")
+  )
+    return <StoreLoading />;
+  if (
+    state.profilePhase === "error" ||
+    (!details && state.listPhase === "error")
+  )
     return (
-      <main className="delivery-setup delivery-setup--center" aria-busy="true">
-        <div className="delivery-setup__spinner" aria-hidden="true" />
-        <h1>Getting your delivery details ready…</h1>
+      <main className="delivery-setup">
+        <h1>Your delivery details could not be loaded</h1>
+        {dataFeedback}
       </main>
     );
-  }
 
   if (details && location) {
     return (
       <main className="delivery-setup">
+        {dataFeedback}
         <div className="delivery-setup__heading">
           <span className="delivery-setup__eyebrow">CKS Go delivery</span>
           <h1>Delivery details</h1>
@@ -68,15 +148,15 @@ export function DeliveryLocationSetup({ onDone }: { onDone: () => void }) {
           <button
             type="button"
             className="delivery-setup__text-action"
-            onClick={() => setDetails(false)}
+            onClick={() => guardNavigation(() => setDetails(false))}
           >
             Change location
           </button>
         </div>
         <AddressForm
-          address={repairing ? selected : undefined}
+          address={selected ?? undefined}
           location={location}
-          onDone={onDone}
+          onDone={() => void done()}
           onCancel={() => setDetails(false)}
         />
       </main>
@@ -94,6 +174,19 @@ export function DeliveryLocationSetup({ onDone }: { onDone: () => void }) {
 
   return (
     <main className="delivery-setup">
+      {dataFeedback}
+      {onCancel && (
+        <button
+          type="button"
+          className="customer-button"
+          onClick={() => guardNavigation(onCancel)}
+        >
+          Cancel
+        </button>
+      )}
+      {state.readOnly && (
+        <p role="status">Your account is read-only. Return to Savt for help.</p>
+      )}
       <div className="delivery-setup__heading">
         <span className="delivery-setup__eyebrow">CKS Go delivery</span>
         <h1>Set your delivery location</h1>
@@ -108,18 +201,27 @@ export function DeliveryLocationSetup({ onDone }: { onDone: () => void }) {
         <section className="delivery-setup__existing">
           <strong>{selected.label}</strong>
           <span>
-            {[selected.addressLine1, selected.addressLine2, selected.postcode, selected.city, selected.state]
+            {[
+              selected.addressLine1,
+              selected.addressLine2,
+              selected.postcode,
+              selected.city,
+              selected.state,
+            ]
               .filter(Boolean)
               .join(", ")}
           </span>
         </section>
       )}
 
-      <section className="delivery-setup__actions" aria-label="Choose delivery location">
+      <section
+        className="delivery-setup__actions"
+        aria-label="Choose delivery location"
+      >
         <button
           type="button"
           className="delivery-setup__primary"
-          disabled={busy}
+          disabled={busy || state.readOnly}
           onClick={() => void resolve(() => port.requestCurrentLocation())}
         >
           <PinIcon className="h-5 w-5" />
@@ -137,6 +239,17 @@ export function DeliveryLocationSetup({ onDone }: { onDone: () => void }) {
           <div>
             <SearchIcon className="h-5 w-5" />
             <input
+              ref={search}
+              onKeyDown={(event) => {
+                if (
+                  event.key === "Enter" &&
+                  !event.nativeEvent.isComposing &&
+                  query.trim()
+                ) {
+                  event.preventDefault();
+                  void resolve(() => port.searchLocation(query));
+                }
+              }}
               value={query}
               maxLength={300}
               placeholder="e.g. Kobusak Perdana, Penampang"
@@ -147,7 +260,7 @@ export function DeliveryLocationSetup({ onDone }: { onDone: () => void }) {
         <button
           type="button"
           className="delivery-setup__secondary"
-          disabled={busy || !query.trim()}
+          disabled={busy || state.readOnly || !query.trim()}
           onClick={() => void resolve(() => port.searchLocation(query))}
         >
           Search for this address
@@ -155,9 +268,16 @@ export function DeliveryLocationSetup({ onDone }: { onDone: () => void }) {
       </section>
 
       {errorMessage && (
-        <section className="delivery-setup__message" role="status">
+        <section
+          ref={locationFeedback}
+          className="delivery-setup__message"
+          role="alert"
+          tabIndex={-1}
+        >
           <strong>
-            {error?.kind === "denied" ? "Location access is off" : "Location unavailable"}
+            {error?.kind === "denied"
+              ? "Location access is off"
+              : "Location unavailable"}
           </strong>
           <p>{errorMessage}</p>
         </section>
@@ -175,6 +295,7 @@ export function DeliveryLocationSetup({ onDone }: { onDone: () => void }) {
           <button
             type="button"
             className="delivery-setup__primary"
+            disabled={busy || state.readOnly}
             onClick={() => setDetails(true)}
           >
             Confirm location
@@ -183,7 +304,8 @@ export function DeliveryLocationSetup({ onDone }: { onDone: () => void }) {
       )}
 
       <p className="delivery-setup__privacy">
-        CKS Go uses the location you confirm only to save your delivery address and check service from the assigned outlet.
+        CKS Go uses the location you confirm only to save your delivery address
+        and check service from the assigned outlet.
       </p>
     </main>
   );

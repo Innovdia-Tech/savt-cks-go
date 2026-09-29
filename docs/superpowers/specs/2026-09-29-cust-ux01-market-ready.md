@@ -38,6 +38,7 @@ Until a dynamic merchandising feed is available, production may use curated, sou
 ## Embedded chrome
 
 When `window.SavtCksGoBridge` exists:
+
 - remove duplicate web `CKS Go` title;
 - remove duplicate web close control;
 - do not duplicate native Back;
@@ -51,6 +52,7 @@ When not embedded, preserve web Back/Close so direct-browser access remains oper
 A usable delivery address is ACTIVE and has finite latitude and longitude.
 
 On authenticated customer-data load:
+
 - usable selected address -> Home/assignment;
 - no active address -> first-use delivery setup;
 - active selected address without coordinates -> repair-location flow.
@@ -60,6 +62,7 @@ Customer-facing copy uses “delivery location”, never “coordinates”.
 ## Location provider boundary
 
 The UX owns:
+
 - current-location action;
 - address search action;
 - detected address;
@@ -68,6 +71,7 @@ The UX owns:
 - permission denied/unavailable states.
 
 The provider supplies:
+
 - latitude;
 - longitude;
 - display address;
@@ -80,6 +84,7 @@ Interactive map/pin rendering must use an explicitly configured approved map pro
 ## Address details
 
 The form should ask only for:
+
 - save-as label (Home / Work / Other or custom);
 - unit/floor/lot;
 - building/residence;

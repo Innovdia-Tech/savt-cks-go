@@ -96,7 +96,6 @@ History and detail reuse the existing shell, rounded cards, CKS-red action hiera
 
 Support opens a separate browser context through `window.open` with `noopener,noreferrer` and does not change Order, payment or fulfilment state. Native WebView handling requires separate Flutter acceptance; the payment-handoff bridge is reserved for payment. Backend policy enforcement is tracked in CUST-CANCEL01-BE.
 
-
 ## UX01 Embedded Host and Delivery Readiness
 
 - `AppShell` remains the canonical shell. Its `embeddedHost` variant removes duplicate web Back/Close/brand chrome while retaining delivery context and Cart.

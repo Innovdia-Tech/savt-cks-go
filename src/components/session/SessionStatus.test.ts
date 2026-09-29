@@ -3,7 +3,7 @@ import { sessionPresentation } from "./SessionStatus";
 
 describe("sessionPresentation", () => {
   it.each([
-    ["loading", "Preparing CKS Go", false],
+    ["loading", "Getting your store ready…", false],
     ["bridgeUnavailable", "Open CKS Go from Savt", true],
     ["offline", "You’re offline", true],
     ["expired", "Your session has expired", true],

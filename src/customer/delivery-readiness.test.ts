@@ -28,6 +28,17 @@ describe("delivery readiness", () => {
     expect(hasDeliveryCoordinates(address)).toBe(true);
     expect(hasDeliveryCoordinates({ ...address, latitude: null })).toBe(false);
     expect(hasDeliveryCoordinates({ ...address, longitude: null })).toBe(false);
-    expect(hasDeliveryCoordinates({ ...address, status: "INACTIVE" })).toBe(false);
+    expect(hasDeliveryCoordinates({ ...address, status: "INACTIVE" })).toBe(
+      false,
+    );
+  });
+  it("rejects out-of-range and non-finite saved locations", () => {
+    for (const latitude of [91, -91, Infinity, NaN])
+      expect(hasDeliveryCoordinates({ ...address, latitude })).toBe(false);
+    for (const longitude of [181, -181, Infinity, NaN])
+      expect(hasDeliveryCoordinates({ ...address, longitude })).toBe(false);
+    expect(
+      hasDeliveryCoordinates({ ...address, latitude: 0, longitude: 0 }),
+    ).toBe(true);
   });
 });

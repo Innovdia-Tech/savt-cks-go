@@ -3,9 +3,11 @@ import type { Address } from "../addresses/contracts";
 export const hasDeliveryCoordinates = (address: Address | undefined) =>
   Boolean(
     address &&
-      address.status === "ACTIVE" &&
-      typeof address.latitude === "number" &&
-      Number.isFinite(address.latitude) &&
-      typeof address.longitude === "number" &&
-      Number.isFinite(address.longitude),
+    address.status === "ACTIVE" &&
+    typeof address.latitude === "number" &&
+    Number.isFinite(address.latitude) &&
+    Math.abs(address.latitude) <= 90 &&
+    typeof address.longitude === "number" &&
+    Number.isFinite(address.longitude) &&
+    Math.abs(address.longitude) <= 180,
   );

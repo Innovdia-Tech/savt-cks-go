@@ -12,12 +12,16 @@ const exactKeys = (value: Record<string, unknown>, keys: readonly string[]) =>
   keys.every((key) => Object.hasOwn(value, key));
 
 const optionalText = (value: unknown, max: number): string | undefined => {
-  if (value === undefined || value === null || value === "") return undefined;
-  if (typeof value !== "string" || value.length > max) throw new DeliveryLocationError("invalid");
+  if (value === null || value === "") return undefined;
+  if (typeof value !== "string" || value.length > max)
+    throw new DeliveryLocationError("invalid");
   return value;
 };
 
-function parseLocationResult(value: unknown, requestId: string): DeliveryLocation {
+function parseLocationResult(
+  value: unknown,
+  requestId: string,
+): DeliveryLocation {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new DeliveryLocationError("invalid");
   const data = value as Record<string, unknown>;
@@ -41,8 +45,21 @@ function parseLocationResult(value: unknown, requestId: string): DeliveryLocatio
     throw new DeliveryLocationError("invalid");
 
   if (data.status !== "ok") {
+    if (
+      [
+        "latitude",
+        "longitude",
+        "formattedAddress",
+        "addressLine1",
+        "city",
+        "state",
+        "postcode",
+      ].some((key) => data[key] !== null)
+    )
+      throw new DeliveryLocationError("invalid");
     if (data.status === "denied") throw new DeliveryLocationError("denied");
-    if (data.status === "not-found") throw new DeliveryLocationError("not-found");
+    if (data.status === "not-found")
+      throw new DeliveryLocationError("not-found");
     if (data.status === "unavailable")
       throw new DeliveryLocationError("unavailable");
     throw new DeliveryLocationError("invalid");
@@ -97,7 +114,8 @@ export class BrowserDeliveryLocationPort implements DeliveryLocationPort {
   }
 
   private requestNative(
-    message: { type: "location-current" } | { type: "location-search"; query: string },
+    message:
+      { type: "location-current" } | { type: "location-search"; query: string },
   ): Promise<DeliveryLocation> {
     const requestId = crypto.randomUUID();
     this.ensureListener();
@@ -178,7 +196,11 @@ export class BrowserDeliveryLocationPort implements DeliveryLocationPort {
               error.code === error.PERMISSION_DENIED ? "denied" : "unavailable",
             ),
           ),
-        { enableHighAccuracy: true, timeout: this.timeoutMs, maximumAge: 30_000 },
+        {
+          enableHighAccuracy: true,
+          timeout: this.timeoutMs,
+          maximumAge: 30_000,
+        },
       );
     });
   }

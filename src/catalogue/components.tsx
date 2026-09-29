@@ -4,7 +4,7 @@ import {
   useCategoryArtworkUrl,
   useProductArtworkUrl,
 } from "./reference-match/useArtwork";
-import { AppShell } from "../components/Layout";
+import { HeaderActions, AppShell } from "../components/Layout";
 import { CustomerProfileScreen, CheckoutAddress } from "../customer/components";
 import { DeliveryLocationSetup } from "../customer/DeliveryLocationSetup";
 import { hasDeliveryCoordinates } from "../customer/delivery-readiness";
@@ -237,7 +237,8 @@ export function categoryIconFor(name?: string) {
   if (/noodle|instant/.test(normalized)) return NoodleIcon;
   if (/house|home care|clean|laundry/.test(normalized)) return HomeCareIcon;
   if (/baby|diaper/.test(normalized)) return BabyIcon;
-  if (/pantry|rice|cooking|grocery|essential/.test(normalized)) return PantryIcon;
+  if (/pantry|rice|cooking|grocery|essential/.test(normalized))
+    return PantryIcon;
   return GridIcon;
 }
 
@@ -290,8 +291,8 @@ const errors: Record<string, [string, string]> = {
     "Choose an active saved address.",
   ],
   CHECKOUT_LOCATION_UNAVAILABLE: [
-    "Address needs coordinates",
-    "Add coordinates in your saved address to check service.",
+    "Set your delivery location",
+    "Confirm your delivery location to check service from your assigned store.",
   ],
   CUSTOMER_PRODUCT_NOT_FOUND: [
     "Product unavailable",
@@ -468,14 +469,15 @@ export function CatalogueApp({
   const [route, setRoute] = useState(readRoute);
   const [query, setQuery] = useState(state.q);
   const [composing, setComposing] = useState(false);
-  const [advertisingScenario, setAdvertisingScenario] =
-    useState<DevelopmentAdvertisingScenario>(
-      import.meta.env.DEV &&
-        new URLSearchParams(window.location.search).get("scenario") ===
-          "ux03-reference-match"
-        ? "reference"
-        : "multiple",
-    );
+  const [advertisingScenario, setAdvertisingScenario] = useState<
+    DevelopmentAdvertisingScenario | "production"
+  >(
+    import.meta.env.DEV &&
+      new URLSearchParams(window.location.search).get("scenario") ===
+        "ux03-reference-match"
+      ? "reference"
+      : "production",
+  );
   const [referenceSample, setReferenceSample] =
     useState<ReferenceSample | null>(null);
   const [advertisingSlides, setAdvertisingSlides] = useState<
@@ -612,7 +614,11 @@ export function CatalogueApp({
   }, [route, state.phase, state.products]);
   useEffect(() => {
     let current = true;
-    if (!import.meta.env.DEV || !controls) {
+    if (
+      !import.meta.env.DEV ||
+      !controls ||
+      advertisingScenario === "production"
+    ) {
       setAdvertisingSlides([...productionAdvertisingSlides]);
       return;
     }
@@ -700,9 +706,7 @@ export function CatalogueApp({
   )?.name;
   const selectedAddress = customer.controller.selectedAddress();
   const needsDeliverySetup =
-    route === "home" &&
-    customer.state.profilePhase === "ready" &&
-    customer.state.listPhase === "ready" &&
+    (route === "home" || route === "categories" || Boolean(detailId)) &&
     !hasDeliveryCoordinates(selectedAddress);
   const cartDeliveryAddress = selectedAddress
     ? [
@@ -724,11 +728,21 @@ export function CatalogueApp({
           : "transaction";
   if (needsDeliverySetup) {
     return (
-      <DeliveryLocationSetup
-        onDone={() => {
-          void controller.retry();
-        }}
-      />
+      <div className="mx-auto max-w-[430px]">
+        {!embeddedHost && (
+          <HeaderActions
+            context="home"
+            onLogout={onLogout}
+            onCart={() => navigate("cart")}
+          />
+        )}
+        <DeliveryLocationSetup
+          onDone={() => {
+            navigate("home");
+            void controller.retry();
+          }}
+        />
+      </div>
     );
   }
 
@@ -1161,11 +1175,12 @@ export function CatalogueApp({
                         value={advertisingScenario}
                         onChange={(event) =>
                           setAdvertisingScenario(
-                            event.target
-                              .value as DevelopmentAdvertisingScenario,
+                            event.target.value as
+                              DevelopmentAdvertisingScenario | "production",
                           )
                         }
                       >
+                        <option value="production">Production banners</option>
                         <option value="multiple">Multiple banners</option>
                         <option value="single">One banner</option>
                         <option value="zero">Zero banners</option>

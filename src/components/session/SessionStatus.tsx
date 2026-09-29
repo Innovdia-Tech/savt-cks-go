@@ -11,8 +11,8 @@ const presentations: Record<
   { title: string; detail: string; canRetry: boolean }
 > = {
   loading: {
-    title: "Preparing CKS Go",
-    detail: "Securing your customer session…",
+    title: "Getting your store ready…",
+    detail: "",
     canRetry: false,
   },
   bridgeUnavailable: {
@@ -49,9 +49,11 @@ export const sessionPresentation = (state: {
 export function CustomerSessionBoundary({
   controller,
   children,
+  embeddedHost = false,
 }: {
   controller: CustomerSessionController;
   children: ReactNode;
+  embeddedHost?: boolean;
 }) {
   const state = useSyncExternalStore(
     controller.subscribe,
@@ -67,6 +69,8 @@ export function CustomerSessionBoundary({
   const presentation = sessionPresentation(state);
   const loading = state.phase === "loading";
   const requestId = "requestId" in state ? state.requestId : undefined;
+
+  if (loading) return embeddedHost ? null : <StoreLoading />;
 
   return (
     <main className="grid min-h-dvh place-items-center bg-app-background px-5 text-savt-ink">
@@ -112,6 +116,20 @@ export function CustomerSessionBoundary({
           </button>
         ) : null}
       </section>
+    </main>
+  );
+}
+
+export function StoreLoading() {
+  return (
+    <main
+      className="delivery-setup delivery-setup--center"
+      role="status"
+      aria-busy="true"
+    >
+      <strong className="text-2xl text-cks-primary">CKS Go</strong>
+      <div className="delivery-setup__spinner" aria-hidden="true" />
+      <h1>Getting your store ready…</h1>
     </main>
   );
 }

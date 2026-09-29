@@ -110,9 +110,10 @@ export function AddressForm({
       className="customer-card space-y-4"
       aria-busy={state.busy}
     >
-      <h2 className="text-xl font-black">Delivery details</h2>
+      {!location && <h2 className="text-xl font-black">Delivery details</h2>}
       <p className="text-sm text-slate-600">
-        Confirm the details below. Your delivery location is saved securely in the background.
+        Confirm the details below. Your delivery location is saved securely in
+        the background.
       </p>
       {Object.entries(addressFormFields).map(([key, label]) => (
         <div key={key}>
@@ -126,7 +127,14 @@ export function AddressForm({
               role="group"
               aria-label="Save address as"
             >
-              {["Home", "Work", "Other"].map((option) => (
+              {Array.from(
+                new Set([
+                  "Home",
+                  "Work",
+                  "Other",
+                  ...(values.label ? [values.label] : []),
+                ]),
+              ).map((option) => (
                 <button
                   key={option}
                   type="button"

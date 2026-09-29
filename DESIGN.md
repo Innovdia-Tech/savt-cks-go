@@ -169,7 +169,6 @@ Cancellation is offered only when the backend returns `canCancel`. The hint is n
 
 Receipt download is visible only when the strict detail projection declares it available and returns paths matching the current order. The response must be a PDF. No receipt, order response, CSRF value, cancellation key or delivery address is persisted in browser storage. Logout/session loss clears order state and fences late requests. The CUST03A PAID-plus-valid-Order finality rule is unchanged; its “View order” action only navigates to the backend-backed detail route.
 
-
 ## UX01 — Native-Embedded Customer Entry
 
 - CKS Retail red remains the primary commerce/action color.
@@ -182,3 +181,9 @@ Receipt download is visible only when the strict detail projection declares it a
 - Current-location permission is requested only after the user explicitly selects that action.
 - The hardened Savt WebView keeps browser geolocation disabled; current/search location uses the trusted native bridge.
 - Do not ship a fake map or unapproved map/tile provider. Until an approved map provider is configured, use the honest location confirmation/search experience.
+
+## UX01 consolidation precedence
+
+The September 29 UX01 brief supersedes historical product-list presentation: Home uses the accepted two-column product grid with 1:1 contain-fit media. Native embedded shopping begins with delivery context and cart, followed by search, production banners, categories and Featured for You. Standalone web retains its header controls. The default development preview uses these same curated production banners; explicit developer scenarios remain available for edge-case checks.
+
+Reconciled drift: historical CUST02B prose describes the earlier compact product list; the current two-column grid and production merchandising are the approved UX01 direction. Commerce, session, quote, payment and order authority stay with their existing controllers and backend contracts.

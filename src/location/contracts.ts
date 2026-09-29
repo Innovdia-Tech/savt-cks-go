@@ -9,11 +9,7 @@ export type DeliveryLocation = {
 };
 
 export type LocationFailureKind =
-  | "denied"
-  | "unavailable"
-  | "not-found"
-  | "invalid"
-  | "timeout";
+  "denied" | "unavailable" | "not-found" | "invalid" | "timeout";
 
 export class DeliveryLocationError extends Error {
   constructor(readonly kind: LocationFailureKind) {
