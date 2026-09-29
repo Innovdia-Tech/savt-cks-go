@@ -1,4 +1,5 @@
 import type { AdvertisingSlide } from "./AdvertisingCarousel";
+import { cksGroceryBannerArtworkUrl } from "./production-artwork";
 
 export const productionAdvertisingSlides: readonly AdvertisingSlide[] = [
   {
@@ -7,6 +8,7 @@ export const productionAdvertisingSlides: readonly AdvertisingSlide[] = [
     title: "Fresh choices, closer to home",
     description: "Browse groceries from the CKS outlet assigned to your delivery address.",
     theme: "berry",
+    imageUrl: cksGroceryBannerArtworkUrl,
     action: { label: "Shop categories", target: "categories" },
   },
   {
