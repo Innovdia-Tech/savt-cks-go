@@ -168,3 +168,17 @@ History and detail display only backend-projected customer stages and milestones
 Cancellation is offered only when the backend returns `canCancel`. The hint is not treated as authority: the backend rechecks eligibility. The empty request uses in-memory CSRF and one stable UUIDv4 idempotency key across uncertain retries. Success is rendered only from the returned cancellation projection; conflict and other safe backend failures remain non-confirming. The app-owned native dialog names the irreversible request, initially focuses “Keep order,” supports Escape, and does not optimistically change status.
 
 Receipt download is visible only when the strict detail projection declares it available and returns paths matching the current order. The response must be a PDF. No receipt, order response, CSRF value, cancellation key or delivery address is persisted in browser storage. Logout/session loss clears order state and fences late requests. The CUST03A PAID-plus-valid-Order finality rule is unchanged; its “View order” action only navigates to the backend-backed detail route.
+
+
+## UX01 — Native-Embedded Customer Entry
+
+- CKS Retail red remains the primary commerce/action color.
+- In Savt WebView mode, the native host owns Back, Close and the CKS Go app title. The React shell must not duplicate those controls.
+- Standalone browser mode retains safe web Back/Close controls.
+- Home merchandising is a production feature: curated CKS Go banner slides render without DEV flags; development controls only switch preview scenarios.
+- A new customer must establish a usable delivery location before shopping. A saved address is usable only when ACTIVE with finite latitude and longitude.
+- Latitude/longitude are infrastructure data and must never render as editable customer fields.
+- Existing text-only addresses use a repair flow that preserves the saved address and adds the confirmed location.
+- Current-location permission is requested only after the user explicitly selects that action.
+- The hardened Savt WebView keeps browser geolocation disabled; current/search location uses the trusted native bridge.
+- Do not ship a fake map or unapproved map/tile provider. Until an approved map provider is configured, use the honest location confirmation/search experience.
