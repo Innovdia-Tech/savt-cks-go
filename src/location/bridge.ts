@@ -119,30 +119,47 @@ export class BrowserDeliveryLocationPort implements DeliveryLocationPort {
     });
   }
 
+  private readonly handleLocationEvent = (event: Event) => {
+    const detail = event instanceof CustomEvent ? event.detail : undefined;
+    const requestId =
+      detail && typeof detail === "object" && !Array.isArray(detail)
+        ? (detail as Record<string, unknown>).requestId
+        : undefined;
+    if (typeof requestId !== "string") return;
+    const pending = this.pending.get(requestId);
+    if (!pending) return;
+    clearTimeout(pending.timer);
+    this.pending.delete(requestId);
+    try {
+      pending.resolve(parseLocationResult(detail, requestId));
+    } catch (error) {
+      pending.reject(
+        error instanceof DeliveryLocationError
+          ? error
+          : new DeliveryLocationError("invalid"),
+      );
+    }
+  };
+
   private ensureListener() {
     if (this.listening) return;
     this.listening = true;
-    window.addEventListener("savt-cks-go-location", (event) => {
-      const detail = event instanceof CustomEvent ? event.detail : undefined;
-      const requestId =
-        detail && typeof detail === "object" && !Array.isArray(detail)
-          ? (detail as Record<string, unknown>).requestId
-          : undefined;
-      if (typeof requestId !== "string") return;
-      const pending = this.pending.get(requestId);
-      if (!pending) return;
+    window.addEventListener("savt-cks-go-location", this.handleLocationEvent);
+  }
+
+  dispose() {
+    if (this.listening) {
+      window.removeEventListener(
+        "savt-cks-go-location",
+        this.handleLocationEvent,
+      );
+      this.listening = false;
+    }
+    for (const pending of this.pending.values()) {
       clearTimeout(pending.timer);
-      this.pending.delete(requestId);
-      try {
-        pending.resolve(parseLocationResult(detail, requestId));
-      } catch (error) {
-        pending.reject(
-          error instanceof DeliveryLocationError
-            ? error
-            : new DeliveryLocationError("invalid"),
-        );
-      }
-    });
+      pending.reject(new DeliveryLocationError("unavailable"));
+    }
+    this.pending.clear();
   }
 
   private requestBrowserCurrentLocation(): Promise<DeliveryLocation> {
