@@ -2,18 +2,18 @@
 
 ## Canonical UI Map
 
-| Capability     | Canonical owner                                | Source of truth                  | Allowed variants                                                                   | Verification                            |
-| -------------- | ---------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------- |
-| Form           | src/addresses/AddressForm.tsx                  | Customer DTOs                    | Add/edit, memory-only drafts                                                       | Validation and browser create/edit      |
-| Select/Listbox | CheckoutAddress in src/customer/components.tsx | Active saved-address list        | Native platform popup                                                              | Checkout selection and keyboard         |
-| CRUD           | src/customer/state.ts                          | Customer address service         | Pessimistic writes, explicit conflict reload, stable retries                       | API/state tests and browser full flow   |
-| Toast          | DataFeedback in src/customer/components.tsx    | Customer error contracts         | Persistent inline status/error                                                     | Render and browser failure tests        |
-| Navigation     | src/customer/context.tsx                       | Memory-only form state           | Discard dialog; native beforeunload                                                | Escape, cancel, discard browser checks  |
-| Scrollbar      | Existing src/styles.css and Layout.tsx         | Existing prototype shell         | Global tokenized baseline; existing scroll ownership preserved                     | Narrow and desktop browser review       |
-| Button         | src/components/ui.tsx                          | DESIGN.md + runtime tokens       | Primary/secondary/tertiary/icon; stable busy and disabled states                   | Component semantics + browser keyboard  |
-| Status         | src/components/ui.tsx                          | Closed catalogue/order contracts | Availability and customer order stages only; Figma promo labels are presentational | Component render + feature tests        |
-| System states  | src/components/ui.tsx                          | Existing feature phases/errors   | Loading, empty and error with safe action callbacks                                | Component render + browser state matrix |
-| App shell      | src/components/Layout.tsx                      | Existing hash routes             | Home, Categories, Cart, Orders; Account intentionally omitted                      | Shell tests + four viewport review      |
+| Capability     | Canonical owner                                                 | Source of truth                  | Allowed variants                                                                   | Verification                            |
+| -------------- | --------------------------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------- |
+| Form           | src/addresses/AddressForm.tsx                                   | Customer DTOs                    | Add/edit, memory-only drafts                                                       | Validation and browser create/edit      |
+| Select/Listbox | DeliveryAddressPicker in src/customer/DeliveryAddressPicker.tsx | Active saved-address cards       | Full-card buttons with separate Edit action; no address select popup               | Picker selection and keyboard           |
+| CRUD           | src/customer/state.ts                                           | Customer address service         | Pessimistic writes, explicit conflict reload, stable retries                       | API/state tests and browser full flow   |
+| Toast          | DataFeedback in src/customer/components.tsx                     | Customer error contracts         | Persistent inline status/error                                                     | Render and browser failure tests        |
+| Navigation     | src/customer/context.tsx                                        | Memory-only form state           | Discard dialog; native beforeunload                                                | Escape, cancel, discard browser checks  |
+| Scrollbar      | Existing src/styles.css and Layout.tsx                          | Existing prototype shell         | Global tokenized baseline; existing scroll ownership preserved                     | Narrow and desktop browser review       |
+| Button         | src/components/ui.tsx                                           | DESIGN.md + runtime tokens       | Primary/secondary/tertiary/icon; stable busy and disabled states                   | Component semantics + browser keyboard  |
+| Status         | src/components/ui.tsx                                           | Closed catalogue/order contracts | Availability and customer order stages only; Figma promo labels are presentational | Component render + feature tests        |
+| System states  | src/components/ui.tsx                                           | Existing feature phases/errors   | Loading, empty and error with safe action callbacks                                | Component render + browser state matrix |
+| App shell      | src/components/Layout.tsx                                       | Existing hash routes             | Home, Categories, Cart, Orders; Account intentionally omitted                      | Shell tests + four viewport review      |
 
 Source authority: current CKS Go customer DTOs, controller, address service and session guards. Tests: customer/contracts, API, state and rendered presentation suites; local browser acceptance at the requested narrow sizes. No sensitive values in URLs, storage, logs or presentation session snapshots. Legacy mocked affordances remain outside this bounded package.
 
@@ -23,15 +23,15 @@ CKS-first presentation rule: CKS Red is the safe commerce primary and active cus
 
 Source: frozen CUST02A-CP0-R2, assignment lifecycle, strict envelopes and CUST02B package sections. Catalogue does not redefine backend policy.
 
-| Capability          | Canonical owner                                   | Allowed variant                                                             | Verification                                                    |
-| ------------------- | ------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Address selection   | Existing CheckoutAddress / CustomerDataController | Catalogue copy; no mutation or session authority change                     | catalogue/address-selection tests and browser address switch    |
-| Browse state        | catalogue/state.ts                                | Automatic address-driven assignment; bounded renewal; late response fencing | state tests including expiry during pending reads               |
-| Search / pagination | catalogue/components.tsx and API                  | Server query, explicit Previous/Next, page reset; memory-only filters       | HTTP tests and browser search/page/empty results                |
-| Status              | CatalogueStatus                                   | Inline loading, empty, error, expiry and read-only copy                     | rendered tests and deterministic browser scenarios              |
-| Images              | ProductImage                                      | Fixed placeholder, lazy returned image, load-error fallback                 | component test and browser null-image geometry                  |
-| Navigation          | Existing guardNavigation + screen/product hash    | Existing unsaved-form guard; no context/address in URL                      | keyboard search, detail/back/refresh, profile and logout checks |
-| Commerce            | CatalogueApp                                      | Historical CUST02B boundary; superseded by the CUST02C map below            | component/browser checks and source review                      |
+| Capability          | Canonical owner                                | Allowed variant                                                             | Verification                                                    |
+| ------------------- | ---------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Address selection   | DeliveryAddressPicker / CustomerDataController | Dedicated picker; assignment check before committing a usable address       | picker, transition and browser address switch tests             |
+| Browse state        | catalogue/state.ts                             | Automatic address-driven assignment; bounded renewal; late response fencing | state tests including expiry during pending reads               |
+| Search / pagination | catalogue/components.tsx and API               | Server query, explicit Previous/Next, page reset; memory-only filters       | HTTP tests and browser search/page/empty results                |
+| Status              | CatalogueStatus                                | Inline loading, empty, error, expiry and read-only copy                     | rendered tests and deterministic browser scenarios              |
+| Images              | ProductImage                                   | Fixed placeholder, lazy returned image, load-error fallback                 | component test and browser null-image geometry                  |
+| Navigation          | Existing guardNavigation + screen/product hash | Existing unsaved-form guard; no context/address in URL                      | keyboard search, detail/back/refresh, profile and logout checks |
+| Commerce            | CatalogueApp                                   | Historical CUST02B boundary; superseded by the CUST02C map below            | component/browser checks and source review                      |
 
 Keep the existing profile/address forms, mutation outcomes, confirmations and session boundary intact. Browser Back restores screen/product navigation; query/filter/page state is intentionally ephemeral and never persisted. A full refresh performs fresh session/address loading and assignment. Catalogue GETs cannot renew or resolve outlets by themselves; the controller uses a separate bounded assignment POST when needed.
 
@@ -49,7 +49,7 @@ Source: approved CUST02C package, existing trusted checkout quote API and frozen
 | Expiry/recovery     | `checkout/state.ts` and `QuoteSummary`           | Expired quote is not actionable; explicit requote; bounded same-attempt retry only for uncertain transport/parse failures | timer, API and browser failure scenarios    |
 | Downstream boundary | `CatalogueApp`                                   | No payment, order creation, mock confirmation, receipt or tracking action from the real cart                              | component tests and source/browser review   |
 
-The assignment-context handle and all credentials remain memory-only and never enter URLs, storage, logs or visible error copy. Browser Back may restore catalogue navigation only; refresh reconstructs an empty cart and requests a fresh assignment context. The native address select remains platform-owned. The clear-cart confirmation is app-owned, Escape-cancelable, viewport-bounded and initially focuses Cancel.
+The assignment-context handle and all credentials remain memory-only and never enter URLs, storage, logs or visible error copy. Browser Back may restore catalogue navigation only; refresh reconstructs an empty cart and requests a fresh assignment context. The delivery picker uses full-card buttons. The clear-cart confirmation is app-owned, Escape-cancelable, viewport-bounded and initially focuses Cancel.
 
 The CUST02C downstream-boundary row is historical. Payment is superseded by the bounded CUST03A rows below; customer order reads and supported after-order actions are superseded by CUST03B. Frontend Order creation remains disconnected.
 
@@ -103,5 +103,18 @@ Support opens a separate browser context through `window.open` with `noopener,no
 - Home is gated until the selected address is ACTIVE and has finite latitude/longitude.
 - `AddressForm` accepts trusted location data as input and never exposes latitude/longitude fields.
 - `BrowserDeliveryLocationPort` is the canonical web location boundary. It uses `SavtCksGoBridge` in the native host and browser geolocation only for standalone current-location requests.
-- Search in the hardened WebView is native-geocoded; React does not call a third-party geocoder directly.
+- Search in the hardened WebView uses the authenticated backend Places adapter; React does not call a third-party geocoder directly.
 - Production `AdvertisingCarousel` uses source-controlled claim-safe slides until a backend merchandising feed supersedes them.
+
+## UX02 Delivery Address and Location
+
+| Operation                | Trigger                                      | Pending                             | Success                                                        | Failure recovery                                  |
+| ------------------------ | -------------------------------------------- | ----------------------------------- | -------------------------------------------------------------- | ------------------------------------------------- |
+| Select saved address     | Tap active card                              | Checking outlet assignment          | Commit selection and return Home                               | Keep prior selection and show a safe inline error |
+| Repair text-only address | Tap card lacking coordinates                 | Location, details and assignment    | Update the same ID and return Home                             | Keep address and entered details for retry        |
+| Search location          | Type at least 3 visible characters           | 300 ms debounce and inline progress | Up to five selectable predictions with Google Maps attribution | Empty or unavailable copy; GPS remains available  |
+| Resolve prediction       | Tap a result                                 | Resolve in progress                 | Explicit textual location confirmation                         | Return to editable search                         |
+| Current location         | Explicit tap                                 | Native permission and GPS           | Same location confirmation                                     | Denied screen offers address search and retry     |
+| Save location            | Confirm location, complete details, tap Save | Address mutation, then assignment   | Return Home with updated delivery context                      | Keep uncommitted selection and show a safe error  |
+
+Autocomplete tokens exist only for one in-memory search interaction. Query changes abort stale requests; no query mutates an address, assignment, quote or payment. Confirmed coordinates stay hidden and do not change when the customer corrects address text. The picker excludes inactive addresses. No browser map credential is configured for UX02, so no map or pin canvas is rendered.

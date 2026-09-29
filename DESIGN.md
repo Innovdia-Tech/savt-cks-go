@@ -117,7 +117,7 @@ CUST01B through CUST03B extend the existing English-language, Malaysia-focused m
 - Session authority: existing `src/session/controller.ts`; its credential callback is infrastructure-only.
 - Customer orders: `src/orders/contracts.ts` (closed customer-safe projections), `api.ts` (exact customer routes), `state.ts` (memory, retry identity and request fencing), `context.tsx` (application ownership), and `components.tsx` / `orders.css` (presentation).
 
-Use native buttons, labels and a native checkout select (platform popup is intentional). The app-owned unsaved-change dialog uses native dialog focus and Escape behavior. Inline deactivation confirmation names its reversible effect. Customer data and drafts remain in memory. Never persist identity, address PII or CSRF.
+Use native buttons and labels. UX02 delivery selection uses full saved-address cards and a dedicated search state. The app-owned unsaved-change dialog uses native dialog focus and Escape behavior. Inline deactivation confirmation names its reversible effect. Customer data and drafts remain in memory. Never persist identity, address PII or CSRF.
 
 Profile and address requests follow the CKS integration checkout DTOs and routes at `bac1f2f`. Mutations wait for the server. Reload all addresses after success because default changes update other versions. A conflict requires explicit reload; uncertain submissions retain the same immutable operation for retry. Order creation remains disconnected and backend-owned.
 
@@ -179,7 +179,7 @@ Receipt download is visible only when the strict detail projection declares it a
 - Latitude/longitude are infrastructure data and must never render as editable customer fields.
 - Existing text-only addresses use a repair flow that preserves the saved address and adds the confirmed location.
 - Current-location permission is requested only after the user explicitly selects that action.
-- The hardened Savt WebView keeps browser geolocation disabled; current/search location uses the trusted native bridge.
+- The hardened Savt WebView keeps browser geolocation disabled; current location uses the trusted native bridge.
 - Do not ship a fake map or unapproved map/tile provider. Until an approved map provider is configured, use the honest location confirmation/search experience.
 
 ## UX01 consolidation precedence
@@ -187,3 +187,9 @@ Receipt download is visible only when the strict detail projection declares it a
 The September 29 UX01 brief supersedes historical product-list presentation: Home uses the accepted two-column product grid with 1:1 contain-fit media. Native embedded shopping begins with delivery context and cart, followed by search, production banners, categories and Featured for You. Standalone web retains its header controls. The default development preview uses these same curated production banners; explicit developer scenarios remain available for edge-case checks.
 
 Reconciled drift: historical CUST02B prose describes the earlier compact product list; the current two-column grid and production merchandising are the approved UX01 direction. Commerce, session, quote, payment and order authority stay with their existing controllers and backend contracts.
+
+## UX02 — Delivery address and location
+
+The Home delivery link opens a dedicated mobile picker with active saved-address cards, a visible selected state, current-location shortcut, search entry and add action. The selected state uses CKS red; Default remains secondary metadata. Inactive addresses belong to Profile management. Saved-address selection runs the existing authoritative assignment check before changing Home context. Text-only addresses enter location repair and retain the same address ID.
+
+Typed search uses the authenticated CKS Go customer location API and bounded Google Places predictions. Search debounces at 300 ms, cancels stale work and keeps its session token only in memory. The customer chooses a prediction, confirms its resolved geographic location, then enters delivery details. Native GPS remains tap-initiated and returns to the same confirmation step. Delivery details prefill bounded text while coordinates remain hidden and attached to the confirmed point. The visual confirmation is textual until an approved browser map provider exists; it never imitates a map. Google Maps text attribution sits with the prediction list using the permitted compact presentation.

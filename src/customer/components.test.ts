@@ -75,18 +75,17 @@ describe("customer presentation", () => {
     const html = await render("mixed", DeliveryAddressLink);
     expect(html).toContain('aria-label="Change delivery address"');
     expect(html).toContain("Deliver to");
-    expect(html).toContain("1 Example Street, Demo City, Sabah");
+    expect(html).toContain("Demo home · 1 Example Street, Demo City");
     expect(html).toContain("delivery-address-link__chevron");
     expect(html).not.toContain(">Change<");
     expect(html.match(/<button/g)).toHaveLength(1);
   });
-  it("checkout displays only active saved addresses", async () => {
+  it("checkout links to delivery selection without a native address dropdown", async () => {
     const html = await render("mixed", CheckoutAddress);
     expect(html).toContain("Deliver to");
-    expect(html).toContain("Change selected address");
+    expect(html).toContain("Change delivery address");
     expect(html).toContain("Demo home");
-    expect(html).toContain("Demo flat");
-    expect(html).toContain("Demo suburb");
+    expect(html).not.toContain("<select");
     expect(html).not.toContain("Demo office");
     expect(html).toContain("1 Example Street");
   });

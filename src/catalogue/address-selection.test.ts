@@ -30,8 +30,9 @@ it("reuses active-address selection without prototype commerce copy", async () =
     }),
   );
   expect(html).toContain("Deliver to");
-  expect(html).toContain("Change selected address");
+  expect(html).toContain("Change delivery address");
   expect(html).toContain("Demo home");
   expect(html).not.toContain("Demo office");
+  expect(html).not.toContain("<select");
   expect(html).not.toMatch(/prototype|remain mocked/);
 });

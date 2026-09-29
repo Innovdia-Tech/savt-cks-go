@@ -9,19 +9,27 @@ import {
 } from "react";
 import type { CustomerDataController } from "./state";
 import type { DevelopmentDataAdapter } from "./development";
+import type { LocationSearchPort } from "../location/api";
+import type { CurrentLocationPort } from "../location/contracts";
 const Context = createContext<{
   controller: CustomerDataController;
   development?: DevelopmentDataAdapter;
+  locationSearch?: LocationSearchPort;
+  currentLocation?: CurrentLocationPort;
   setDirty: (dirty: boolean) => void;
   guardNavigation: (action: () => void) => void;
 } | null>(null);
 export function CustomerDataProvider({
   controller,
   development,
+  locationSearch,
+  currentLocation,
   children,
 }: {
   controller: CustomerDataController;
   development?: DevelopmentDataAdapter;
+  locationSearch?: LocationSearchPort;
+  currentLocation?: CurrentLocationPort;
   children: ReactNode;
 }) {
   const dirty = useRef(false);
@@ -48,6 +56,8 @@ export function CustomerDataProvider({
       value={{
         controller,
         development,
+        locationSearch,
+        currentLocation,
         setDirty: (value) => {
           dirty.current = value;
         },

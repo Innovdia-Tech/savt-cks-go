@@ -114,6 +114,7 @@ export class DevelopmentCatalogueAdapter {
   private paymentCreates = 0;
   private paymentResults = 0;
   private orderScenario: OrderScenario = "active";
+  private readonly repairedAddressIds = new Set<string>();
   constructor(
     production: boolean,
     private readonly now = Date.now,
@@ -124,6 +125,7 @@ export class DevelopmentCatalogueAdapter {
   }
   reset(scenario: string) {
     this.scenario = scenario;
+    this.repairedAddressIds.clear();
     this.assignment = null;
     this.expiryUsed = false;
     this.latestQuote = null;
@@ -439,8 +441,18 @@ export class DevelopmentCatalogueAdapter {
   customerFetch(fetcher: typeof fetch): typeof fetch {
     return async (input, init) => {
       const response = await fetcher(input, init);
-      if (!response.ok || init?.method !== "GET") return response;
       const path = new URL(String(input), "https://synthetic.invalid").pathname;
+      if (
+        response.ok &&
+        this.scenario === "coordinates" &&
+        init?.method === "PATCH"
+      ) {
+        const id = path.match(
+          /^\/api\/v1\/customer\/me\/addresses\/([^/]+)$/,
+        )?.[1];
+        if (id) this.repairedAddressIds.add(id);
+      }
+      if (!response.ok || init?.method !== "GET") return response;
       if (path === "/api/v1/customer/me") {
         const body = await response.json();
         return Response.json({
@@ -461,9 +473,13 @@ export class DevelopmentCatalogueAdapter {
               : body.data.map((a: Record<string, unknown>) => ({
                   ...a,
                   latitude:
-                    this.scenario === "coordinates" ? null : (a.latitude ?? 5),
+                    this.scenario === "coordinates" &&
+                    !this.repairedAddressIds.has(String(a.id))
+                      ? null
+                      : (a.latitude ?? 5),
                   longitude:
-                    this.scenario === "coordinates"
+                    this.scenario === "coordinates" &&
+                    !this.repairedAddressIds.has(String(a.id))
                       ? null
                       : (a.longitude ?? 116),
                 })),
