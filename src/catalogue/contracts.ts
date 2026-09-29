@@ -92,9 +92,14 @@ function category(v: unknown): Category {
   if (!uuid(d.id) || !str(d.name, 160)) return fail();
   return { id: d.id, name: d.name };
 }
-function imageUrl(v: unknown): boolean {
+const managedProductImagePath =
+  /^\/api\/v1\/product-media\/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/;
+
+function imageUrl(v: unknown, productId: unknown): boolean {
   if (v === null) return true;
-  if (!str(v, 1000)) return false;
+  if (!str(v, 1000) || !uuid(productId)) return false;
+  const managed = managedProductImagePath.exec(v);
+  if (managed) return managed[1] === productId.toLowerCase();
   try {
     const u = new URL(v);
     return (
@@ -128,7 +133,7 @@ function product(v: unknown, detail = false): Product | Detail {
     !uuid(d.productId) ||
     !uuid(d.outletProductId) ||
     !str(d.name, 200) ||
-    !imageUrl(d.imageUrl) ||
+    !imageUrl(d.imageUrl, d.productId) ||
     !str(u.code, 40) ||
     !str(u.name, 120) ||
     !(d.packSize === null || str(d.packSize, 120, true)) ||
