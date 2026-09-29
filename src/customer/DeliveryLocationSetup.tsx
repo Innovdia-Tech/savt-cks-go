@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AddressForm } from "../addresses/AddressForm";
 import { PinIcon, SearchIcon } from "../components/Icons";
 import {
@@ -26,6 +26,8 @@ export function DeliveryLocationSetup({ onDone }: { onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<DeliveryLocationError | null>(null);
   const [details, setDetails] = useState(false);
+
+  useEffect(() => () => port.dispose(), [port]);
 
   const resolve = async (operation: () => Promise<DeliveryLocation>) => {
     if (busy) return;
