@@ -24,7 +24,19 @@ import {
   StatusBadge,
   SystemState,
 } from "../components/ui";
-import { BagIcon, FruitIcon, GridIcon, PantryIcon } from "../components/Icons";
+import {
+  BabyIcon,
+  BagIcon,
+  DairyIcon,
+  DrinkIcon,
+  FruitIcon,
+  FrozenIcon,
+  GridIcon,
+  HomeCareIcon,
+  NoodleIcon,
+  PantryIcon,
+  SnackIcon,
+} from "../components/Icons";
 import {
   AdvertisingCarousel,
   filterRenderableSlides,
@@ -33,6 +45,7 @@ import {
   type AdvertisingSlide,
 } from "./AdvertisingCarousel";
 import type { DevelopmentAdvertisingScenario } from "./development-advertising";
+import { productionAdvertisingSlides } from "./production-advertising";
 type ReferenceSample =
   typeof import("./reference-match/content").referenceSample;
 
@@ -212,17 +225,25 @@ export function ProductDetailPurchase({
   );
 }
 
+export function categoryIconFor(name?: string) {
+  const normalized = name?.trim().toLowerCase() ?? "";
+  if (/fruit|vegetable|fresh|produce/.test(normalized)) return FruitIcon;
+  if (/dairy|milk|chilled/.test(normalized)) return DairyIcon;
+  if (/drink|beverage|water|juice/.test(normalized)) return DrinkIcon;
+  if (/snack|confection|biscuit/.test(normalized)) return SnackIcon;
+  if (/frozen|ice cream/.test(normalized)) return FrozenIcon;
+  if (/noodle|instant/.test(normalized)) return NoodleIcon;
+  if (/house|home care|clean|laundry/.test(normalized)) return HomeCareIcon;
+  if (/baby|diaper/.test(normalized)) return BabyIcon;
+  if (/pantry|rice|cooking|grocery|essential/.test(normalized)) return PantryIcon;
+  return GridIcon;
+}
+
 export function CategoryArtwork({ name }: { name?: string }) {
   const reference = useCategoryArtworkUrl(name);
   if (reference)
     return <img className="catalogue-category-photo" src={reference} alt="" />;
-  const normalized = name?.trim().toLowerCase();
-  const Icon =
-    normalized === "pantry"
-      ? PantryIcon
-      : normalized === "fresh food"
-        ? FruitIcon
-        : GridIcon;
+  const Icon = categoryIconFor(name);
   return <Icon className="catalogue-category-icon" />;
 }
 const errors: Record<string, [string, string]> = {
@@ -455,7 +476,7 @@ export function CatalogueApp({
     useState<ReferenceSample | null>(null);
   const [advertisingSlides, setAdvertisingSlides] = useState<
     AdvertisingSlide[]
-  >([]);
+  >([...productionAdvertisingSlides]);
   const heading = useRef<HTMLHeadingElement>(null),
     search = useRef<HTMLInputElement>(null);
   const productOrigin = useRef<"home" | "categories">("home");
@@ -588,7 +609,7 @@ export function CatalogueApp({
   useEffect(() => {
     let current = true;
     if (!import.meta.env.DEV || !controls) {
-      setAdvertisingSlides([]);
+      setAdvertisingSlides([...productionAdvertisingSlides]);
       return;
     }
     void import("./development-advertising").then((development) => {
@@ -1009,9 +1030,7 @@ export function CatalogueApp({
                       <div>
                         <h2>
                           {route === "home"
-                            ? referenceFixture
-                              ? "Featured for You"
-                              : "Products"
+                            ? "Featured for You"
                             : state.categoryId
                               ? (state.categories.find(
                                   (category) =>
