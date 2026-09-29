@@ -23,6 +23,28 @@ const jsonResponse = (body: unknown, status = 200) =>
   });
 
 describe("CustomerApiClient", () => {
+  it("uses relative bootstrap and exchange paths with no API origin", async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ data: bootstrap }))
+      .mockResolvedValueOnce(jsonResponse({ data: session }));
+    const client = new CustomerApiClient("", fetcher);
+    await client.bootstrap();
+    await client.exchange({
+      protocolVersion: "1",
+      launchRequestId: requestId,
+      state: bootstrap.state,
+      code: "D".repeat(43),
+    });
+    expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+      "/api/v1/customer/session/bootstrap",
+      "/api/v1/customer/session/exchange",
+    ]);
+    expect(
+      fetcher.mock.calls.every(([, init]) => init?.credentials === "include"),
+    ).toBe(true);
+  });
+
   it("bootstraps and exchanges with cookie credentials and the exact public fields", async () => {
     const fetcher = vi
       .fn<typeof fetch>()
