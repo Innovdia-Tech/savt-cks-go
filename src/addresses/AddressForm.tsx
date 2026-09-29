@@ -7,7 +7,7 @@ import {
   validateAddressInput,
 } from "./contracts";
 import { useCustomer } from "../customer/context";
-const labels = {
+export const addressFormFields = {
   label: "Save as",
   recipientName: "Recipient",
   recipientPhoneE164: "Phone (optional)",
@@ -31,10 +31,12 @@ export function AddressForm({
   address,
   location,
   onDone,
+  onCancel,
 }: {
   address?: Address;
   location?: AddressLocationInput;
   onDone: () => void;
+  onCancel?: () => void;
 }) {
   const { controller, state, setDirty, guardNavigation } = useCustomer();
   const form = useRef<HTMLFormElement>(null);
@@ -42,7 +44,9 @@ export function AddressForm({
     const profile = state.profile;
     const suggested: Record<string, string> = {
       label: String(address?.label ?? "Home"),
-      recipientName: String(address?.recipientName ?? profile?.nameSnapshot ?? ""),
+      recipientName: String(
+        address?.recipientName ?? profile?.nameSnapshot ?? "",
+      ),
       recipientPhoneE164: String(
         address?.recipientPhoneE164 ?? profile?.phoneE164Snapshot ?? "",
       ),
@@ -57,7 +61,11 @@ export function AddressForm({
     };
     return suggested;
   });
-  const [isDefault, setDefault] = useState(false);
+  const [isDefault, setDefault] = useState(
+    () =>
+      !address &&
+      !state.addresses.some((candidate) => candidate.status === "ACTIVE"),
+  );
   const [errors, setErrors] = useState<FieldErrors>({});
   useEffect(() => {
     form.current?.querySelector<HTMLInputElement>("input")?.focus();
@@ -102,18 +110,39 @@ export function AddressForm({
       className="customer-card space-y-4"
       aria-busy={state.busy}
     >
-      <h2 className="text-xl font-black">
-        {address ? "Delivery details" : "Delivery details"}
-      </h2>
+      <h2 className="text-xl font-black">Delivery details</h2>
       <p className="text-sm text-slate-600">
-        Confirm the delivery details below. Your exact location is saved securely in the background.
+        Confirm the details below. Your delivery location is saved securely in the background.
       </p>
-      {Object.entries(labels).map(([key, label]) => (
+      {Object.entries(addressFormFields).map(([key, label]) => (
         <div key={key}>
           <label htmlFor={`address-${key}`} className="block text-sm font-bold">
             {label}
           </label>
-          {key === "deliveryInstructions" ? (
+          {key === "label" ? (
+            <div
+              className="address-save-as"
+              id="address-label"
+              role="group"
+              aria-label="Save address as"
+            >
+              {["Home", "Work", "Other"].map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  disabled={blocked}
+                  aria-pressed={values.label === option}
+                  onClick={() => {
+                    setValues({ ...values, label: option });
+                    setErrors({ ...errors, label: "" });
+                    setDirty(true);
+                  }}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          ) : key === "deliveryInstructions" ? (
             <textarea
               id={`address-${key}`}
               name={key}
@@ -175,15 +204,19 @@ export function AddressForm({
           disabled={blocked}
           type="submit"
         >
-          {state.busy ? "Saving…" : "Save address"}
+          {state.busy
+            ? "Saving…"
+            : address
+              ? "Save changes"
+              : "Save & use this address"}
         </button>
         <button
           className="customer-button"
           disabled={state.busy || state.canRetryOperation}
           type="button"
-          onClick={() => guardNavigation(onDone)}
+          onClick={() => guardNavigation(onCancel ?? onDone)}
         >
-          Cancel
+          {onCancel ? "Back to location" : "Cancel"}
         </button>
       </div>
     </form>
