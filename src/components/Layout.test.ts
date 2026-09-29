@@ -164,4 +164,47 @@ describe("HeaderActions", () => {
     );
     expect(orders).toContain('aria-label="Close CKS Go"');
   });
+
+  it("removes duplicate web chrome in the trusted embedded host while retaining delivery and cart controls", async () => {
+    const layout = (await import("./Layout")) as typeof import("./Layout") & {
+      DeliveryHeader?: React.ComponentType<{
+        context: "home" | "browse" | "transaction" | "orders";
+        onManage: () => void;
+        addressLink?: React.ReactNode;
+        title?: string;
+        embeddedHost?: boolean;
+        onCart?: () => void;
+        cartCount?: number;
+      }>;
+    };
+    expect(layout.DeliveryHeader).toBeTypeOf("function");
+
+    const home = renderToStaticMarkup(
+      createElement(layout.DeliveryHeader!, {
+        context: "home",
+        onManage: () => {},
+        addressLink: createElement("span", null, "Home · Lot 57"),
+        embeddedHost: true,
+        onCart: () => {},
+        cartCount: 2,
+      }),
+    );
+    expect(home).toContain("Home · Lot 57");
+    expect(home).toContain('aria-label="Open cart"');
+    expect(home).not.toContain(">CKS Go<");
+    expect(home).not.toContain('aria-label="Close CKS Go"');
+    expect(home).not.toContain('aria-label="Back"');
+
+    const browse = renderToStaticMarkup(
+      createElement(layout.DeliveryHeader!, {
+        context: "browse",
+        onManage: () => {},
+        title: "Categories",
+        embeddedHost: true,
+      }),
+    );
+    expect(browse).toContain("Categories");
+    expect(browse).not.toContain('aria-label="Close CKS Go"');
+    expect(browse).not.toContain('aria-label="Back"');
+  });
 });
