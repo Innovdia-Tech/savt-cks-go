@@ -245,6 +245,56 @@ a[href] {
     margin-top: var(--space-1);
   }
 
+  .app-header--embedded {
+    padding-top: var(--space-2);
+  }
+
+  .app-header__embedded-shopping {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 2.75rem;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .app-header__embedded-title {
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    color: var(--color-text);
+    font-size: 17px;
+    font-weight: 900;
+    line-height: 1.2;
+  }
+
+  .app-header__cart {
+    position: relative;
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    border: 0;
+    border-radius: var(--radius-chip);
+    color: var(--color-cks-primary);
+    background: var(--color-cks-primary-soft);
+  }
+
+  .app-header__cart > span {
+    position: absolute;
+    top: -0.125rem;
+    right: -0.125rem;
+    display: grid;
+    min-width: 1.2rem;
+    height: 1.2rem;
+    place-items: center;
+    border: 2px solid var(--color-surface);
+    border-radius: var(--radius-chip);
+    color: var(--color-on-primary);
+    background: var(--color-cks-primary);
+    padding: 0 0.2rem;
+    font-size: 0.6rem;
+    font-weight: 900;
+  }
+
   .app-header--browse .delivery-address-link,
   .app-header--browse .app-header__outlet-line {
     display: none;
