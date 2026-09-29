@@ -27,6 +27,43 @@ describe("trusted quote response contract", () => {
     });
   });
 
+  it("accepts the canonical rate format from a sanitized real quote", () => {
+    const {
+      outletId: _outletId,
+      customerAddressId: _customerAddressId,
+      addressRowVersion: _addressRowVersion,
+      ...data
+    } = quoteEnvelope().data;
+    data.processingFee.rate = "0.03";
+
+    expect(parseQuote({ data }).processingFee.rate).toBe("0.03");
+  });
+
+  it.each(["0", "0.03", "0.0300", "1", "1.5"])(
+    "accepts canonical percentage rate %s",
+    (rate) => {
+      const value = quoteEnvelope();
+      value.data.processingFee.rate = rate;
+      expect(parseQuote(value).processingFee.rate).toBe(rate);
+    },
+  );
+
+  it.each([
+    "",
+    " 0.03",
+    "-0.03",
+    "+0.03",
+    "3e-2",
+    "abc",
+    "00.03",
+    "0.",
+    "1".repeat(33),
+  ])("rejects malformed percentage rate %s", (rate) => {
+    const value = quoteEnvelope();
+    value.data.processingFee.rate = rate;
+    expect(() => parseQuote(value)).toThrow("Invalid checkout quote response");
+  });
+
   it.each([
     ["expanded envelope", () => ({ ...quoteEnvelope(), secret: "no" })],
     [
