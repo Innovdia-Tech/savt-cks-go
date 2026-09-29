@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useCustomer } from "./context";
 import { errorMessage } from "./errors";
+import { DeliveryLocationSetup } from "./DeliveryLocationSetup";
+import { hasDeliveryCoordinates } from "./delivery-readiness";
 import { AddressForm } from "../addresses/AddressForm";
 import type { Address } from "../addresses/contracts";
 import { ChevronRightIcon } from "../components/Icons";
@@ -176,12 +178,16 @@ export function CustomerProfileScreen() {
           </button>
         </section>
       )}
-      {editing ? (
+      {editing === "new" || (editing && !hasDeliveryCoordinates(editing)) ? (
+        <DeliveryLocationSetup
+          address={editing === "new" ? null : editing}
+          onDone={done}
+          onCancel={done}
+        />
+      ) : editing ? (
         <AddressForm
-          key={
-            editing === "new" ? "new" : editing.id + ":" + editing.rowVersion
-          }
-          address={editing === "new" ? undefined : editing}
+          key={editing.id + ":" + editing.rowVersion}
+          address={editing}
           onDone={done}
         />
       ) : (

@@ -7,37 +7,65 @@ import {
   validateAddressInput,
 } from "./contracts";
 import { useCustomer } from "../customer/context";
-const labels = {
-  label: "Address label",
-  recipientName: "Recipient name",
-  recipientPhoneE164: "Recipient phone (optional)",
-  addressLine1: "Address line 1",
-  addressLine2: "Address line 2 (optional)",
+export const addressFormFields = {
+  label: "Save as",
+  recipientName: "Recipient",
+  recipientPhoneE164: "Phone (optional)",
+  addressLine1: "Address / street",
+  addressLine2: "Unit / Floor / Building (optional)",
   city: "City",
   state: "State",
   postcode: "Postcode (optional)",
   deliveryInstructions: "Delivery instructions (optional)",
-  latitude: "Latitude (optional)",
-  longitude: "Longitude (optional)",
+};
+
+export type AddressLocationInput = {
+  latitude: number;
+  longitude: number;
+  addressLine1?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
 };
 export function AddressForm({
   address,
+  location,
   onDone,
+  onCancel,
 }: {
   address?: Address;
+  location?: AddressLocationInput;
   onDone: () => void;
+  onCancel?: () => void;
 }) {
   const { controller, state, setDirty, guardNavigation } = useCustomer();
   const form = useRef<HTMLFormElement>(null);
-  const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(
-      Object.keys(labels).map((k) => [
-        k,
-        String(address?.[k as keyof Address] ?? ""),
-      ]),
-    ),
+  const [values, setValues] = useState<Record<string, string>>(() => {
+    const profile = state.profile;
+    const suggested: Record<string, string> = {
+      label: String(address?.label ?? "Home"),
+      recipientName: String(
+        address?.recipientName ?? profile?.nameSnapshot ?? "",
+      ),
+      recipientPhoneE164: String(
+        address?.recipientPhoneE164 ?? profile?.phoneE164Snapshot ?? "",
+      ),
+      addressLine1: String(
+        address?.addressLine1 ?? location?.addressLine1 ?? "",
+      ),
+      addressLine2: String(address?.addressLine2 ?? ""),
+      city: String(address?.city ?? location?.city ?? ""),
+      state: String(address?.state ?? location?.state ?? ""),
+      postcode: String(address?.postcode ?? location?.postcode ?? ""),
+      deliveryInstructions: String(address?.deliveryInstructions ?? ""),
+    };
+    return suggested;
+  });
+  const [isDefault, setDefault] = useState(
+    () =>
+      !address &&
+      !state.addresses.some((candidate) => candidate.status === "ACTIVE"),
   );
-  const [isDefault, setDefault] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   useEffect(() => {
     form.current?.querySelector<HTMLInputElement>("input")?.focus();
@@ -55,8 +83,8 @@ export function AddressForm({
     const input = {
       ...values,
       countryCode: "MY",
-      latitude: values.latitude.trim() ? Number(values.latitude) : null,
-      longitude: values.longitude.trim() ? Number(values.longitude) : null,
+      latitude: location?.latitude ?? address?.latitude ?? null,
+      longitude: location?.longitude ?? address?.longitude ?? null,
       ...(!address ? { isDefault } : {}),
     } as AddressInput;
     const invalid = validateAddressInput(input);
@@ -82,18 +110,47 @@ export function AddressForm({
       className="customer-card space-y-4"
       aria-busy={state.busy}
     >
-      <h2 className="text-xl font-black">
-        {address ? "Edit address" : "Add address"}
-      </h2>
+      {!location && <h2 className="text-xl font-black">Delivery details</h2>}
       <p className="text-sm text-slate-600">
-        Malaysia only. Optional fields may be left blank.
+        Confirm the details below. Your delivery location is saved securely in
+        the background.
       </p>
-      {Object.entries(labels).map(([key, label]) => (
+      {Object.entries(addressFormFields).map(([key, label]) => (
         <div key={key}>
           <label htmlFor={`address-${key}`} className="block text-sm font-bold">
             {label}
           </label>
-          {key === "deliveryInstructions" ? (
+          {key === "label" ? (
+            <div
+              className="address-save-as"
+              id="address-label"
+              role="group"
+              aria-label="Save address as"
+            >
+              {Array.from(
+                new Set([
+                  "Home",
+                  "Work",
+                  "Other",
+                  ...(values.label ? [values.label] : []),
+                ]),
+              ).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  disabled={blocked}
+                  aria-pressed={values.label === option}
+                  onClick={() => {
+                    setValues({ ...values, label: option });
+                    setErrors({ ...errors, label: "" });
+                    setDirty(true);
+                  }}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          ) : key === "deliveryInstructions" ? (
             <textarea
               id={`address-${key}`}
               name={key}
@@ -115,11 +172,7 @@ export function AddressForm({
               name={key}
               className="customer-input"
               type={key === "recipientPhoneE164" ? "tel" : "text"}
-              inputMode={
-                key === "latitude" || key === "longitude"
-                  ? "decimal"
-                  : undefined
-              }
+              inputMode={key === "recipientPhoneE164" ? "tel" : undefined}
               maxLength={fieldLimits[key as keyof typeof fieldLimits]}
               disabled={blocked}
               value={values[key]}
@@ -159,15 +212,19 @@ export function AddressForm({
           disabled={blocked}
           type="submit"
         >
-          {state.busy ? "Saving…" : "Save address"}
+          {state.busy
+            ? "Saving…"
+            : address
+              ? "Save changes"
+              : "Save & use this address"}
         </button>
         <button
           className="customer-button"
           disabled={state.busy || state.canRetryOperation}
           type="button"
-          onClick={() => guardNavigation(onDone)}
+          onClick={() => guardNavigation(onCancel ?? onDone)}
         >
-          Cancel
+          {onCancel ? "Back to location" : "Cancel"}
         </button>
       </div>
     </form>

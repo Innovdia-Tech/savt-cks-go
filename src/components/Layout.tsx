@@ -26,6 +26,7 @@ type AppShellProps = {
   developmentFixture?: boolean;
   title?: string;
   onBack?: () => void;
+  embeddedHost?: boolean;
 };
 
 export type ShellHeaderContext =
@@ -49,6 +50,7 @@ export function AppShell({
   developmentFixture = false,
   title,
   onBack,
+  embeddedHost = false,
 }: AppShellProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -77,6 +79,7 @@ export function AppShell({
             cartCount={cartCount}
             onLogout={onLogout}
             onManage={() => onNavigate("profile")}
+            embeddedHost={embeddedHost}
           />
           {import.meta.env.DEV &&
             import.meta.env.VITE_CKS_GO_DEVELOPMENT_API === "true" &&
@@ -108,6 +111,7 @@ export function DeliveryHeader({
   onBack,
   onCart,
   cartCount = 0,
+  embeddedHost = false,
 }: {
   context: ShellHeaderContext;
   onLogout?: () => void;
@@ -118,8 +122,26 @@ export function DeliveryHeader({
   onBack?: () => void;
   onCart?: () => void;
   cartCount?: number;
+  embeddedHost?: boolean;
 }) {
   const shoppingContext = context === "home" || context === "browse";
+
+  if (embeddedHost) {
+    return (
+      <header className={`app-header app-header--${context} app-header--embedded`}>
+        {context === "home" ? (
+          <div className="app-header__embedded-shopping">
+            {addressLink ?? <DeliveryAddressLink onManage={onManage} />}
+            <CartButton onCart={onCart} cartCount={cartCount} />
+          </div>
+        ) : title ? (
+          <div className="app-header__embedded-title">{title}</div>
+        ) : null}
+        {context === "home" && outlet && <AssignedOutletLine outlet={outlet} />}
+      </header>
+    );
+  }
+
   return (
     <header className={`app-header app-header--${context}`}>
       <HeaderActions
@@ -132,9 +154,7 @@ export function DeliveryHeader({
       />
       {shoppingContext &&
         (addressLink ?? <DeliveryAddressLink onManage={onManage} />)}
-      {shoppingContext && outlet && (
-        <AssignedOutletLine outlet={outlet} />
-      )}
+      {shoppingContext && outlet && <AssignedOutletLine outlet={outlet} />}
     </header>
   );
 }
@@ -149,6 +169,26 @@ export function AssignedOutletLine({ outlet }: { outlet: Outlet }) {
     >
       From {outlet.displayName}
     </p>
+  );
+}
+
+export function CartButton({
+  onCart,
+  cartCount = 0,
+}: {
+  onCart?: () => void;
+  cartCount?: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onCart}
+      aria-label="Open cart"
+      className="app-header__cart"
+    >
+      <BagIcon className="h-5 w-5" />
+      {cartCount > 0 && <span>{cartCount}</span>}
+    </button>
   );
 }
 
@@ -172,10 +212,7 @@ export function HeaderActions({
       <div className="app-header__shopping-actions app-header__shopping-actions--shopping">
         <span className="app-header__brand">CKS Go</span>
         <div className="app-header__shopping-controls">
-          <button type="button" onClick={onCart} aria-label="Open cart" className="app-header__cart">
-            <BagIcon className="h-5 w-5" />
-            {cartCount > 0 && <span>{cartCount}</span>}
-          </button>
+          <CartButton onCart={onCart} cartCount={cartCount} />
           <button type="button" aria-label="Close CKS Go" onClick={onLogout} className="app-header__exit">
             ×
           </button>

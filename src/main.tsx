@@ -106,7 +106,10 @@ async function start() {
     );
     root.render(
       <React.StrictMode>
-        <CustomerSessionBoundary controller={session}>
+        <CustomerSessionBoundary
+          controller={session}
+          embeddedHost={Boolean(window.SavtCksGoBridge)}
+        >
           <CustomerDataProvider controller={customer} development={development}>
             <CatalogueProvider
               controller={catalogue}
@@ -134,6 +137,7 @@ async function start() {
                     <App
                       onLogout={() => void session.logout()}
                       supportWhatsApp={config.supportWhatsApp}
+                      embeddedHost={Boolean(window.SavtCksGoBridge)}
                     />
                   </OrdersProvider>
                 </PaymentProvider>

@@ -4,8 +4,10 @@ import {
   useCategoryArtworkUrl,
   useProductArtworkUrl,
 } from "./reference-match/useArtwork";
-import { AppShell } from "../components/Layout";
+import { HeaderActions, AppShell } from "../components/Layout";
 import { CustomerProfileScreen, CheckoutAddress } from "../customer/components";
+import { DeliveryLocationSetup } from "../customer/DeliveryLocationSetup";
+import { hasDeliveryCoordinates } from "../customer/delivery-readiness";
 import { useCustomer } from "../customer/context";
 import { useCatalogue } from "./context";
 import type { Product } from "./contracts";
@@ -24,7 +26,19 @@ import {
   StatusBadge,
   SystemState,
 } from "../components/ui";
-import { BagIcon, FruitIcon, GridIcon, PantryIcon } from "../components/Icons";
+import {
+  BabyIcon,
+  BagIcon,
+  DairyIcon,
+  DrinkIcon,
+  FruitIcon,
+  FrozenIcon,
+  GridIcon,
+  HomeCareIcon,
+  NoodleIcon,
+  PantryIcon,
+  SnackIcon,
+} from "../components/Icons";
 import {
   AdvertisingCarousel,
   filterRenderableSlides,
@@ -33,6 +47,7 @@ import {
   type AdvertisingSlide,
 } from "./AdvertisingCarousel";
 import type { DevelopmentAdvertisingScenario } from "./development-advertising";
+import { productionAdvertisingSlides } from "./production-advertising";
 type ReferenceSample =
   typeof import("./reference-match/content").referenceSample;
 
@@ -212,17 +227,26 @@ export function ProductDetailPurchase({
   );
 }
 
+export function categoryIconFor(name?: string) {
+  const normalized = name?.trim().toLowerCase() ?? "";
+  if (/fruit|vegetable|fresh|produce/.test(normalized)) return FruitIcon;
+  if (/dairy|milk|chilled/.test(normalized)) return DairyIcon;
+  if (/drink|beverage|water|juice/.test(normalized)) return DrinkIcon;
+  if (/snack|confection|biscuit/.test(normalized)) return SnackIcon;
+  if (/frozen|ice cream/.test(normalized)) return FrozenIcon;
+  if (/noodle|instant/.test(normalized)) return NoodleIcon;
+  if (/house|home care|clean|laundry/.test(normalized)) return HomeCareIcon;
+  if (/baby|diaper/.test(normalized)) return BabyIcon;
+  if (/pantry|rice|cooking|grocery|essential/.test(normalized))
+    return PantryIcon;
+  return GridIcon;
+}
+
 export function CategoryArtwork({ name }: { name?: string }) {
   const reference = useCategoryArtworkUrl(name);
   if (reference)
     return <img className="catalogue-category-photo" src={reference} alt="" />;
-  const normalized = name?.trim().toLowerCase();
-  const Icon =
-    normalized === "pantry"
-      ? PantryIcon
-      : normalized === "fresh food"
-        ? FruitIcon
-        : GridIcon;
+  const Icon = categoryIconFor(name);
   return <Icon className="catalogue-category-icon" />;
 }
 const errors: Record<string, [string, string]> = {
@@ -267,8 +291,8 @@ const errors: Record<string, [string, string]> = {
     "Choose an active saved address.",
   ],
   CHECKOUT_LOCATION_UNAVAILABLE: [
-    "Address needs coordinates",
-    "Add coordinates in your saved address to check service.",
+    "Set your delivery location",
+    "Confirm your delivery location to check service from your assigned store.",
   ],
   CUSTOMER_PRODUCT_NOT_FOUND: [
     "Product unavailable",
@@ -318,12 +342,12 @@ export function CatalogueStatus({
       "Reload your saved addresses to continue.",
     ],
     "no-address": [
-      "Choose an active address",
-      "Add or select a saved address before browsing.",
+      "Set your delivery location",
+      "Add a delivery location before you start shopping.",
     ],
     coordinates: [
-      "Address needs coordinates",
-      "Edit your saved address and add its coordinates.",
+      "Set your delivery location",
+      "We have your address, but need the exact location to arrange delivery.",
     ],
     "assignment-loading": [
       "Checking delivery availability…",
@@ -430,9 +454,11 @@ export function CatalogueProductPages({
 export function CatalogueApp({
   onLogout,
   supportWhatsApp = "",
+  embeddedHost = false,
 }: {
   onLogout?: () => void;
   supportWhatsApp?: string;
+  embeddedHost?: boolean;
 }) {
   const { state, controller, controls } = useCatalogue();
   const checkout = useCheckout();
@@ -443,19 +469,20 @@ export function CatalogueApp({
   const [route, setRoute] = useState(readRoute);
   const [query, setQuery] = useState(state.q);
   const [composing, setComposing] = useState(false);
-  const [advertisingScenario, setAdvertisingScenario] =
-    useState<DevelopmentAdvertisingScenario>(
-      import.meta.env.DEV &&
-        new URLSearchParams(window.location.search).get("scenario") ===
-          "ux03-reference-match"
-        ? "reference"
-        : "multiple",
-    );
+  const [advertisingScenario, setAdvertisingScenario] = useState<
+    DevelopmentAdvertisingScenario | "production"
+  >(
+    import.meta.env.DEV &&
+      new URLSearchParams(window.location.search).get("scenario") ===
+        "ux03-reference-match"
+      ? "reference"
+      : "production",
+  );
   const [referenceSample, setReferenceSample] =
     useState<ReferenceSample | null>(null);
   const [advertisingSlides, setAdvertisingSlides] = useState<
     AdvertisingSlide[]
-  >([]);
+  >([...productionAdvertisingSlides]);
   const heading = useRef<HTMLHeadingElement>(null),
     search = useRef<HTMLInputElement>(null);
   const productOrigin = useRef<"home" | "categories">("home");
@@ -587,8 +614,12 @@ export function CatalogueApp({
   }, [route, state.phase, state.products]);
   useEffect(() => {
     let current = true;
-    if (!import.meta.env.DEV || !controls) {
-      setAdvertisingSlides([]);
+    if (
+      !import.meta.env.DEV ||
+      !controls ||
+      advertisingScenario === "production"
+    ) {
+      setAdvertisingSlides([...productionAdvertisingSlides]);
       return;
     }
     void import("./development-advertising").then((development) => {
@@ -674,6 +705,9 @@ export function CatalogueApp({
     (category) => category.id === state.categoryId,
   )?.name;
   const selectedAddress = customer.controller.selectedAddress();
+  const needsDeliverySetup =
+    (route === "home" || route === "categories" || Boolean(detailId)) &&
+    !hasDeliveryCoordinates(selectedAddress);
   const cartDeliveryAddress = selectedAddress
     ? [
         selectedAddress.addressLine1,
@@ -692,6 +726,26 @@ export function CatalogueApp({
         : route === "orders" || orderDetailId
           ? "orders"
           : "transaction";
+  if (needsDeliverySetup) {
+    return (
+      <div className="mx-auto max-w-[430px]">
+        {!embeddedHost && (
+          <HeaderActions
+            context="home"
+            onLogout={onLogout}
+            onCart={() => navigate("cart")}
+          />
+        )}
+        <DeliveryLocationSetup
+          onDone={() => {
+            navigate("home");
+            void controller.retry();
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <AppShell
       active={
@@ -716,11 +770,17 @@ export function CatalogueApp({
       title={
         route === "categories"
           ? (selectedCategoryName ?? "Categories")
-          : route === "orders"
-            ? "My Orders"
-            : orderDetailId
-              ? "Order details"
-              : ""
+          : detailId
+            ? "Product details"
+            : route === "cart"
+              ? payment.state.phase === "paid"
+                ? "Order confirmed"
+                : "Your Cart"
+              : route === "orders"
+                ? "My Orders"
+                : orderDetailId
+                  ? "Order details"
+                  : ""
       }
       onBack={() =>
         navigate(
@@ -736,6 +796,7 @@ export function CatalogueApp({
       sticky={detailId ? detailPurchase : undefined}
       outlet={state.assignment?.outlet}
       restoreScrollTop={scrollPositions.current.get(route) ?? 0}
+      embeddedHost={embeddedHost}
       onScrollPositionChange={(top) => {
         if (
           (route === "home" || route === "categories") &&
@@ -1009,9 +1070,7 @@ export function CatalogueApp({
                       <div>
                         <h2>
                           {route === "home"
-                            ? referenceFixture
-                              ? "Featured for You"
-                              : "Products"
+                            ? "Featured for You"
                             : state.categoryId
                               ? (state.categories.find(
                                   (category) =>
@@ -1116,19 +1175,20 @@ export function CatalogueApp({
                         value={advertisingScenario}
                         onChange={(event) =>
                           setAdvertisingScenario(
-                            event.target
-                              .value as DevelopmentAdvertisingScenario,
+                            event.target.value as
+                              DevelopmentAdvertisingScenario | "production",
                           )
                         }
                       >
+                        <option value="production">Production banners</option>
                         <option value="multiple">Multiple banners</option>
                         <option value="single">One banner</option>
                         <option value="zero">Zero banners</option>
                         <option value="failed-creative">Failed creative</option>
                       </select>
                       <p>
-                        Development-only previews. Production stays empty until
-                        a compatible customer merchandising feed is connected.
+                        Development-only carousel state controls. Production
+                        uses the curated CKS Go merchandising slides.
                       </p>
                     </details>
                   </div>
