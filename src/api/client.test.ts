@@ -104,6 +104,106 @@ describe("CustomerApiClient", () => {
     });
   });
 
+  it("sends exact browser OTP requests through the credentialed CKS proxy", async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: { otpRequestId: "O".repeat(43), resendAfterSeconds: 60 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse(
+          {
+            data: {
+              protocolVersion: "1",
+              code: "D".repeat(43),
+              expiresAt: bootstrap.expiresAt,
+            },
+          },
+          201,
+        ),
+      );
+    const client = new CustomerApiClient("", fetcher);
+    expect(
+      await client.requestWebOtp({
+        launchRequestId: requestId,
+        mobileNumber: "+60123456789",
+      }),
+    ).toEqual({ otpRequestId: "O".repeat(43), resendAfterSeconds: 60 });
+    expect(
+      await client.authorizeWebOtp({
+        protocolVersion: "1",
+        otpRequestId: "O".repeat(43),
+        launchRequestId: requestId,
+        state: bootstrap.state,
+        codeChallenge: bootstrap.codeChallenge,
+        codeChallengeMethod: "S256",
+        otp: "123456",
+      }),
+    ).toEqual({
+      protocolVersion: "1",
+      code: "D".repeat(43),
+      expiresAt: bootstrap.expiresAt,
+    });
+    expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+      "/api/v1/customer/session/web-otp/request",
+      "/api/v1/customer/session/web-otp/authorize",
+    ]);
+    expect(
+      fetcher.mock.calls.every(([, init]) => init?.credentials === "include"),
+    ).toBe(true);
+    expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body))).toEqual({
+      launchRequestId: requestId,
+      mobileNumber: "+60123456789",
+    });
+    expect(JSON.parse(String(fetcher.mock.calls[1]?.[1]?.body))).toEqual({
+      protocolVersion: "1",
+      otpRequestId: "O".repeat(43),
+      launchRequestId: requestId,
+      state: bootstrap.state,
+      codeChallenge: bootstrap.codeChallenge,
+      codeChallengeMethod: "S256",
+      otp: "123456",
+    });
+    expect(
+      fetcher.mock.calls.every(
+        ([, init]) => !JSON.stringify(init).includes("Authorization"),
+      ),
+    ).toBe(true);
+  });
+
+  it("retains bounded server retry timing without rendering its error message", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: {
+            code: "CUSTOMER_OTP_RATE_LIMITED",
+            message: "private upstream detail",
+          },
+        }),
+        {
+          status: 429,
+          headers: {
+            "content-type": "application/json",
+            "Retry-After": "37",
+          },
+        },
+      ),
+    );
+    const error = await new CustomerApiClient("", fetcher)
+      .requestWebOtp({
+        launchRequestId: requestId,
+        mobileNumber: "+60123456789",
+      })
+      .catch((value: unknown) => value);
+    expect(error).toMatchObject({
+      code: "CUSTOMER_OTP_RATE_LIMITED",
+      category: "retryable",
+      retryAfterSeconds: 37,
+    });
+  });
+
   it.each([
     [new TypeError("Failed to fetch"), "offline"],
     [

@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  BrowserBridgeAdapter,
   BridgeError,
   DevelopmentBridgeAdapter,
   FlutterBridgeAdapter,
+  selectCustomerBridge,
   type BridgeEnvironment,
   type HandoffDetail,
 } from "./bridge";
@@ -227,5 +229,52 @@ describe("DevelopmentBridgeAdapter", () => {
     expect(bridge.getPaymentHandoffs()).toEqual([]);
     await expect(bridge.requestPaymentHandoff(url)).resolves.toBeUndefined();
     expect(bridge.getPaymentHandoffs()).toEqual([url]);
+  });
+});
+
+describe("standalone browser payment handoff", () => {
+  it("selects the browser adapter without changing native or development selection", () => {
+    vi.stubGlobal("window", {
+      SavtCksGoBridge: { postMessage: vi.fn() },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    });
+    expect(selectCustomerBridge(false, false, true)).toBeInstanceOf(
+      BrowserBridgeAdapter,
+    );
+    expect(selectCustomerBridge(true, false, true)).toBeInstanceOf(
+      FlutterBridgeAdapter,
+    );
+    expect(selectCustomerBridge(false, true, false)).toBeInstanceOf(
+      DevelopmentBridgeAdapter,
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it("opens only a validated HTTPS checkout URL and cannot authorize a native launch", async () => {
+    const navigate = vi.fn();
+    const bridge = new BrowserBridgeAdapter(navigate);
+    await expect(bridge.requestLaunchCode(bootstrap)).rejects.toEqual(
+      new BridgeError("unavailable"),
+    );
+    await bridge.requestPaymentHandoff(
+      "https://payments.example.test/checkout/approved",
+    );
+    expect(navigate).toHaveBeenCalledExactlyOnceWith(
+      "https://payments.example.test/checkout/approved",
+    );
+    await expect(
+      bridge.requestPaymentHandoff("http://payments.example.test/pay"),
+    ).rejects.toEqual(new BridgeError("invalid"));
+    expect(navigate).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports navigation failure without exposing the checkout URL", async () => {
+    const bridge = new BrowserBridgeAdapter(() => {
+      throw new Error("private URL");
+    });
+    await expect(
+      bridge.requestPaymentHandoff("https://payments.example.test/pay"),
+    ).rejects.toEqual(new BridgeError("unavailable"));
   });
 });

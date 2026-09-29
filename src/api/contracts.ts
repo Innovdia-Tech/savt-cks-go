@@ -13,6 +13,34 @@ export type SessionData = {
   csrfToken: string;
 };
 
+export type WebOtpRequestBody = {
+  launchRequestId: string;
+  mobileNumber: string;
+};
+
+export type WebOtpRequestData = {
+  otpRequestId: string;
+  resendAfterSeconds: number;
+};
+
+export type WebOtpAuthorizeBody = Pick<
+  BootstrapData,
+  | "protocolVersion"
+  | "launchRequestId"
+  | "state"
+  | "codeChallenge"
+  | "codeChallengeMethod"
+> & {
+  otpRequestId: string;
+  otp: string;
+};
+
+export type WebOtpAuthorizeData = {
+  protocolVersion: "1";
+  code: string;
+  expiresAt: string;
+};
+
 export type ApiErrorData = {
   code: string;
   message: string;
@@ -90,6 +118,37 @@ export const parseSessionEnvelope = (value: unknown): SessionData => {
     return invalidResponse();
   }
   return data as SessionData;
+};
+
+export const parseWebOtpRequestEnvelope = (
+  value: unknown,
+): WebOtpRequestData => {
+  const data = envelopeData(value);
+  if (
+    !hasExactKeys(data, ["otpRequestId", "resendAfterSeconds"]) ||
+    typeof data.otpRequestId !== "string" ||
+    !opaque43.test(data.otpRequestId) ||
+    !Number.isInteger(data.resendAfterSeconds) ||
+    (data.resendAfterSeconds as number) < 1 ||
+    (data.resendAfterSeconds as number) > 3600
+  )
+    return invalidResponse();
+  return data as WebOtpRequestData;
+};
+
+export const parseWebOtpAuthorizeEnvelope = (
+  value: unknown,
+): WebOtpAuthorizeData => {
+  const data = envelopeData(value);
+  if (
+    !hasExactKeys(data, ["protocolVersion", "code", "expiresAt"]) ||
+    data.protocolVersion !== "1" ||
+    typeof data.code !== "string" ||
+    !opaque43.test(data.code) ||
+    !isDateTime(data.expiresAt)
+  )
+    return invalidResponse();
+  return data as WebOtpAuthorizeData;
 };
 
 export const parseApiErrorEnvelope = (value: unknown): ApiErrorData | null => {

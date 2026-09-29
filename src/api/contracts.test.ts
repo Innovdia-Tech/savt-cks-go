@@ -3,6 +3,8 @@ import {
   parseApiErrorEnvelope,
   parseBootstrapEnvelope,
   parseSessionEnvelope,
+  parseWebOtpAuthorizeEnvelope,
+  parseWebOtpRequestEnvelope,
 } from "./contracts";
 
 const bootstrapData = {
@@ -80,5 +82,33 @@ describe("API response envelope validation", () => {
         extra: true,
       }),
     ).toBeNull();
+  });
+
+  it("accepts only an exact web OTP request envelope", () => {
+    const data = { otpRequestId: "O".repeat(43), resendAfterSeconds: 60 };
+    expect(parseWebOtpRequestEnvelope({ data })).toEqual(data);
+    for (const value of [
+      { data: { ...data, mobileNumber: "+60123456789" } },
+      { data: { ...data, otpRequestId: "short" } },
+      { data: { ...data, resendAfterSeconds: "60" } },
+      { data, token: "hidden" },
+    ])
+      expect(() => parseWebOtpRequestEnvelope(value)).toThrow();
+  });
+
+  it("accepts only the standard one-use authorize result", () => {
+    const data = {
+      protocolVersion: "1",
+      code: "C".repeat(43),
+      expiresAt: "2026-09-18T12:30:00.000Z",
+    };
+    expect(parseWebOtpAuthorizeEnvelope({ data })).toEqual(data);
+    for (const value of [
+      { data: { ...data, accessToken: "hidden" } },
+      { data: { ...data, protocolVersion: 1 } },
+      { data: { ...data, code: "short" } },
+      { data: { ...data, expiresAt: "tomorrow" } },
+    ])
+      expect(() => parseWebOtpAuthorizeEnvelope(value)).toThrow();
   });
 });

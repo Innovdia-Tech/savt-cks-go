@@ -183,6 +183,31 @@ export class FlutterBridgeAdapter implements NativeBridgePort {
   }
 }
 
+// Standalone browser entry keeps payment navigation behind the same validated
+// handoff port while native authorization remains unavailable without Flutter.
+export class BrowserBridgeAdapter implements NativeBridgePort {
+  constructor(
+    private readonly navigate: (url: string) => void = (url) =>
+      window.location.assign(url),
+  ) {}
+
+  requestLaunchCode(_bootstrap: BootstrapMessage): Promise<HandoffDetail> {
+    return Promise.reject(new BridgeError("unavailable"));
+  }
+
+  async requestPaymentHandoff(checkoutUrl: string): Promise<void> {
+    if (!isSafeCheckoutUrl(checkoutUrl)) throw new BridgeError("invalid");
+    try {
+      this.navigate(checkoutUrl);
+    } catch {
+      throw new BridgeError("unavailable");
+    }
+  }
+
+  notifyLoaded(): void {}
+  notifyError(): void {}
+}
+
 export class DevelopmentBridgeAdapter implements NativeBridgePort {
   private readonly attemptedRequestIds = new Set<string>();
   private readonly paymentHandoffs: string[] = [];
@@ -228,3 +253,14 @@ export class DevelopmentBridgeAdapter implements NativeBridgePort {
 
   notifyError(): void {}
 }
+
+export const selectCustomerBridge = (
+  embeddedHost: boolean,
+  developmentBridge: boolean,
+  production: boolean,
+): NativeBridgePort =>
+  developmentBridge
+    ? new DevelopmentBridgeAdapter(true, production)
+    : embeddedHost
+      ? new FlutterBridgeAdapter()
+      : new BrowserBridgeAdapter();
