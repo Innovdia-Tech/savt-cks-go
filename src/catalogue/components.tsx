@@ -6,6 +6,8 @@ import {
 } from "./reference-match/useArtwork";
 import { AppShell } from "../components/Layout";
 import { CustomerProfileScreen, CheckoutAddress } from "../customer/components";
+import { DeliveryLocationSetup } from "../customer/DeliveryLocationSetup";
+import { hasDeliveryCoordinates } from "../customer/delivery-readiness";
 import { useCustomer } from "../customer/context";
 import { useCatalogue } from "./context";
 import type { Product } from "./contracts";
@@ -339,12 +341,12 @@ export function CatalogueStatus({
       "Reload your saved addresses to continue.",
     ],
     "no-address": [
-      "Choose an active address",
-      "Add or select a saved address before browsing.",
+      "Set your delivery location",
+      "Add a delivery location before you start shopping.",
     ],
     coordinates: [
-      "Address needs coordinates",
-      "Edit your saved address and add its coordinates.",
+      "Set your delivery location",
+      "We have your address, but need the exact location to arrange delivery.",
     ],
     "assignment-loading": [
       "Checking delivery availability…",
@@ -697,6 +699,11 @@ export function CatalogueApp({
     (category) => category.id === state.categoryId,
   )?.name;
   const selectedAddress = customer.controller.selectedAddress();
+  const needsDeliverySetup =
+    route === "home" &&
+    customer.state.profilePhase === "ready" &&
+    customer.state.listPhase === "ready" &&
+    !hasDeliveryCoordinates(selectedAddress);
   const cartDeliveryAddress = selectedAddress
     ? [
         selectedAddress.addressLine1,
@@ -715,6 +722,16 @@ export function CatalogueApp({
         : route === "orders" || orderDetailId
           ? "orders"
           : "transaction";
+  if (needsDeliverySetup) {
+    return (
+      <DeliveryLocationSetup
+        onDone={() => {
+          void controller.retry();
+        }}
+      />
+    );
+  }
+
   return (
     <AppShell
       active={
