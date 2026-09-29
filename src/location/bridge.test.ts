@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { BrowserDeliveryLocationPort, DeliveryLocationError } from "./bridge";
+import { BrowserDeliveryLocationPort } from "./bridge";
+import { DeliveryLocationError } from "./contracts";
 
 describe("BrowserDeliveryLocationPort", () => {
   it("fails address search closed when the trusted native bridge is unavailable", async () => {
