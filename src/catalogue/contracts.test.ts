@@ -84,6 +84,24 @@ describe("closed R2 projections", () => {
       }),
     ).toThrow(),
   );
+  it("accepts managed CKS product media bound to the product id", () => {
+    const assetId = "22222222-2222-4222-8222-222222222222";
+    const imageUrl = `/api/v1/product-media/${id}/${assetId}`;
+    expect(
+      parseProducts({ data: [{ ...product, imageUrl }], meta }).data[0].imageUrl,
+    ).toBe(imageUrl);
+  });
+
+  it.each([
+    `/api/v1/product-media/33333333-3333-4333-8333-333333333333/22222222-2222-4222-8222-222222222222`,
+    `/api/v1/product-media/${id}/not-a-v4-asset`,
+    `/api/v1/product-media/${id}/22222222-2222-4222-8222-222222222222?x=1`,
+  ])("rejects invalid managed product media path %s", (imageUrl) =>
+    expect(() =>
+      parseProducts({ data: [{ ...product, imageUrl }], meta }),
+    ).toThrow(),
+  );
+
   it.each([
     { sellingPriceMinor: 1.25 },
     { sellingPriceMinor: "1234" },
