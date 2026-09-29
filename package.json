@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.js --configLoader runner",
+    "start": "vite --config vite.config.js --configLoader runner --host 0.0.0.0 --port 5173",
     "build": "tsc -b && vite build --config vite.config.js --configLoader runner",
     "preview": "vite preview --config vite.config.js --configLoader runner",
     "test": "vitest run",
