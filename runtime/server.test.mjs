@@ -187,6 +187,24 @@ describe("same-origin customer runtime", () => {
       expect(received.headers[header]).toBeUndefined();
   });
 
+  it("forwards catalogue assignment context to the fixed upstream", async () => {
+    let received;
+    const { origin } = await setup((req, res) => {
+      received = req.headers["x-cks-assignment-context"];
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end("{}");
+    });
+    const assignmentContext = "A".repeat(43);
+    const response = await fetch(
+      `${origin}/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24`,
+      {
+        headers: { "X-CKS-Assignment-Context": assignmentContext },
+      },
+    );
+    expect(response.status).toBe(200);
+    expect(received).toBe(assignmentContext);
+  });
+
   it("returns multiple Set-Cookie headers byte-for-byte, including launch security and deletion", async () => {
     const cookies = [
       "__Host-cksgo_launch=synthetic; HttpOnly; Secure; SameSite=Lax; Path=/",
