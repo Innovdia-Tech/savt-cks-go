@@ -77,6 +77,7 @@ export function DeliveryLocationSetup({ onDone }: { onDone: () => void }) {
           address={repairing ? selected : undefined}
           location={location}
           onDone={onDone}
+          onCancel={() => setDetails(false)}
         />
       </main>
     );
