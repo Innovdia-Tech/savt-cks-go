@@ -95,3 +95,14 @@ History and detail reuse the existing shell, rounded cards, CKS-red action hiera
 | WhatsApp help     | `orders/support.ts` and order detail   | Optional `VITE_CKS_GO_SUPPORT_WHATSAPP`; empty/invalid is inert; valid E.164-style number builds only encoded HTTPS `wa.me` enquiry with displayed Order number | config and stubbed-navigation tests    |
 
 Support opens a separate browser context through `window.open` with `noopener,noreferrer` and does not change Order, payment or fulfilment state. Native WebView handling requires separate Flutter acceptance; the payment-handoff bridge is reserved for payment. Backend policy enforcement is tracked in CUST-CANCEL01-BE.
+
+
+## UX01 Embedded Host and Delivery Readiness
+
+- `AppShell` remains the canonical shell. Its `embeddedHost` variant removes duplicate web Back/Close/brand chrome while retaining delivery context and Cart.
+- `DeliveryLocationSetup` is the canonical first-use and missing-location repair surface.
+- Home is gated until the selected address is ACTIVE and has finite latitude/longitude.
+- `AddressForm` accepts trusted location data as input and never exposes latitude/longitude fields.
+- `BrowserDeliveryLocationPort` is the canonical web location boundary. It uses `SavtCksGoBridge` in the native host and browser geolocation only for standalone current-location requests.
+- Search in the hardened WebView is native-geocoded; React does not call a third-party geocoder directly.
+- Production `AdvertisingCarousel` uses source-controlled claim-safe slides until a backend merchandising feed supersedes them.
