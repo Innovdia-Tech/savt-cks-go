@@ -451,9 +451,11 @@ export function CatalogueProductPages({
 export function CatalogueApp({
   onLogout,
   supportWhatsApp = "",
+  embeddedHost = false,
 }: {
   onLogout?: () => void;
   supportWhatsApp?: string;
+  embeddedHost?: boolean;
 }) {
   const { state, controller, controls } = useCatalogue();
   const checkout = useCheckout();
@@ -737,11 +739,17 @@ export function CatalogueApp({
       title={
         route === "categories"
           ? (selectedCategoryName ?? "Categories")
-          : route === "orders"
-            ? "My Orders"
-            : orderDetailId
-              ? "Order details"
-              : ""
+          : detailId
+            ? "Product details"
+            : route === "cart"
+              ? payment.state.phase === "paid"
+                ? "Order confirmed"
+                : "Your Cart"
+              : route === "orders"
+                ? "My Orders"
+                : orderDetailId
+                  ? "Order details"
+                  : ""
       }
       onBack={() =>
         navigate(
@@ -757,6 +765,7 @@ export function CatalogueApp({
       sticky={detailId ? detailPurchase : undefined}
       outlet={state.assignment?.outlet}
       restoreScrollTop={scrollPositions.current.get(route) ?? 0}
+      embeddedHost={embeddedHost}
       onScrollPositionChange={(top) => {
         if (
           (route === "home" || route === "categories") &&
