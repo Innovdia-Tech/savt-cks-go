@@ -88,7 +88,8 @@ describe("closed R2 projections", () => {
     const assetId = "22222222-2222-4222-8222-222222222222";
     const imageUrl = `/api/v1/product-media/${id}/${assetId}`;
     expect(
-      parseProducts({ data: [{ ...product, imageUrl }], meta }).data[0].imageUrl,
+      parseProducts({ data: [{ ...product, imageUrl }], meta }).data[0]
+        .imageUrl,
     ).toBe(imageUrl);
   });
 
