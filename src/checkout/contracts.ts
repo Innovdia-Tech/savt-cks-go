@@ -134,7 +134,9 @@ const processing = (value: unknown): CheckoutQuote["processingFee"] => {
     !["PERCENTAGE", "FIXED"].includes(String(value.feeType)) ||
     !(
       value.rate === null ||
-      (typeof value.rate === "string" && /^\d{1,9}\.\d{4}$/.test(value.rate))
+      (typeof value.rate === "string" &&
+        value.rate.length <= 32 &&
+        /^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value.rate))
     ) ||
     !nullableMoney(value.fixedAmountMinor)
   )
