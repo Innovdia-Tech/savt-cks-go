@@ -4,6 +4,7 @@ import { errorMessage } from "./errors";
 import { DeliveryLocationSetup } from "./DeliveryLocationSetup";
 import { hasDeliveryCoordinates } from "./delivery-readiness";
 import { AddressForm } from "../addresses/AddressForm";
+import { useOptionalCheckout } from "../checkout/context";
 import type { Address } from "../addresses/contracts";
 import { ChevronRightIcon } from "../components/Icons";
 export { CustomerDataProvider } from "./context";
@@ -84,7 +85,7 @@ export function DataFeedback({
   onRetried,
 }: {
   onReload?: () => void;
-  onRetried?: () => void;
+  onRetried?: (saved: Address) => void;
 }) {
   const { state, controller } = useCustomer();
   return (
@@ -104,7 +105,7 @@ export function DataFeedback({
               disabled={state.busy}
               onClick={() =>
                 void controller.retryOperation().then((saved) => {
-                  if (saved) onRetried?.();
+                  if (saved) onRetried?.(saved);
                 })
               }
             >
@@ -127,8 +128,9 @@ export function DataFeedback({
 export function CustomerProfileScreen() {
   const { state, controller, guardNavigation, setDirty, development } =
     useCustomer();
+  const checkout = useOptionalCheckout();
   const [editing, setEditing] = useState<Address | "new" | null>(null);
-  const [deactivating, setDeactivating] = useState<string | null>(null);
+  const [editingLocation, setEditingLocation] = useState(false);
   const [discardReload, setDiscardReload] = useState(false);
   const blocked =
     state.readOnly ||
@@ -136,11 +138,13 @@ export function CustomerProfileScreen() {
     state.canRetryOperation ||
     state.listPhase !== "ready" ||
     state.profilePhase !== "ready" ||
-    state.error?.category === "conflict";
+    state.error?.category === "conflict" ||
+    Boolean(checkout?.state.paymentFrozen);
   const selectedAddressId = controller.selectedAddress()?.id;
   const done = () => {
     setDirty(false);
     setEditing(null);
+    setEditingLocation(false);
   };
   const reload = () => {
     done();
@@ -178,17 +182,23 @@ export function CustomerProfileScreen() {
           </button>
         </section>
       )}
-      {editing === "new" || (editing && !hasDeliveryCoordinates(editing)) ? (
+      {editing === "new" ||
+      (editing && (!hasDeliveryCoordinates(editing) || editingLocation)) ? (
         <DeliveryLocationSetup
           address={editing === "new" ? null : editing}
+          initialMode={editingLocation ? "confirm" : "choose"}
           onDone={done}
-          onCancel={done}
+          onCancel={() =>
+            editingLocation ? setEditingLocation(false) : done()
+          }
         />
       ) : editing ? (
         <AddressForm
           key={editing.id + ":" + editing.rowVersion}
           address={editing}
           onDone={done}
+          onDeleted={done}
+          onChangeLocation={() => setEditingLocation(true)}
         />
       ) : (
         <>
@@ -205,103 +215,48 @@ export function CustomerProfileScreen() {
           {state.listPhase === "loading" && (
             <p role="status">Loading saved addresses…</p>
           )}
-          {state.listPhase === "ready" && state.addresses.length === 0 && (
-            <p className="customer-card">
-              No saved addresses yet. Add an address for your next delivery.
-            </p>
-          )}
-          {(["ACTIVE", "INACTIVE"] as const).map((status) => (
-            <section key={status} className="space-y-3">
-              <h3 className="font-black">
-                {status === "ACTIVE"
-                  ? "Active addresses"
-                  : "Inactive addresses"}{" "}
-                ({state.addresses.filter((a) => a.status === status).length})
-              </h3>
-              {state.addresses
-                .filter((a) => a.status === status)
-                .map((address) => (
-                  <article
-                    key={address.id}
-                    className={`customer-card ${selectedAddressId === address.id ? "customer-card--selected" : ""}`.trim()}
-                  >
-                    {selectedAddressId === address.id && (
-                      <span className="customer-selected-address">
-                        Selected for delivery
-                      </span>
-                    )}
-                    <AddressText address={address} />
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        className="customer-button"
-                        aria-label={`Edit ${address.label}`}
-                        disabled={blocked}
-                        onClick={() => setEditing(address)}
-                      >
-                        Edit
-                      </button>
-                      {status === "ACTIVE" ? (
-                        <>
-                          <button
-                            className="customer-button"
-                            disabled={blocked || address.isDefault}
-                            onClick={() =>
-                              void controller.mutate("default", address.id)
-                            }
-                          >
-                            Set default
-                          </button>
-                          <button
-                            className="customer-button"
-                            disabled={blocked}
-                            onClick={() => setDeactivating(address.id)}
-                          >
-                            Deactivate
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          className="customer-button"
-                          disabled={blocked}
-                          onClick={() =>
-                            void controller.mutate("reactivate", address.id)
-                          }
-                        >
-                          Reactivate
-                        </button>
-                      )}
-                    </div>
-                    {deactivating === address.id && (
-                      <div className="mt-3 rounded-2xl bg-amber-50 p-3">
-                        <p className="text-sm">
-                          Deactivate {address.label}? It will no longer be
-                          available at checkout. You can reactivate it later.
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <button
-                            className="customer-button"
-                            disabled={blocked}
-                            onClick={() => setDeactivating(null)}
-                          >
-                            Keep active
-                          </button>
-                          <button
-                            className="customer-button"
-                            disabled={blocked}
-                            onClick={() => {
-                              setDeactivating(null);
-                              void controller.mutate("deactivate", address.id);
-                            }}
-                          >
-                            Confirm deactivate
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </article>
-                ))}
-            </section>
-          ))}
+          {state.listPhase === "ready" &&
+            !state.addresses.some((address) => address.status === "ACTIVE") && (
+              <p className="customer-card">
+                No saved addresses yet. Add an address for your next delivery.
+              </p>
+            )}
+          <section className="space-y-3">
+            {state.addresses
+              .filter((a) => a.status === "ACTIVE")
+              .map((address) => (
+                <article
+                  key={address.id}
+                  className={`customer-card ${selectedAddressId === address.id ? "customer-card--selected" : ""}`.trim()}
+                >
+                  {selectedAddressId === address.id && (
+                    <span className="customer-selected-address">
+                      Selected for delivery
+                    </span>
+                  )}
+                  <AddressText address={address} />
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      className="customer-button"
+                      aria-label={`Edit ${address.label}`}
+                      disabled={blocked}
+                      onClick={() => setEditing(address)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="customer-button"
+                      disabled={blocked || address.isDefault}
+                      onClick={() =>
+                        void controller.mutate("default", address.id)
+                      }
+                    >
+                      Set default
+                    </button>
+                  </div>
+                </article>
+              ))}
+          </section>
         </>
       )}
       {development && (

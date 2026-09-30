@@ -27,6 +27,28 @@ async function setup(scenario = "mixed") {
   return { session, adapter, state };
 }
 describe("customer data state and synthetic transport", () => {
+  it("returns the authoritative saved address after refreshing the address book", async () => {
+    const { state } = await setup("empty");
+    const saved = await state.mutate("create", undefined, input);
+    expect(saved).toMatchObject({
+      label: "New demo",
+      rowVersion: 1,
+      status: "ACTIVE",
+    });
+    expect(state.getSnapshot().addresses).toContainEqual(saved);
+  });
+
+  it("keeps the current delivery choice when a new address changes the database default", async () => {
+    const { state } = await setup();
+    const current = state.selectedAddress()!;
+    await state.mutate("create", undefined, { ...input, isDefault: true });
+    expect(state.selectedAddress()?.id).toBe(current.id);
+    expect(
+      state.getSnapshot().addresses.find((a) => a.label === "New demo")
+        ?.isDefault,
+    ).toBe(true);
+  });
+
   it("fails closed in production", () =>
     expect(() => new DevelopmentDataAdapter(true)).toThrow());
   it("loads profile and selects the active default", async () => {
@@ -245,10 +267,16 @@ it("shows profile loading until a response arrives", async () => {
   expect(state.getSnapshot().profilePhase).toBe("ready");
 });
 
-it("follows a changed default until the customer explicitly chooses another address", async () => {
+it("preserves an explicit delivery choice across later address refreshes", async () => {
   const { state } = await setup();
   const original = state.selectedAddress()!;
-  await state.mutate("create", undefined, { ...input, isDefault: true });
+  const created = await state.mutate("create", undefined, {
+    ...input,
+    isDefault: true,
+  });
+  expect(state.selectedAddress()?.id).toBe(original.id);
+  if (!created) throw new Error("Address was not saved");
+  state.select(created.id);
   expect(state.selectedAddress()?.label).toBe("New demo");
   state.select(original.id);
   await state.load();

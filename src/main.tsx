@@ -85,6 +85,9 @@ async function start() {
       ),
       session,
     );
+    catalogueDevelopment?.setAddressLookup((id) =>
+      customer.getSnapshot().addresses.find((address) => address.id === id),
+    );
     const locationSearch = development
       ? new (await import("./location/development")).DevelopmentLocationSearch()
       : new LocationSearchApi(config.apiOrigin, session);

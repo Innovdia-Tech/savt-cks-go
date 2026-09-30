@@ -54,6 +54,40 @@ const controller = {
 };
 
 describe("real cart and trusted quote presentation", () => {
+  it("gates quote review when saved cart lines lack a current delivery assignment", () => {
+    const html = renderToStaticMarkup(
+      createElement(CartScreen, {
+        state: { ...base, assignment: null },
+        controller,
+        onBrowse: () => {},
+        onChangeAddress: () => {},
+      } as never),
+    );
+    expect(html).toContain(
+      "Choose a delivery address before reviewing your order",
+    );
+    expect(html).toContain("disabled");
+  });
+  it("explains a saved unserviceable address before clearing a filled cart", () => {
+    const html = renderToStaticMarkup(
+      createElement(AddressChangeDialog, {
+        state: {
+          ...base,
+          pendingAddress: {
+            address: { id: id("d"), label: "Tuaran", rowVersion: 1 },
+            assignment: null,
+          },
+          transitionPhase: "confirmation",
+        },
+        controller,
+        onCommit: () => {},
+      } as never),
+    );
+    expect(html).toContain("saved");
+    expect(html).toContain("Keep current delivery address");
+    expect(html).toContain("Change address and clear cart");
+    expect(html).not.toContain("No serviceable outlet");
+  });
   it("uses accepted checkout rows and server totals with ordinary data", () => {
     const quote = parseQuote(quoteEnvelope());
     const html = renderToStaticMarkup(

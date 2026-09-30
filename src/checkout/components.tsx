@@ -378,9 +378,23 @@ export function CartScreen({
             confirmed at review.
           </p>
         )}
+        {!state.assignment && (
+          <p className="catalogue-caption" role="status">
+            Choose a delivery address before reviewing your order.
+            {onChangeAddress && (
+              <button
+                className="customer-button mt-2"
+                onClick={onChangeAddress}
+              >
+                Choose address
+              </button>
+            )}
+          </p>
+        )}
         {state.quotePhase === "idle" && (
           <button
             className="customer-button customer-primary quote-action"
+            disabled={!state.assignment}
             onClick={() => void controller.requestQuote()}
           >
             Review order
@@ -452,12 +466,26 @@ export function AddressChangeDialog({
         controller.cancelAddressChange();
       }}
     >
-      <h2 id="cart-switch-title">Clear cart and switch address?</h2>
+      <h2 id="cart-switch-title">
+        {pending.assignment
+          ? "Clear cart and switch address?"
+          : "Change delivery address?"}
+      </h2>
       <p id="cart-switch-description">
-        {pending.address.label} is assigned to{" "}
-        {pending.assignment.outletDisplayName}. Your current cart belongs to
-        another outlet and cannot be remapped. Switching clears the cart and its
-        quote.
+        {pending.assignment ? (
+          <>
+            {pending.address.label} is assigned to{" "}
+            {pending.assignment.outletDisplayName}. Your current cart belongs to
+            another outlet and cannot be remapped. Switching clears the cart and
+            its quote.
+          </>
+        ) : (
+          <>
+            {pending.address.label} has been saved, but we are not delivering
+            there yet. Changing your delivery address will clear your current
+            cart and quote.
+          </>
+        )}
       </p>
       <div className="cart-dialog-actions">
         <button
@@ -465,7 +493,9 @@ export function AddressChangeDialog({
           className="customer-button"
           onClick={() => controller.cancelAddressChange()}
         >
-          Keep current cart
+          {pending.assignment
+            ? "Keep current cart"
+            : "Keep current delivery address"}
         </button>
         <button
           className="customer-button customer-danger"
@@ -474,7 +504,9 @@ export function AddressChangeDialog({
             if (addressId) onCommit(addressId);
           }}
         >
-          Clear cart and switch
+          {pending.assignment
+            ? "Clear cart and switch"
+            : "Change address and clear cart"}
         </button>
       </div>
     </dialog>

@@ -107,6 +107,10 @@
   background: #f1f5f9;
   color: #475569;
 }
+.customer-input[readonly] {
+  background: #f8fafc;
+  color: #334155;
+}
 .customer-input[aria-invalid="true"] {
   border-color: #991b1b;
 }

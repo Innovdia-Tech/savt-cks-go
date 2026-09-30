@@ -59,6 +59,7 @@ export function CheckoutProvider({
   );
   useEffect(() => {
     const address = customer.selectedAddress();
+    controller.bindSelectedAddress(address);
     const assignment = catalogue.state.assignment;
     if (
       address &&
@@ -96,4 +97,16 @@ export function useCheckout() {
     context.controller.getSnapshot,
   );
   return { ...context, state };
+}
+
+const noCheckoutSubscribe = () => () => {};
+const noCheckoutSnapshot = () => null;
+export function useOptionalCheckout() {
+  const context = useContext(Context);
+  const state = useSyncExternalStore(
+    context?.controller.subscribe ?? noCheckoutSubscribe,
+    context?.controller.getSnapshot ?? noCheckoutSnapshot,
+    context?.controller.getSnapshot ?? noCheckoutSnapshot,
+  );
+  return context ? { ...context, state: state! } : null;
 }

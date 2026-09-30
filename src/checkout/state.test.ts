@@ -148,6 +148,76 @@ describe("real cart invariants", () => {
 });
 
 describe("assigned address transitions", () => {
+  it("invalidates stale outlet and quote evidence when the selected address revision changes", async () => {
+    const { controller } = fixture();
+    controller.add(product(), assignmentA);
+    await controller.requestQuote();
+
+    controller.bindSelectedAddress({ ...addressA, rowVersion: 8 });
+
+    expect(controller.getSnapshot()).toMatchObject({
+      assignment: null,
+      quote: null,
+      quotePhase: "idle",
+      lines: [expect.objectContaining({ outletProductId: id("2") })],
+    });
+    await controller.requestQuote();
+    expect(controller.getSnapshot().quote).toBeNull();
+  });
+
+  it("commits a valid unserviceable address without retaining the previous outlet when the cart is empty", async () => {
+    const { controller, assign } = fixture();
+    assign.mockRejectedValueOnce(
+      new QuoteError("CUSTOMER_NO_SERVICEABLE_OUTLET"),
+    );
+
+    await expect(controller.requestAddress(addressOther)).resolves.toBe(
+      "committed",
+    );
+    expect(controller.getSnapshot()).toMatchObject({
+      assignment: null,
+      lines: [],
+      pendingAddress: null,
+      transitionPhase: "idle",
+    });
+  });
+
+  it("keeps a filled cart and current outlet until an unserviceable address change is confirmed", async () => {
+    const { controller, assign } = fixture();
+    controller.add(product(), assignmentA);
+    assign.mockRejectedValueOnce(
+      new QuoteError("CUSTOMER_NO_SERVICEABLE_OUTLET"),
+    );
+
+    await expect(controller.requestAddress(addressOther)).resolves.toBe(
+      "confirmation",
+    );
+    expect(controller.getSnapshot()).toMatchObject({
+      assignment: { outletId: id("a"), customerAddressId: addressA.id },
+      lines: [expect.objectContaining({ outletProductId: id("2") })],
+      pendingAddress: {
+        address: { id: addressOther.id },
+        assignment: null,
+      },
+    });
+    controller.cancelAddressChange();
+    expect(controller.getSnapshot().assignment?.customerAddressId).toBe(
+      addressA.id,
+    );
+    expect(controller.getSnapshot().lines).toHaveLength(1);
+
+    assign.mockRejectedValueOnce(
+      new QuoteError("CUSTOMER_NO_SERVICEABLE_OUTLET"),
+    );
+    await controller.requestAddress(addressOther);
+    expect(controller.confirmAddressChange()).toBe(addressOther.id);
+    expect(controller.getSnapshot()).toMatchObject({
+      assignment: null,
+      lines: [],
+      transitionPhase: "idle",
+    });
+  });
+
   it("preserves a same-outlet cart, invalidates its quote, and commits the candidate address", async () => {
     const { controller } = fixture();
     controller.add(product(), assignmentA);

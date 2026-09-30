@@ -51,20 +51,26 @@ describe("customer presentation", () => {
     expect(html).toContain("may be out of date");
     expect(html).not.toContain("csrf");
   });
-  it("divides active and inactive addresses and exposes actions", async () => {
+  it("shows only active saved addresses with customer delete language", async () => {
     const html = await render("mixed", CustomerProfileScreen);
     for (const text of [
-      "Active addresses",
-      "Inactive addresses",
+      "Saved addresses",
       "Demo home",
-      "Demo office",
+      "Demo flat",
       "Edit",
-      "Deactivate",
-      "Reactivate",
       "Add address",
     ])
       expect(html).toContain(text);
     expect(html).toContain("Selected for delivery");
+    for (const hidden of [
+      "Inactive addresses",
+      "Active addresses",
+      "Deactivate",
+      "Reactivate",
+      "INACTIVE",
+      "Demo office",
+    ])
+      expect(html).not.toContain(hidden);
   });
   it("shows an actionable no-address checkout state", async () => {
     const html = await render("empty", CheckoutAddress);

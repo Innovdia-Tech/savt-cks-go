@@ -45,7 +45,7 @@ export type CartAssignment = {
 };
 type PendingAddress = {
   address: Pick<Address, "id" | "label" | "rowVersion">;
-  assignment: CartAssignment;
+  assignment: CartAssignment | null;
 };
 type QuoteAttempt = { request: QuoteRequest; key: string };
 export type CartState = {
@@ -163,6 +163,25 @@ export class CartController {
 
   private assertMutable() {
     if (this.state.paymentFrozen) throw new Error("CART_PAYMENT_FROZEN");
+  }
+
+  bindSelectedAddress(address?: Address) {
+    if (this.state.paymentFrozen) return;
+    const current = this.state.assignment;
+    if (
+      !current ||
+      (address &&
+        current.customerAddressId === address.id &&
+        current.addressRowVersion === address.rowVersion)
+    )
+      return;
+    this.invalidateQuote();
+    this.update({
+      assignment: null,
+      pendingAddress: null,
+      transitionPhase: "idle",
+      transitionError: null,
+    });
   }
 
   syncAssignment(address: Address, assignment: Assignment) {
@@ -299,7 +318,8 @@ export class CartController {
       const next = safeAssignment(address, assignment);
       if (
         this.state.lines.length &&
-        this.state.assignment?.outletId !== next.outletId
+        (this.state.assignment?.outletId ?? this.state.lines[0]?.outletId) !==
+          next.outletId
       ) {
         this.update({
           pendingAddress: {
@@ -324,6 +344,31 @@ export class CartController {
       return "committed";
     } catch (error) {
       if (generation !== this.transitionGeneration) return "error";
+      if (codeOf(error) === "CUSTOMER_NO_SERVICEABLE_OUTLET") {
+        if (this.state.lines.length) {
+          this.update({
+            pendingAddress: {
+              address: {
+                id: address.id,
+                label: address.label,
+                rowVersion: address.rowVersion,
+              },
+              assignment: null,
+            },
+            transitionPhase: "confirmation",
+            transitionError: null,
+          });
+          return "confirmation";
+        }
+        this.invalidateQuote();
+        this.update({
+          assignment: null,
+          pendingAddress: null,
+          transitionPhase: "idle",
+          transitionError: null,
+        });
+        return "committed";
+      }
       this.update({
         pendingAddress: null,
         transitionPhase: "error",
