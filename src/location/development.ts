@@ -1,5 +1,10 @@
 import { DeliveryLocationError, type CurrentLocationPort } from "./contracts";
-import type { LocationSearchPort, PlaceSuggestion, ResolvedPlace } from "./api";
+import type {
+  LocationSearchPort,
+  PlaceSuggestion,
+  ResolvedPlace,
+  ReverseAddress,
+} from "./api";
 
 const places: PlaceSuggestion[] = [
   {
@@ -23,6 +28,37 @@ const places: PlaceSuggestion[] = [
 ];
 
 export class DevelopmentLocationSearch implements LocationSearchPort {
+  reverse(
+    pin: { latitude: number; longitude: number },
+    _signal: AbortSignal,
+  ): Promise<ReverseAddress> {
+    const testPins = (globalThis as { __cksGoUx02Pins?: Array<typeof pin> })
+      .__cksGoUx02Pins;
+    testPins?.push({ ...pin });
+    if (
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).has("reverse-partial")
+    )
+      return Promise.resolve({
+        formattedAddress: "Malaysia",
+        addressLine1: "",
+        city: "",
+        state: "",
+        postcode: "",
+        countryCode: "MY",
+        ...pin,
+      });
+    return Promise.resolve({
+      formattedAddress:
+        "Jalan Pintas Penampang, 89500 Penampang, Sabah, Malaysia",
+      addressLine1: "Jalan Pintas Penampang",
+      city: "Penampang",
+      state: "Sabah",
+      postcode: "89500",
+      countryCode: "MY",
+      ...pin,
+    });
+  }
   search(
     input: string,
     _token: string,

@@ -31,6 +31,7 @@ import { OrdersController } from "./orders/state";
 import { OrdersProvider } from "./orders/context";
 import "./orders/orders.css";
 import { LocationSearchApi } from "./location/api";
+import { googlePinMapAdapter } from "./location/DeliveryPinMap";
 
 const root = createRoot(document.getElementById("root")!);
 
@@ -87,6 +88,9 @@ async function start() {
           await import("./location/development")
         ).DevelopmentCurrentLocation()
       : undefined;
+    const pinMapAdapter = development
+      ? (await import("./location/development-map")).developmentPinMapAdapter
+      : googlePinMapAdapter(import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY ?? "");
     const catalogueApi = new CatalogueApi(
       config.apiOrigin,
       session,
@@ -124,6 +128,7 @@ async function start() {
             development={development}
             locationSearch={locationSearch}
             currentLocation={currentLocation}
+            pinMapAdapter={pinMapAdapter}
           >
             <CatalogueProvider
               controller={catalogue}

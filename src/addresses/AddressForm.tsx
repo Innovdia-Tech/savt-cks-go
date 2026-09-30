@@ -54,9 +54,9 @@ export function AddressForm({
         location?.addressLine1 ?? address?.addressLine1 ?? "",
       ),
       addressLine2: String(address?.addressLine2 ?? ""),
-      city: String(location?.city || address?.city || ""),
-      state: String(location?.state || address?.state || ""),
-      postcode: String(location?.postcode || address?.postcode || ""),
+      city: String(location?.city ?? address?.city ?? ""),
+      state: String(location?.state ?? address?.state ?? ""),
+      postcode: String(location?.postcode ?? address?.postcode ?? ""),
       deliveryInstructions: String(address?.deliveryInstructions ?? ""),
     };
     return suggested;

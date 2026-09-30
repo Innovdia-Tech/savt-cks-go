@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { parseResolvedPlace, parseSuggestions, LocationSearchApi } from "./api";
+import {
+  parseResolvedPlace,
+  parseReverseAddress,
+  parseSuggestions,
+  LocationSearchApi,
+} from "./api";
 import type { CustomerSessionController } from "../session/controller";
 
 const token = "123e4567-e89b-42d3-a456-426614174000";
@@ -20,6 +25,7 @@ const resolved = {
   latitude: 5.92,
   longitude: 116.08,
 };
+const reversed = (({ placeId: _placeId, ...rest }) => rest)(resolved);
 const session = {
   withCredentials: <T>(operation: (csrf: string) => Promise<T>) =>
     operation("csrf-fixture"),
@@ -53,6 +59,23 @@ describe("location search contract", () => {
     ).toThrow();
   });
 
+  it("accepts partial reverse text but rejects changed coordinates and hidden fields", () => {
+    expect(
+      parseReverseAddress({
+        data: { ...reversed, addressLine1: "", postcode: "" },
+      }),
+    ).toEqual({ ...reversed, addressLine1: "", postcode: "" });
+    expect(() =>
+      parseReverseAddress({ data: { ...reversed, countryCode: "SG" } }),
+    ).toThrow();
+    expect(() =>
+      parseReverseAddress({ data: { ...reversed, rawGoogle: true } }),
+    ).toThrow();
+    expect(() =>
+      parseReverseAddress({ data: { ...reversed, latitude: 91 } }),
+    ).toThrow();
+  });
+
   it("sends credentialed, CSRF-protected search and resolve requests with one session token", async () => {
     const fetcher = vi
       .fn<typeof fetch>()
@@ -76,5 +99,29 @@ describe("location search contract", () => {
       expect(init?.headers).toMatchObject({ "x-cks-csrf": "csrf-fixture" });
       expect(JSON.parse(String(init?.body)).sessionToken).toBe(token);
     }
+  });
+
+  it("sends a reverse request only when explicitly called, with pin coordinates and no session token", async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(Response.json({ data: reversed }));
+    const api = new LocationSearchApi("https://example.test", session, fetcher);
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(
+      await api.reverse(
+        { latitude: 5.92, longitude: 116.08 },
+        new AbortController().signal,
+      ),
+    ).toEqual(reversed);
+    expect(fetcher).toHaveBeenCalledOnce();
+    const [url, init] = fetcher.mock.calls[0]!;
+    expect(url).toBe("https://example.test/api/v1/customer/location/reverse");
+    expect(init?.credentials).toBe("include");
+    expect(init?.cache).toBe("no-store");
+    expect(init?.headers).toMatchObject({ "x-cks-csrf": "csrf-fixture" });
+    expect(JSON.parse(String(init?.body))).toEqual({
+      latitude: 5.92,
+      longitude: 116.08,
+    });
   });
 });

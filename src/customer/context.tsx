@@ -11,11 +11,13 @@ import type { CustomerDataController } from "./state";
 import type { DevelopmentDataAdapter } from "./development";
 import type { LocationSearchPort } from "../location/api";
 import type { CurrentLocationPort } from "../location/contracts";
+import type { PinMapAdapter } from "../location/DeliveryPinMap";
 const Context = createContext<{
   controller: CustomerDataController;
   development?: DevelopmentDataAdapter;
   locationSearch?: LocationSearchPort;
   currentLocation?: CurrentLocationPort;
+  pinMapAdapter?: PinMapAdapter;
   setDirty: (dirty: boolean) => void;
   guardNavigation: (action: () => void) => void;
 } | null>(null);
@@ -24,12 +26,14 @@ export function CustomerDataProvider({
   development,
   locationSearch,
   currentLocation,
+  pinMapAdapter,
   children,
 }: {
   controller: CustomerDataController;
   development?: DevelopmentDataAdapter;
   locationSearch?: LocationSearchPort;
   currentLocation?: CurrentLocationPort;
+  pinMapAdapter?: PinMapAdapter;
   children: ReactNode;
 }) {
   const dirty = useRef(false);
@@ -58,6 +62,7 @@ export function CustomerDataProvider({
         development,
         locationSearch,
         currentLocation,
+        pinMapAdapter,
         setDirty: (value) => {
           dirty.current = value;
         },

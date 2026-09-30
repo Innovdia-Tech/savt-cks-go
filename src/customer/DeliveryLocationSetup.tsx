@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Address } from "../addresses/contracts";
 import { AddressForm } from "../addresses/AddressForm";
 import { AddressTransitionError } from "../checkout/components";
@@ -7,6 +7,12 @@ import { PinIcon, SearchIcon } from "../components/Icons";
 import { StoreLoading } from "../components/session/SessionStatus";
 import type { PlaceSuggestion } from "../location/api";
 import { BrowserDeliveryLocationPort } from "../location/bridge";
+import {
+  DeliveryPinMap,
+  googlePinMapAdapter,
+  type MapStatus,
+  type PinCoordinate,
+} from "../location/DeliveryPinMap";
 import {
   DeliveryLocationError,
   type DeliveryLocation,
@@ -42,7 +48,10 @@ export function DeliveryLocationSetup({
     guardNavigation,
     locationSearch,
     currentLocation: currentLocationPort,
+    pinMapAdapter,
   } = useCustomer();
+  const [fallbackMapAdapter] = useState(() => googlePinMapAdapter(""));
+  const mapAdapter = pinMapAdapter ?? fallbackMapAdapter;
   const checkout = useCheckout();
   const originalIds = useRef(new Set(state.addresses.map((item) => item.id)));
   const originalIdsReady = useRef(state.listPhase === "ready");
@@ -60,7 +69,17 @@ export function DeliveryLocationSetup({
   const [searchPhase, setSearchPhase] = useState<SearchPhase>("initial");
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [location, setLocation] = useState<DeliveryLocation | null>(null);
+  const mapInitial = useMemo(
+    () =>
+      location
+        ? { latitude: location.latitude, longitude: location.longitude }
+        : null,
+    [location],
+  );
   const [locationTitle, setLocationTitle] = useState("");
+  const [candidate, setCandidate] = useState<PinCoordinate | null>(null);
+  const [mapStatus, setMapStatus] = useState<MapStatus>("loading");
+  const [reverseError, setReverseError] = useState("");
   const [busy, setBusy] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [awaitingAssignmentId, setAwaitingAssignmentId] = useState<
@@ -72,6 +91,7 @@ export function DeliveryLocationSetup({
   );
   const searchAbort = useRef<AbortController | null>(null);
   const resolveAbort = useRef<AbortController | null>(null);
+  const reverseAbort = useRef<AbortController | null>(null);
   const generation = useRef(0);
   const currentStarted = useRef(false);
   const input = useRef<HTMLInputElement>(null);
@@ -80,6 +100,7 @@ export function DeliveryLocationSetup({
     () => () => {
       searchAbort.current?.abort();
       resolveAbort.current?.abort();
+      reverseAbort.current?.abort();
       port.dispose?.();
     },
     [port],
@@ -95,6 +116,7 @@ export function DeliveryLocationSetup({
   }, [stage]);
 
   const openSearch = () => {
+    reverseAbort.current?.abort();
     token.current = crypto.randomUUID();
     setQuery("");
     setSuggestions([]);
@@ -106,6 +128,7 @@ export function DeliveryLocationSetup({
     ++generation.current;
     searchAbort.current?.abort();
     resolveAbort.current?.abort();
+    reverseAbort.current?.abort();
     token.current = null;
     setQuery("");
     setSuggestions([]);
@@ -174,6 +197,7 @@ export function DeliveryLocationSetup({
 
   const currentLocation = async () => {
     if (busy || state.readOnly) return;
+    reverseAbort.current?.abort();
     ++generation.current;
     searchAbort.current?.abort();
     token.current = null;
@@ -182,6 +206,9 @@ export function DeliveryLocationSetup({
     try {
       const found = await port.requestCurrentLocation();
       setLocation(found);
+      setCandidate({ latitude: found.latitude, longitude: found.longitude });
+      setMapStatus("loading");
+      setReverseError("");
       setLocationTitle("Your current location");
       setStage("confirm");
     } catch (error) {
@@ -220,11 +247,43 @@ export function DeliveryLocationSetup({
       );
       if (abort.signal.aborted) return;
       setLocation(resolved);
+      setCandidate({
+        latitude: resolved.latitude,
+        longitude: resolved.longitude,
+      });
+      setMapStatus("loading");
+      setReverseError("");
       setLocationTitle(suggestion.primaryText);
       token.current = null;
       setStage("confirm");
     } catch {
       if (!abort.signal.aborted) setSearchPhase("error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmPin = async () => {
+    if (!candidate || !locationSearch || mapStatus !== "ready" || busy) return;
+    const pin = { ...candidate };
+    const abort = new AbortController();
+    reverseAbort.current?.abort();
+    reverseAbort.current = abort;
+    setBusy(true);
+    setReverseError("");
+    try {
+      const address = await locationSearch.reverse(pin, abort.signal);
+      if (abort.signal.aborted) return;
+      if (
+        address.latitude !== pin.latitude ||
+        address.longitude !== pin.longitude
+      )
+        throw new DeliveryLocationError("invalid");
+      setLocation(address);
+      setStage("details");
+    } catch {
+      if (!abort.signal.aborted)
+        setReverseError("We couldn't confirm that pin right now. Try again.");
     } finally {
       setBusy(false);
     }
@@ -277,11 +336,12 @@ export function DeliveryLocationSetup({
 
   const back = () => {
     if (stage === "search") closeSearch();
-    else if (stage === "confirm")
+    else if (stage === "confirm") {
+      reverseAbort.current?.abort();
       locationTitle === "Your current location"
         ? setStage("choose")
         : openSearch();
-    else if (stage === "details") guardNavigation(() => setStage("confirm"));
+    } else if (stage === "details") guardNavigation(() => setStage("confirm"));
     else if (onCancel) guardNavigation(onCancel);
   };
   return (
@@ -461,10 +521,16 @@ export function DeliveryLocationSetup({
           </button>
         </section>
       )}
-      {stage === "confirm" && location && (
+      {stage === "confirm" && location && mapInitial && (
         <section className="delivery-flow__confirm">
           <span className="delivery-setup__eyebrow">Delivery location</span>
           <h1>Confirm delivery location</h1>
+          <DeliveryPinMap
+            initial={mapInitial}
+            adapter={mapAdapter}
+            onCandidate={setCandidate}
+            onStatus={setMapStatus}
+          />
           <div className="delivery-flow__location">
             <span className="delivery-flow__pin">
               <PinIcon className="h-6 w-6" />
@@ -472,21 +538,50 @@ export function DeliveryLocationSetup({
             <strong>{locationTitle}</strong>
             <p>{locationCopy(location)}</p>
           </div>
-          <p>Make sure this is where you want your order delivered.</p>
-          <button
-            type="button"
-            className="delivery-setup__secondary"
-            onClick={() => setStage("choose")}
-          >
-            Change location
-          </button>
-          <button
-            type="button"
-            className="delivery-setup__primary"
-            onClick={() => setStage("details")}
-          >
-            Confirm this location
-          </button>
+          {mapStatus === "ready" && (
+            <p>Move the map so the pin is at your delivery entrance.</p>
+          )}
+          {reverseError && <p role="alert">{reverseError}</p>}
+          {mapStatus === "unavailable" ? (
+            <div className="delivery-flow__map-fallback">
+              <button
+                type="button"
+                className="delivery-setup__secondary"
+                onClick={openSearch}
+              >
+                Search again
+              </button>
+              <button
+                type="button"
+                className="delivery-setup__secondary"
+                onClick={() => void currentLocation()}
+                disabled={busy}
+              >
+                Try current location again
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="delivery-setup__secondary"
+                onClick={() => {
+                  reverseAbort.current?.abort();
+                  setStage("choose");
+                }}
+              >
+                Change location
+              </button>
+              <button
+                type="button"
+                className="delivery-setup__primary"
+                onClick={() => void confirmPin()}
+                disabled={mapStatus !== "ready" || busy}
+              >
+                {busy ? "Confirming location…" : "Confirm this location"}
+              </button>
+            </>
+          )}
         </section>
       )}
       {stage === "details" && location && (

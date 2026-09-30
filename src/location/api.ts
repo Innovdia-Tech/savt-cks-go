@@ -16,6 +16,7 @@ export type ResolvedPlace = DeliveryLocation & {
   postcode: string;
   countryCode: "MY";
 };
+export type ReverseAddress = Omit<ResolvedPlace, "placeId">;
 const idPattern = /^[A-Za-z0-9_-]{1,255}$/;
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -113,7 +114,41 @@ export function parseResolvedPlace(value: unknown): ResolvedPlace {
   };
 }
 
+export function parseReverseAddress(value: unknown): ReverseAddress {
+  const outer = object(value);
+  if (!keys(outer, ["data"])) return invalid();
+  const row = object(outer.data);
+  if (
+    !keys(row, [
+      "formattedAddress",
+      "addressLine1",
+      "city",
+      "state",
+      "postcode",
+      "countryCode",
+      "latitude",
+      "longitude",
+    ]) ||
+    row.countryCode !== "MY"
+  )
+    return invalid();
+  return {
+    formattedAddress: string(row.formattedAddress, 400),
+    addressLine1: string(row.addressLine1, 200, true),
+    city: string(row.city, 100, true),
+    state: string(row.state, 100, true),
+    postcode: string(row.postcode, 20, true),
+    countryCode: "MY",
+    latitude: coordinate(row.latitude, 90),
+    longitude: coordinate(row.longitude, 180),
+  };
+}
+
 export interface LocationSearchPort {
+  reverse(
+    pin: { latitude: number; longitude: number },
+    signal: AbortSignal,
+  ): Promise<ReverseAddress>;
   search(
     input: string,
     sessionToken: string,
@@ -158,13 +193,20 @@ export class LocationSearchApi implements LocationSearchPort {
     );
   }
 
+  reverse(pin: { latitude: number; longitude: number }, signal: AbortSignal) {
+    return this.request("reverse", pin, signal, parseReverseAddress);
+  }
+
   private async request<T>(
-    route: "search" | "resolve",
+    route: "search" | "resolve" | "reverse",
     body: Record<string, unknown>,
     signal: AbortSignal,
     parse: (value: unknown) => T,
   ): Promise<T> {
-    if (!uuid.test(String(body.sessionToken)) || signal.aborted)
+    if (
+      (route !== "reverse" && !uuid.test(String(body.sessionToken))) ||
+      signal.aborted
+    )
       throw new DeliveryLocationError("invalid");
     return this.session.withCredentials(async (csrf) => {
       const deadline = new AbortController();
