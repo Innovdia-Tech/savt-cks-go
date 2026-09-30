@@ -12,7 +12,7 @@ import { CustomerSessionBoundary } from "./components/session/SessionStatus";
 import { CustomerSessionController } from "./session/controller";
 import {
   DevelopmentBridgeAdapter,
-  FlutterBridgeAdapter,
+  selectCustomerBridge,
 } from "./webview/bridge";
 import "./styles.css";
 import "./customer/customer.css";
@@ -42,10 +42,15 @@ async function start() {
     const api = config.developmentApi
       ? new DevelopmentCustomerApi(production)
       : new CustomerApiClient(config.apiOrigin);
-    const bridge = config.developmentBridge
-      ? new DevelopmentBridgeAdapter(true, production)
-      : new FlutterBridgeAdapter();
-    const session = new CustomerSessionController(api, bridge);
+    const embeddedHost = Boolean(window.SavtCksGoBridge);
+    const bridge = selectCustomerBridge(
+      embeddedHost,
+      config.developmentBridge,
+      production,
+    );
+    const session = new CustomerSessionController(api, bridge, {
+      entryMode: embeddedHost ? "embedded" : "standalone",
+    });
 
     const development =
       import.meta.env.DEV && config.developmentApi
@@ -121,7 +126,7 @@ async function start() {
       <React.StrictMode>
         <CustomerSessionBoundary
           controller={session}
-          embeddedHost={Boolean(window.SavtCksGoBridge)}
+          embeddedHost={embeddedHost}
         >
           <CustomerDataProvider
             controller={customer}
@@ -157,7 +162,7 @@ async function start() {
                     <App
                       onLogout={() => void session.logout()}
                       supportWhatsApp={config.supportWhatsApp}
-                      embeddedHost={Boolean(window.SavtCksGoBridge)}
+                      embeddedHost={embeddedHost}
                     />
                   </OrdersProvider>
                 </PaymentProvider>

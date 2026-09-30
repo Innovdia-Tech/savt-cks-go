@@ -13,12 +13,34 @@ const handoff = {
   state: "A".repeat(43),
   code: "D".repeat(43),
 };
-const operations = ["status", "bootstrap", "exchange", "logout"] as const;
+const operations = [
+  "status",
+  "bootstrap",
+  "requestWebOtp",
+  "authorizeWebOtp",
+  "exchange",
+  "logout",
+] as const;
 const invoke = (
   client: CustomerApiClient,
   operation: (typeof operations)[number],
 ) => {
   if (operation === "exchange") return client.exchange(handoff);
+  if (operation === "requestWebOtp")
+    return client.requestWebOtp({
+      launchRequestId: handoff.launchRequestId,
+      mobileNumber: "+601100000001",
+    });
+  if (operation === "authorizeWebOtp")
+    return client.authorizeWebOtp({
+      protocolVersion: "1",
+      otpRequestId: "O".repeat(43),
+      launchRequestId: handoff.launchRequestId,
+      state: handoff.state,
+      codeChallenge: "B".repeat(43),
+      codeChallengeMethod: "S256",
+      otp: "123456",
+    });
   if (operation === "logout") return client.logout(session.csrfToken);
   return client[operation]();
 };
@@ -70,7 +92,13 @@ describe("customer API operation deadlines", () => {
     );
   });
 
-  it.each(["status", "bootstrap", "exchange"] as const)(
+  it.each([
+    "status",
+    "bootstrap",
+    "requestWebOtp",
+    "authorizeWebOtp",
+    "exchange",
+  ] as const)(
     "keeps the original %s deadline through successful body consumption",
     async (operation) => {
       const response = new Response(new ReadableStream());
