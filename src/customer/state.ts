@@ -72,6 +72,9 @@ export class CustomerDataController {
     this.state.addresses.find(
       (a) => a.id === this.state.selectedId && a.status === "ACTIVE",
     );
+  announce(message: string) {
+    this.update({ notice: message });
+  }
   select(id: string) {
     if (
       this.state.addresses.some((a) => a.id === id && a.status === "ACTIVE")

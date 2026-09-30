@@ -12,6 +12,13 @@ const browser = await chromium.launch({
 const base = process.env.CKS_GO_LOCAL_URL || "http://127.0.0.1:5176";
 let page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 page.on("pageerror", (error) => console.error("Browser error:", error.message));
+const capture = async (name) => {
+  if (process.env.CKS_GO_VISUAL_CAPTURE)
+    await page.screenshot({
+      path: `${process.env.CKS_GO_VISUAL_CAPTURE}/${name}.png`,
+      fullPage: true,
+    });
+};
 
 async function login(query = "") {
   await page.goto(base + query, { waitUntil: "networkidle" });
@@ -80,7 +87,7 @@ try {
   await page.getByRole("heading", { name: "Delivery address" }).waitFor();
   assert.ok(await page.getByText("Other", { exact: true }).count());
   await page
-    .getByRole("button", { name: /Work.*Jalan Pintas Penampang/s })
+    .getByRole("button", { name: /^Work.*Jalan Pintas Penampang/s })
     .click();
   await page.getByPlaceholder("Search products…").waitFor();
   console.log("UX02 browser scenarios A-C passed.");
@@ -94,6 +101,10 @@ try {
   await page.getByLabel("Centered delivery pin").waitFor();
   await page.getByRole("button", { name: "Pan map east" }).click();
   await page.getByRole("button", { name: "Confirm this location" }).click();
+  await page
+    .getByRole("button", { name: "Save changes" })
+    .scrollIntoViewIfNeeded();
+  await capture("ux02-normal-edit");
   await page.getByRole("button", { name: "Save changes" }).click();
   await page.getByRole("heading", { name: "Saved addresses" }).waitFor();
   await page.getByRole("button", { name: "Home", exact: true }).click();
@@ -151,7 +162,7 @@ try {
   await page.getByRole("button", { name: "Home", exact: true }).click();
   await page.getByText("Deliver to", { exact: true }).click();
   await page
-    .getByRole("button", { name: /Work.*Jalan Pintas Penampang/s })
+    .getByRole("button", { name: /^Work.*Jalan Pintas Penampang/s })
     .click();
   await page
     .getByRole("heading", { name: "We're not delivering here yet" })
@@ -190,15 +201,51 @@ try {
   await page.getByLabel("Centered delivery pin").waitFor();
   await page.getByRole("button", { name: "Pan map east" }).click();
   await page.getByRole("button", { name: "Confirm this location" }).click();
-  await page.getByRole("button", { name: "Save changes" }).click();
   await page
-    .getByRole("dialog", { name: "Change delivery address?" })
+    .getByText(/current delivery address and cart will stay unchanged/)
+    .waitFor();
+  await page
+    .getByRole("button", { name: "Save as new address" })
+    .scrollIntoViewIfNeeded();
+  await capture("ux02-save-as-new");
+  await page.getByRole("button", { name: "Save as new address" }).click();
+  const movedHomeDialog = page.getByRole("dialog", {
+    name: "Change delivery address?",
+  });
+  await movedHomeDialog.waitFor();
+  await capture("ux02-duplicate-dialog");
+  assert.ok(await movedHomeDialog.getByText("Jalan Pintas Penampang").count());
+  assert.ok(await movedHomeDialog.getByText(/Penampang, Sabah/).count());
+  await movedHomeDialog
     .getByRole("button", { name: "Keep current delivery address" })
     .click();
   await page.getByRole("heading", { name: "Saved addresses" }).waitFor();
-  assert.equal(
-    await page.getByRole("button", { name: "Edit Home" }).count(),
-    2,
+  await page
+    .getByText(
+      "New address saved. Your current delivery address and cart remain unchanged.",
+    )
+    .waitFor();
+  await page
+    .getByText(
+      "New address saved. Your current delivery address and cart remain unchanged.",
+    )
+    .scrollIntoViewIfNeeded();
+  await capture("ux02-keep-feedback");
+  const duplicateHomeEdits = await page
+    .getByRole("button", { name: /^Edit Home, Jalan Pintas Penampang/ })
+    .all();
+  const duplicateHomeNames = await Promise.all(
+    duplicateHomeEdits.map((button) => button.getAttribute("aria-label")),
+  );
+  assert.equal(duplicateHomeNames.length, 2);
+  assert.equal(new Set(duplicateHomeNames).size, 2);
+  assert.ok(
+    duplicateHomeNames.every((name) => name.includes("Penampang, Sabah")),
+  );
+  assert.ok(
+    duplicateHomeNames.every(
+      (name) => !/[0-9]{8}-[0-9a-f-]{27}|5\.9186|116\.08/.test(name),
+    ),
   );
   await page.getByRole("button", { name: "Home", exact: true }).click();
   await page.getByPlaceholder("Search products…").waitFor();
@@ -206,22 +253,30 @@ try {
   console.log("UX02 browser selected-pin cart preservation passed.");
 
   await page.getByText("Deliver to", { exact: true }).click();
+  await capture("ux02-duplicate-picker");
   await page.getByRole("button", { name: "＋ Add a new address" }).click();
   await confirmLocation({ moved: "west", label: "Work" });
   const outletDialog = page.getByRole("dialog", {
     name: "Clear cart and switch address?",
   });
   await outletDialog.waitFor();
-  await outletDialog.getByRole("button", { name: "Keep current cart" }).click();
+  await outletDialog
+    .getByRole("button", { name: "Keep current delivery address" })
+    .click();
   await page.getByPlaceholder("Search products…").waitFor();
+  await page
+    .getByText(
+      "New address saved. Your current delivery address and cart remain unchanged.",
+    )
+    .waitFor({ timeout: 5000 });
   assert.ok(await page.getByRole("button", { name: "Cart, 1 item" }).count());
   await page.getByText("Deliver to", { exact: true }).click();
   await page
-    .getByRole("button", { name: /Work.*Jalan Pintas Penampang/s })
+    .getByRole("button", { name: /^Work.*Jalan Pintas Penampang/s })
     .click();
   await outletDialog.waitFor();
   await outletDialog
-    .getByRole("button", { name: "Clear cart and switch" })
+    .getByRole("button", { name: "Use this address & clear cart" })
     .click();
   await page.getByPlaceholder("Search products…").waitFor();
   assert.equal(
@@ -249,19 +304,22 @@ try {
   await page.getByText("Deliver to", { exact: true }).click();
   assert.ok(
     await page
-      .getByRole("button", { name: /Other.*Jalan Pintas Penampang/s })
+      .getByRole("button", { name: /^Other.*Jalan Pintas Penampang/s })
       .count(),
   );
   await page
-    .getByRole("button", { name: /Other.*Jalan Pintas Penampang/s })
+    .getByRole("button", { name: /^Other.*Jalan Pintas Penampang/s })
     .click();
   await coverageDialog.waitFor();
   await coverageDialog
-    .getByRole("button", { name: "Change address and clear cart" })
+    .getByRole("button", { name: "Use this address & clear cart" })
     .click();
   await page
     .getByRole("heading", { name: "We're not delivering here yet" })
     .waitFor();
+  await page
+    .getByText("Delivery address changed. Your cart was cleared.")
+    .waitFor({ timeout: 5000 });
   assert.equal(
     await page.getByRole("button", { name: "Cart, 1 item" }).count(),
     0,
@@ -270,7 +328,7 @@ try {
 
   await page.getByRole("button", { name: "Choose another address" }).click();
   await page
-    .getByRole("button", { name: /Work.*Jalan Pintas Penampang/s })
+    .getByRole("button", { name: /^Work.*Jalan Pintas Penampang/s })
     .click();
   await page.getByPlaceholder("Search products…").waitFor();
   await page
@@ -291,7 +349,7 @@ try {
     .click();
   await page
     .getByRole("dialog", { name: "Change delivery address?" })
-    .getByRole("button", { name: "Change address and clear cart" })
+    .getByRole("button", { name: "Use this address & clear cart" })
     .click();
   await page.getByRole("heading", { name: "Saved addresses" }).waitFor();
   assert.equal(

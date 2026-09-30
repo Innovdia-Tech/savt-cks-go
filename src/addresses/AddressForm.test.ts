@@ -85,6 +85,14 @@ describe("AddressForm customer fields", () => {
     ).toBe(false);
     expect(
       shouldSaveLocationAsNewAddress(
+        { ...address, postcode: null },
+        { ...recipientOnly, postcode: "" },
+        address.id,
+        true,
+      ),
+    ).toBe(false);
+    expect(
+      shouldSaveLocationAsNewAddress(
         address,
         { ...address, longitude: 116.082 },
         address.id,

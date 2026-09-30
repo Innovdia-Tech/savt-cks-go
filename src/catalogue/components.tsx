@@ -877,6 +877,11 @@ export function CatalogueApp({
           </>
         ) : (
           <>
+            {customer.state.notice && (
+              <p className="catalogue-notice" role="status">
+                {customer.state.notice}
+              </p>
+            )}
             <div
               className={`catalogue-heading ${route === "home" ? "catalogue-heading--hidden" : ""}`}
             >

@@ -55,6 +55,7 @@ export function DeliveryLocationSetup({
   const checkout = useCheckout();
   const selected =
     address === undefined ? controller.selectedAddress() : address;
+  const originalSelectedId = useRef(controller.selectedAddress()?.id ?? null);
   const repairing = Boolean(selected && !hasDeliveryCoordinates(selected));
   const [port] = useState(
     () => currentLocationPort ?? new BrowserDeliveryLocationPort(),
@@ -342,12 +343,25 @@ export function DeliveryLocationSetup({
   useEffect(() => {
     if (!awaitingAssignmentId || checkout.state.transitionPhase !== "idle")
       return;
+    if (
+      savedForAssignment &&
+      originalSelectedId.current &&
+      savedForAssignment.id !== originalSelectedId.current
+    ) {
+      controller.announce(
+        state.selectedId === awaitingAssignmentId
+          ? "New address saved and selected for delivery. Your previous cart was cleared."
+          : "New address saved. Your current delivery address and cart remain unchanged.",
+      );
+    }
     setAwaitingAssignmentId(null);
     onDone();
   }, [
     awaitingAssignmentId,
     checkout.state.transitionPhase,
     state.selectedId,
+    savedForAssignment,
+    controller,
     onDone,
   ]);
 

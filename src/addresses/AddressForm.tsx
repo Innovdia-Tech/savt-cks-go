@@ -51,7 +51,11 @@ export function shouldSaveLocationAsNewAddress(
         "state",
         "postcode",
       ] as const
-    ).some((key) => (address[key] ?? null) !== (input[key] ?? null))
+    ).some((key) =>
+      key === "postcode"
+        ? (address[key] || null) !== (input[key] || null)
+        : (address[key] ?? null) !== (input[key] ?? null),
+    )
   );
 }
 export function AddressForm({
@@ -197,11 +201,21 @@ export function AddressForm({
   const fixedLocation = Boolean(
     location || (address?.latitude != null && address?.longitude != null),
   );
-  const selectedLocationWithCart = Boolean(
+  const saveAsNew = Boolean(
     address &&
-    state.selectedId === address.id &&
-    checkout?.state.lines.length &&
-    location,
+    shouldSaveLocationAsNewAddress(
+      address,
+      {
+        latitude: location?.latitude ?? address.latitude,
+        longitude: location?.longitude ?? address.longitude,
+        addressLine1: values.addressLine1,
+        city: values.city,
+        state: values.state,
+        postcode: values.postcode,
+      },
+      state.selectedId,
+      Boolean(checkout?.state.lines.length),
+    ),
   );
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -232,14 +246,6 @@ export function AddressForm({
         ?.focus();
       return;
     }
-    const saveAsNew =
-      address &&
-      shouldSaveLocationAsNewAddress(
-        address,
-        input,
-        state.selectedId,
-        Boolean(checkout?.state.lines.length),
-      );
     const saved = await controller.mutate(
       saveAsNew || !address ? "create" : "edit",
       saveAsNew ? undefined : address?.id,
@@ -278,10 +284,11 @@ export function AddressForm({
           )}
         </div>
       )}
-      {selectedLocationWithCart && (
+      {saveAsNew && (
         <p className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-950">
-          With items in your cart, changing this delivery place saves it as
-          another address. If switching would clear your cart, we’ll ask first.
+          Because your cart is using your current delivery address, this
+          location will be saved as a new address. Your current delivery address
+          and cart will stay unchanged unless you choose to switch.
         </p>
       )}
       {errors.form && (
@@ -396,7 +403,9 @@ export function AddressForm({
           {state.busy
             ? "Saving…"
             : address
-              ? "Save changes"
+              ? saveAsNew
+                ? "Save as new address"
+                : "Save changes"
               : "Save & use this address"}
         </button>
         <button

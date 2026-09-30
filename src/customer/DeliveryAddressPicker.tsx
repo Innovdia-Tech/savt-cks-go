@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Address } from "../addresses/contracts";
 import { AddressForm } from "../addresses/AddressForm";
+import { editAddressName } from "../addresses/presentation";
 import { AddressTransitionError } from "../checkout/components";
 import { useCheckout } from "../checkout/context";
 import { PinIcon, SearchIcon } from "../components/Icons";
@@ -209,7 +210,7 @@ export function DeliveryAddressPicker({
                 )
               }
               disabled={blocked || Boolean(checkingId)}
-              aria-label={`Edit ${address.label}`}
+              aria-label={editAddressName(address, active)}
             >
               Edit <span aria-hidden="true">›</span>
             </button>

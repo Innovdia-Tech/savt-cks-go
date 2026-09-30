@@ -82,7 +82,10 @@ export function CheckoutProvider({
       <AddressChangeDialog
         state={state}
         controller={controller}
-        onCommit={(addressId) => customer.select(addressId)}
+        onCommit={(addressId) => {
+          customer.select(addressId);
+          customer.announce("Delivery address changed. Your cart was cleared.");
+        }}
       />
     </Context.Provider>
   );

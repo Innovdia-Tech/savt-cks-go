@@ -4,6 +4,7 @@ import { errorMessage } from "./errors";
 import { DeliveryLocationSetup } from "./DeliveryLocationSetup";
 import { hasDeliveryCoordinates } from "./delivery-readiness";
 import { AddressForm } from "../addresses/AddressForm";
+import { editAddressName } from "../addresses/presentation";
 import { useOptionalCheckout } from "../checkout/context";
 import type { Address } from "../addresses/contracts";
 import { ChevronRightIcon } from "../components/Icons";
@@ -141,6 +142,9 @@ export function CustomerProfileScreen() {
     state.error?.category === "conflict" ||
     Boolean(checkout?.state.paymentFrozen);
   const selectedAddressId = controller.selectedAddress()?.id;
+  const activeAddresses = state.addresses.filter(
+    (address) => address.status === "ACTIVE",
+  );
   const done = () => {
     setDirty(false);
     setEditing(null);
@@ -222,40 +226,38 @@ export function CustomerProfileScreen() {
               </p>
             )}
           <section className="space-y-3">
-            {state.addresses
-              .filter((a) => a.status === "ACTIVE")
-              .map((address) => (
-                <article
-                  key={address.id}
-                  className={`customer-card ${selectedAddressId === address.id ? "customer-card--selected" : ""}`.trim()}
-                >
-                  {selectedAddressId === address.id && (
-                    <span className="customer-selected-address">
-                      Selected for delivery
-                    </span>
-                  )}
-                  <AddressText address={address} />
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      className="customer-button"
-                      aria-label={`Edit ${address.label}`}
-                      disabled={blocked}
-                      onClick={() => setEditing(address)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="customer-button"
-                      disabled={blocked || address.isDefault}
-                      onClick={() =>
-                        void controller.mutate("default", address.id)
-                      }
-                    >
-                      Set default
-                    </button>
-                  </div>
-                </article>
-              ))}
+            {activeAddresses.map((address) => (
+              <article
+                key={address.id}
+                className={`customer-card ${selectedAddressId === address.id ? "customer-card--selected" : ""}`.trim()}
+              >
+                {selectedAddressId === address.id && (
+                  <span className="customer-selected-address">
+                    Selected for delivery
+                  </span>
+                )}
+                <AddressText address={address} />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    className="customer-button"
+                    aria-label={editAddressName(address, activeAddresses)}
+                    disabled={blocked}
+                    onClick={() => setEditing(address)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="customer-button"
+                    disabled={blocked || address.isDefault}
+                    onClick={() =>
+                      void controller.mutate("default", address.id)
+                    }
+                  >
+                    Set default
+                  </button>
+                </div>
+              </article>
+            ))}
           </section>
         </>
       )}

@@ -44,7 +44,17 @@ export type CartAssignment = {
   addressRowVersion: number;
 };
 type PendingAddress = {
-  address: Pick<Address, "id" | "label" | "rowVersion">;
+  address: Pick<
+    Address,
+    | "id"
+    | "label"
+    | "rowVersion"
+    | "addressLine1"
+    | "addressLine2"
+    | "postcode"
+    | "city"
+    | "state"
+  >;
   assignment: CartAssignment | null;
 };
 type QuoteAttempt = { request: QuoteRequest; key: string };
@@ -327,6 +337,11 @@ export class CartController {
               id: address.id,
               label: address.label,
               rowVersion: address.rowVersion,
+              addressLine1: address.addressLine1,
+              addressLine2: address.addressLine2,
+              postcode: address.postcode,
+              city: address.city,
+              state: address.state,
             },
             assignment: next,
           },
@@ -352,6 +367,11 @@ export class CartController {
                 id: address.id,
                 label: address.label,
                 rowVersion: address.rowVersion,
+                addressLine1: address.addressLine1,
+                addressLine2: address.addressLine2,
+                postcode: address.postcode,
+                city: address.city,
+                state: address.state,
               },
               assignment: null,
             },
