@@ -22,6 +22,11 @@ const newPage = async (width, options = {}) => {
     `${process.env.CKS_GO_LOCAL_URL || "http://127.0.0.1:5176"}/${options.query ?? ""}`,
     { waitUntil: "networkidle" },
   );
+  await page.getByLabel("Mobile number").fill("0123456789");
+  await page.getByRole("button", { name: "Send OTP" }).click();
+  await page.getByLabel("One-time code").fill("123456");
+  await page.getByRole("button", { name: "Verify & continue" }).click();
+  await page.getByText("Deliver to", { exact: true }).waitFor();
   if (options.scenario) {
     await page.getByText("Synthetic development fixtures").click();
     await page.locator("#catalogue-scenario").selectOption(options.scenario);
