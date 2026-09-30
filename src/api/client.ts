@@ -2,8 +2,14 @@ import {
   parseApiErrorEnvelope,
   parseBootstrapEnvelope,
   parseSessionEnvelope,
+  parseWebOtpAuthorizeEnvelope,
+  parseWebOtpRequestEnvelope,
   type BootstrapData,
   type SessionData,
+  type WebOtpAuthorizeBody,
+  type WebOtpAuthorizeData,
+  type WebOtpRequestBody,
+  type WebOtpRequestData,
 } from "./contracts";
 import type { HandoffDetail } from "../webview/bridge";
 
@@ -15,6 +21,7 @@ export class ApiClientError extends Error {
     readonly category: ApiFailureCategory,
     readonly code: string,
     readonly requestId?: string,
+    readonly retryAfterSeconds?: number,
   ) {
     super(code);
     this.name = "ApiClientError";
@@ -23,6 +30,8 @@ export class ApiClientError extends Error {
 
 export interface CustomerApi {
   bootstrap(): Promise<BootstrapData>;
+  requestWebOtp(body: WebOtpRequestBody): Promise<WebOtpRequestData>;
+  authorizeWebOtp(body: WebOtpAuthorizeBody): Promise<WebOtpAuthorizeData>;
   exchange(handoff: HandoffDetail): Promise<SessionData>;
   status(): Promise<SessionData>;
   logout(csrfToken: string): Promise<void>;
@@ -55,6 +64,22 @@ export class CustomerApiClient implements CustomerApi {
         method: "POST",
         body: "{}",
       },
+    );
+  }
+
+  requestWebOtp(body: WebOtpRequestBody): Promise<WebOtpRequestData> {
+    return this.jsonRequest(
+      "/api/v1/customer/session/web-otp/request",
+      parseWebOtpRequestEnvelope,
+      { method: "POST", body: JSON.stringify(body) },
+    );
+  }
+
+  authorizeWebOtp(body: WebOtpAuthorizeBody): Promise<WebOtpAuthorizeData> {
+    return this.jsonRequest(
+      "/api/v1/customer/session/web-otp/authorize",
+      parseWebOtpAuthorizeEnvelope,
+      { method: "POST", body: JSON.stringify(body) },
     );
   }
 
@@ -159,6 +184,21 @@ export class CustomerApiClient implements CustomerApi {
     const category = error
       ? categoryFor(response.status, code)
       : "unrecoverable";
-    throw new ApiClientError(category, code, error?.requestId);
+    const retryHeader = response.headers.get("Retry-After");
+    const retryAfterSeconds =
+      retryHeader && /^\d{1,4}$/.test(retryHeader)
+        ? Number(retryHeader)
+        : undefined;
+    throw new ApiClientError(
+      category,
+      code,
+      error?.requestId,
+      code === "CUSTOMER_OTP_RATE_LIMITED" &&
+        retryAfterSeconds !== undefined &&
+        retryAfterSeconds >= 1 &&
+        retryAfterSeconds <= 3600
+        ? retryAfterSeconds
+        : undefined,
+    );
   }
 }

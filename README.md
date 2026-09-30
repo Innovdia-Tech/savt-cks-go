@@ -11,14 +11,14 @@ React + TypeScript + TailwindCSS customer-web foundation for the CKS GO grocery 
 - Server-authoritative trusted checkout quotes
 - Backend-owned payment initiation and observational payment results
 - Customer order history, detail, backend-projected tracking, receipt download and optional WhatsApp help
-- Strict customer-session bootstrap, native handoff, exchange, restoration and logout
-- Explicit loading, offline, expired-session, bridge-unavailable and error states
+- Strict customer-session bootstrap, native or browser OTP authorization, shared exchange, restoration and logout
+- Explicit loading, offline, expired-session, pilot-denied and error states
 
 Catalogue, saved addresses, cart, trusted checkout quotes, payment results and customer orders use their real customer-web contracts. Provider communication, paid Order materialization and fulfilment authority remain backend-owned. The retained mock prototype cannot be reached from the exported real catalogue/cart flow.
 
 ## Business rules represented
 
-- Users are already logged into SAVT.
+- Embedded users arrive through Savt's trusted native handoff; standalone browser users prove their Savt mobile with a one-time code before the same CKS Go session exchange.
 - An outlet is assigned automatically from the active saved delivery address.
 - One assigned outlet owns a cart; products are never remapped across outlets.
 - A different-outlet address change clears a nonempty cart only after explicit confirmation.
@@ -43,7 +43,7 @@ VITE_CKS_GO_DEVELOPMENT_API=true
 VITE_CKS_GO_DEVELOPMENT_BRIDGE=true
 ```
 
-The synthetic API session is held in memory, contains no Savt member identity or credential, and both development adapters are rejected by production builds. The switches are independent so the native bridge fail-closed state can be tested locally. Without the bridge switch, the app requires the `SavtCksGoBridge` WebView channel. Without the API switch, it uses same-origin `/api/v1/customer/session` endpoints unless `VITE_CUSTOMER_API_ORIGIN` names a validated HTTPS origin.
+The synthetic API session is held in memory, contains no Savt member identity or credential, and both development adapters are rejected by production builds. The switches are independent so the native bridge fail-closed state can be tested locally. With no `SavtCksGoBridge` WebView channel, the customer web uses the standalone mobile and OTP entry. The development API accepts the synthetic OTP `123456` only when its development switch is enabled. Without the API switch, the app uses same-origin `/api/v1/customer/session` endpoints unless `VITE_CUSTOMER_API_ORIGIN` names a validated HTTPS origin.
 
 Optional public support setting: `VITE_CKS_GO_SUPPORT_WHATSAPP=`. It defaults to empty. Configure an approved E.164-style international number with a leading `+`; missing or invalid values leave WhatsApp help inactive without blocking startup. The app constructs an HTTPS `wa.me` link with only the displayed Order number in the prefilled enquiry. Support activation remains pending until an approved number is configured and native external-opening behavior is accepted in Flutter.
 
@@ -104,7 +104,7 @@ Assignment context, CSRF, quote token and credentials stay in memory and out of 
 
 The customer web calls only CKS Go's `POST /api/v1/customer/checkout/payments` and `GET /api/v1/customer/checkout/payments/:paymentIntentId`. It never calls Savt Payment, GKash or another gateway and never creates an Order. The backend owns provider communication, authenticated finality and paid Order materialization.
 
-An accepted quote is frozen before the explicit payment action. Uncertain initiation retries retain the same UUIDv4 idempotency key; successful initiation stores one PaymentIntent and a strictly validated HTTPS checkout URL in memory. Production requests external navigation through the small native `payment-handoff` bridge message and fails closed when that capability is absent.
+An accepted quote is frozen before the explicit payment action. Uncertain initiation retries retain the same UUIDv4 idempotency key; successful initiation stores one PaymentIntent and a strictly validated HTTPS checkout URL in memory. Embedded production requests external navigation through the native `payment-handoff` bridge message. Standalone browser entry navigates to that validated HTTPS checkout URL in the browser.
 
 External return, focus and visibility trigger backend observation only. PENDING, FAILED and PAID_PROCESSING remain non-confirming. The customer sees “Order Confirmed” only for PAID with strict backend-projected Order identity. Logout/session loss clears payment memory and fences late asynchronous completion. CUST03B adds a link from that exact confirmed state to backend-backed order detail without changing this finality rule.
 
