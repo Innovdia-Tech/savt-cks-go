@@ -22,3 +22,8 @@ export interface DeliveryLocationPort {
   requestCurrentLocation(): Promise<DeliveryLocation>;
   searchLocation(query: string): Promise<DeliveryLocation>;
 }
+
+export interface CurrentLocationPort {
+  requestCurrentLocation(): Promise<DeliveryLocation>;
+  dispose?(): void;
+}

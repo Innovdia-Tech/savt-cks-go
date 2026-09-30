@@ -30,6 +30,8 @@ import { OrdersApi } from "./orders/api";
 import { OrdersController } from "./orders/state";
 import { OrdersProvider } from "./orders/context";
 import "./orders/orders.css";
+import { LocationSearchApi } from "./location/api";
+import { googlePinMapAdapter } from "./location/DeliveryPinMap";
 
 const root = createRoot(document.getElementById("root")!);
 
@@ -83,6 +85,17 @@ async function start() {
       ),
       session,
     );
+    const locationSearch = development
+      ? new (await import("./location/development")).DevelopmentLocationSearch()
+      : new LocationSearchApi(config.apiOrigin, session);
+    const currentLocation = development
+      ? new (
+          await import("./location/development")
+        ).DevelopmentCurrentLocation()
+      : undefined;
+    const pinMapAdapter = development
+      ? (await import("./location/development-map")).developmentPinMapAdapter
+      : googlePinMapAdapter(import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY ?? "");
     const catalogueApi = new CatalogueApi(
       config.apiOrigin,
       session,
@@ -115,7 +128,13 @@ async function start() {
           controller={session}
           embeddedHost={embeddedHost}
         >
-          <CustomerDataProvider controller={customer} development={development}>
+          <CustomerDataProvider
+            controller={customer}
+            development={development}
+            locationSearch={locationSearch}
+            currentLocation={currentLocation}
+            pinMapAdapter={pinMapAdapter}
+          >
             <CatalogueProvider
               controller={catalogue}
               customer={customer}
@@ -127,6 +146,7 @@ async function start() {
                     customer={customer}
                     catalogue={catalogue}
                     payment={payment}
+                    currentLocation={currentLocation}
                     bridge={
                       bridge instanceof DevelopmentBridgeAdapter
                         ? bridge

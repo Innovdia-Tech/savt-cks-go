@@ -5,7 +5,8 @@ import {
   useProductArtworkUrl,
 } from "./reference-match/useArtwork";
 import { HeaderActions, AppShell } from "../components/Layout";
-import { CustomerProfileScreen, CheckoutAddress } from "../customer/components";
+import { CustomerProfileScreen } from "../customer/components";
+import { DeliveryAddressPicker } from "../customer/DeliveryAddressPicker";
 import { DeliveryLocationSetup } from "../customer/DeliveryLocationSetup";
 import { hasDeliveryCoordinates } from "../customer/delivery-readiness";
 import { useCustomer } from "../customer/context";
@@ -14,7 +15,7 @@ import type { Product } from "./contracts";
 import type { CatalogueState } from "./state";
 import type { Screen } from "../types";
 import { useCheckout } from "../checkout/context";
-import { AddressTransitionError, CartScreen } from "../checkout/components";
+import { CartScreen } from "../checkout/components";
 import { MAX_LINE_QUANTITY } from "../checkout/contracts";
 import { QuantitySelector } from "../components/QuantitySelector";
 import { usePayment } from "../payment/context";
@@ -401,7 +402,7 @@ export function CatalogueStatus({
 }
 function readRoute() {
   const value = window.location.hash.slice(1);
-  return /^(home|categories|profile|cart|orders|detail\/[0-9a-f-]{36}|order\/[0-9a-f-]{36})$/.test(
+  return /^(home|categories|profile|delivery-address|cart|orders|detail\/[0-9a-f-]{36}|order\/[0-9a-f-]{36})$/.test(
     value,
   )
     ? value
@@ -419,9 +420,11 @@ export function routeTitle(route: string) {
           ? "Cart"
           : route === "orders"
             ? "Orders"
-            : route === "profile"
-              ? "Profile and addresses"
-              : "Browse products";
+            : route === "delivery-address"
+              ? "Delivery address"
+              : route === "profile"
+                ? "Profile and addresses"
+                : "Browse products";
   return `${page} | CKS Go`;
 }
 
@@ -746,6 +749,19 @@ export function CatalogueApp({
     );
   }
 
+  if (route === "delivery-address") {
+    return (
+      <DeliveryAddressPicker
+        onDone={() => {
+          navigate("home");
+          void controller.retry();
+        }}
+        onBack={() => navigate("home")}
+        onManage={() => navigate("profile")}
+      />
+    );
+  }
+
   return (
     <AppShell
       active={
@@ -763,6 +779,7 @@ export function CatalogueApp({
           : checkout.state.lines.reduce((sum, line) => sum + line.quantity, 0)
       }
       onNavigate={nav}
+      onDeliveryAddress={() => navigate("delivery-address")}
       onLogout={onLogout}
       screenKey={route}
       headerContext={headerContext}
@@ -811,18 +828,6 @@ export function CatalogueApp({
       >
         {route === "profile" ? (
           <>
-            <CheckoutAddress
-              catalogue
-              onManage={() => {}}
-              selecting={
-                checkout.state.transitionPhase === "checking" ||
-                checkout.state.paymentFrozen
-              }
-              onSelect={(addressId) => void checkout.selectAddress(addressId)}
-            />
-            {checkout.state.transitionPhase === "error" && (
-              <AddressTransitionError error={checkout.state.transitionError} />
-            )}
             <CustomerProfileScreen />
           </>
         ) : (
@@ -889,7 +894,7 @@ export function CatalogueApp({
                 }}
                 onBrowse={() => navigate(browseOrigin.current)}
                 deliveryAddress={cartDeliveryAddress}
-                onChangeAddress={() => navigate("profile")}
+                onChangeAddress={() => navigate("delivery-address")}
               />
             ) : route === "orders" ? (
               <OrdersScreen
@@ -1026,7 +1031,7 @@ export function CatalogueApp({
                     error={state.error}
                     hasAssignment={Boolean(state.assignment)}
                     onRetry={() => void controller.retry()}
-                    onManage={() => navigate("profile")}
+                    onManage={() => navigate("delivery-address")}
                   />
                 ) : detailId ? (
                   p && (

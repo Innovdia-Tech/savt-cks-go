@@ -22,6 +22,7 @@ type AppShellProps = {
   outlet?: Outlet | null;
   restoreScrollTop?: number;
   onScrollPositionChange?: (top: number) => void;
+  onDeliveryAddress?: () => void;
   headerContext?: ShellHeaderContext;
   developmentFixture?: boolean;
   title?: string;
@@ -46,6 +47,7 @@ export function AppShell({
   outlet,
   restoreScrollTop,
   onScrollPositionChange,
+  onDeliveryAddress,
   headerContext = screenKey === "home" ? "home" : "browse",
   developmentFixture = false,
   title,
@@ -78,7 +80,7 @@ export function AppShell({
             onCart={() => onNavigate("cart")}
             cartCount={cartCount}
             onLogout={onLogout}
-            onManage={() => onNavigate("profile")}
+            onManage={onDeliveryAddress ?? (() => onNavigate("profile"))}
             embeddedHost={embeddedHost}
           />
           {import.meta.env.DEV &&

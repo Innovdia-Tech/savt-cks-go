@@ -11,18 +11,24 @@ import type { CustomerDataController } from "../customer/state";
 import type { CatalogueController } from "./state";
 import type { PaymentController } from "../payment/state";
 import type { DevelopmentBridgeAdapter } from "../webview/bridge";
+import type {
+  DevelopmentCurrentLocation,
+  DevelopmentGpsMode,
+} from "../location/development";
 export function DevelopmentControls({
   adapter,
   customer,
   catalogue,
   payment,
   bridge,
+  currentLocation,
 }: {
   adapter: DevelopmentCatalogueAdapter;
   customer: CustomerDataController;
   catalogue: CatalogueController;
   payment: PaymentController;
   bridge?: DevelopmentBridgeAdapter;
+  currentLocation?: DevelopmentCurrentLocation;
 }) {
   const [value, setValue] = useState(adapter.currentScenario());
   const [paymentResult, setPaymentResult] = useState<PaymentResultScenario>(
@@ -32,6 +38,7 @@ export function DevelopmentControls({
     adapter.currentOrderScenario(),
   );
   const metrics = adapter.paymentMetrics();
+  const [gpsMode, setGpsMode] = useState<DevelopmentGpsMode>("available");
   return (
     <details className="catalogue-dev">
       <summary>Synthetic development fixtures</summary>
@@ -56,6 +63,24 @@ export function DevelopmentControls({
           <option key={s}>{s}</option>
         ))}
       </select>
+      {currentLocation && (
+        <>
+          <label htmlFor="location-result">Synthetic current location</label>
+          <select
+            id="location-result"
+            value={gpsMode}
+            onChange={(event) => {
+              const mode = event.target.value as DevelopmentGpsMode;
+              setGpsMode(mode);
+              currentLocation.setMode(mode);
+            }}
+          >
+            <option value="available">Available</option>
+            <option value="denied">Denied</option>
+            <option value="unavailable">Unavailable</option>
+          </select>
+        </>
+      )}
       <label htmlFor="order-result">Customer orders</label>
       <select
         id="order-result"

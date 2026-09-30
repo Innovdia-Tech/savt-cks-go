@@ -8,15 +8,15 @@ import {
 } from "./contracts";
 import { useCustomer } from "../customer/context";
 export const addressFormFields = {
-  label: "Save as",
-  recipientName: "Recipient",
-  recipientPhoneE164: "Phone (optional)",
-  addressLine1: "Address / street",
-  addressLine2: "Unit / Floor / Building (optional)",
+  addressLine2: "Unit / Floor / Lot No. (optional)",
+  addressLine1: "Building / Residence / Street",
   city: "City",
   state: "State",
   postcode: "Postcode (optional)",
-  deliveryInstructions: "Delivery instructions (optional)",
+  deliveryInstructions: "Landmark / delivery instructions (optional)",
+  label: "Save as",
+  recipientName: "Recipient",
+  recipientPhoneE164: "Phone (optional)",
 };
 
 export type AddressLocationInput = {
@@ -51,12 +51,12 @@ export function AddressForm({
         address?.recipientPhoneE164 ?? profile?.phoneE164Snapshot ?? "",
       ),
       addressLine1: String(
-        address?.addressLine1 ?? location?.addressLine1 ?? "",
+        location?.addressLine1 ?? address?.addressLine1 ?? "",
       ),
       addressLine2: String(address?.addressLine2 ?? ""),
-      city: String(address?.city ?? location?.city ?? ""),
-      state: String(address?.state ?? location?.state ?? ""),
-      postcode: String(address?.postcode ?? location?.postcode ?? ""),
+      city: String(location?.city ?? address?.city ?? ""),
+      state: String(location?.state ?? address?.state ?? ""),
+      postcode: String(location?.postcode ?? address?.postcode ?? ""),
       deliveryInstructions: String(address?.deliveryInstructions ?? ""),
     };
     return suggested;

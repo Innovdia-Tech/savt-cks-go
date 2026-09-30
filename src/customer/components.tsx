@@ -357,7 +357,6 @@ export function CustomerProfileScreen() {
 export function CheckoutAddress({
   onManage,
   catalogue = false,
-  onSelect,
   selecting = false,
 }: {
   onManage: () => void;
@@ -377,28 +376,15 @@ export function CheckoutAddress({
         <DataFeedback />
       ) : selected ? (
         <>
-          <label htmlFor="checkout-address" className="block text-sm font-bold">
-            Change selected address
-          </label>
-          <select
-            id="checkout-address"
-            className="customer-input"
-            value={selected.id}
+          <button
+            type="button"
+            className="customer-button w-full text-left"
             disabled={state.busy || selecting}
             aria-busy={selecting || undefined}
-            onChange={(e) =>
-              onSelect
-                ? onSelect(e.target.value)
-                : controller.select(e.target.value)
-            }
+            onClick={onManage}
           >
-            {active.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.label}
-                {a.isDefault ? " (default)" : ""}
-              </option>
-            ))}
-          </select>
+            Change delivery address
+          </button>
           <AddressText address={selected} />
           {selecting && (
             <p role="status">Checking the assigned outlet for this address…</p>
@@ -442,7 +428,7 @@ export function DeliveryAddressLink({ onManage }: { onManage: () => void }) {
           {state.listPhase === "loading"
             ? "Loading delivery address…"
             : a
-              ? [a.addressLine1, a.city, a.state].filter(Boolean).join(", ")
+              ? `${a.label} · ${[a.addressLine1, a.city].filter(Boolean).join(", ")}`
               : "Add a delivery address"}
         </strong>
       </span>
