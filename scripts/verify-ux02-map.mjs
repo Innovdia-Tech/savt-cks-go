@@ -43,7 +43,13 @@ const searchMap = async (page, ready = true) => {
   await page.getByPlaceholder("Building, street or postcode").fill("ITCC");
   await page.getByText("ITCC Shopping Mall").waitFor();
   await page.getByText("ITCC Shopping Mall").click();
-  if (ready) await page.getByLabel("Centered delivery pin").waitFor();
+  if (ready) {
+    await page.getByLabel("Centered delivery pin").waitFor();
+    await page
+      .locator(".delivery-flow__location")
+      .getByText("Jalan Pintas Penampang", { exact: false })
+      .waitFor();
+  }
 };
 const screenshot = async (page, file) => {
   const sizes = await page.evaluate(() => ({
@@ -84,6 +90,12 @@ const movedCenter = (
   await small.evaluate(() => window.__cksGoUx02MapCenters)
 ).at(-1);
 assert.ok(Math.abs(movedCenter.longitude - 116.082) < 1e-12);
+assert.equal(
+  await small
+    .getByRole("button", { name: "Confirm this location" })
+    .isEnabled(),
+  false,
+);
 await screenshot(small, "map-moved-320");
 await small.getByRole("button", { name: "Recenter" }).click();
 assert.deepEqual(
@@ -94,7 +106,11 @@ await small.getByRole("button", { name: "Pan map east" }).click();
 await small.evaluate(() => {
   window.__cksGoUx02Pins = [];
 });
-assert.equal((await small.evaluate(() => window.__cksGoUx02Pins)).length, 0);
+await small
+  .locator(".delivery-flow__location")
+  .getByText("Jalan Pintas Penampang", { exact: false })
+  .waitFor();
+assert.equal((await small.evaluate(() => window.__cksGoUx02Pins)).length, 1);
 await small.getByRole("button", { name: "Confirm this location" }).click();
 await small.getByRole("heading", { name: "Delivery details" }).waitFor();
 const pins = await small.evaluate(() => window.__cksGoUx02Pins);
@@ -120,7 +136,9 @@ assert.deepEqual((await gps.evaluate(() => window.__cksGoUx02MapCenters))[0], {
   longitude: 116.0818,
 });
 assert.ok(
-  (await gps.locator("body").innerText()).includes("Your current location"),
+  (await gps.locator("body").innerText()).includes(
+    "Selected delivery location",
+  ),
 );
 await screenshot(gps, "map-gps-320");
 await gps.close();
@@ -162,11 +180,14 @@ assert.equal(
 await loading.close();
 
 const partial = await newPage(390, { query: "?reverse-partial=1" });
-await searchMap(partial);
-await partial.getByRole("button", { name: "Confirm this location" }).click();
-await partial.getByRole("heading", { name: "Delivery details" }).waitFor();
-assert.equal(await partial.locator('[name="addressLine1"]').inputValue(), "");
-assert.equal(await partial.locator('[name="postcode"]').inputValue(), "");
+await searchMap(partial, false);
+await partial.getByText("We couldn't identify this location yet.").waitFor();
+assert.equal(
+  await partial
+    .getByRole("button", { name: "Confirm this location" })
+    .isEnabled(),
+  false,
+);
 await partial.close();
 
 const repair = await newPage(390, { scenario: "coordinates" });
@@ -203,9 +224,7 @@ for (const width of [390, 430, 768]) {
     });
     await page.getByRole("button", { name: "Confirm this location" }).click();
     await page.getByRole("heading", { name: "Delivery details" }).waitFor();
-    assert.deepEqual(await page.evaluate(() => window.__cksGoUx02Pins), [
-      { latitude: 5.9186, longitude: 116.0818 },
-    ]);
+    assert.deepEqual(await page.evaluate(() => window.__cksGoUx02Pins), []);
     await screenshot(page, "map-details-390");
   }
   await page.close();

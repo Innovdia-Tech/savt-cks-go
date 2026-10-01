@@ -30,11 +30,20 @@ const places: PlaceSuggestion[] = [
 export class DevelopmentLocationSearch implements LocationSearchPort {
   reverse(
     pin: { latitude: number; longitude: number },
-    _signal: AbortSignal,
+    signal: AbortSignal,
   ): Promise<ReverseAddress> {
     const testPins = (globalThis as { __cksGoUx02Pins?: Array<typeof pin> })
       .__cksGoUx02Pins;
     testPins?.push({ ...pin });
+    const testHandler = (
+      globalThis as {
+        __cksGoUx02ReverseHandler?: (
+          pin: { latitude: number; longitude: number },
+          signal: AbortSignal,
+        ) => Promise<ReverseAddress>;
+      }
+    ).__cksGoUx02ReverseHandler;
+    if (testHandler) return testHandler(pin, signal);
     if (
       typeof window !== "undefined" &&
       new URLSearchParams(window.location.search).has("reverse-partial")

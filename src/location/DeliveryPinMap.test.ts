@@ -12,18 +12,20 @@ describe("Google pin map adapter", () => {
         { latitude: 5.9186, longitude: 116.0818 },
         () => undefined,
         () => undefined,
+        () => undefined,
       ),
     ).rejects.toThrow("Map unavailable");
   });
 
-  it("centers the map, reports settled movement, and restores the original pin", async () => {
+  it("invalidates the address as soon as the center moves, before idle", async () => {
     const original = { latitude: 5.9186, longitude: 116.0818 };
     const moved = { latitude: 5.9188, longitude: 116.082 };
+    const events: string[] = [];
     const centers: (typeof original)[] = [];
     let map: FakeMap;
     class FakeMap {
       center = { lat: original.latitude, lng: original.longitude };
-      listener?: () => void;
+      listeners = new Map<string, () => void>();
       removed = false;
       constructor(
         _element: HTMLElement,
@@ -36,11 +38,11 @@ describe("Google pin map adapter", () => {
       }
       panTo(center: { lat: number; lng: number }) {
         this.center = center;
-        this.listener?.();
+        this.listeners.get("center_changed")?.();
+        this.listeners.get("idle")?.();
       }
       addListener(event: string, callback: () => void) {
-        expect(event).toBe("idle");
-        this.listener = callback;
+        this.listeners.set(event, callback);
         return {
           remove: () => {
             this.removed = true;
@@ -59,8 +61,12 @@ describe("Google pin map adapter", () => {
     const mounted = await adapter.mount(
       element,
       original,
-      (center) => centers.push(center),
+      (center) => {
+        events.push("idle");
+        centers.push(center);
+      },
       unavailable,
+      () => events.push("moving"),
     );
     expect(element.replaceChildren).toHaveBeenCalledOnce();
     expect(map!.options).toMatchObject({
@@ -71,6 +77,7 @@ describe("Google pin map adapter", () => {
       mapTypeControl: false,
     });
     map!.panTo({ lat: moved.latitude, lng: moved.longitude });
+    expect(events).toEqual(["moving", "idle"]);
     expect(centers).toEqual([moved]);
     mounted.recenter(original);
     expect(centers).toEqual([moved, original]);

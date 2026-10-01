@@ -12,6 +12,7 @@ export interface PinMapAdapter {
     center: PinCoordinate,
     onIdle: (center: PinCoordinate) => void,
     onFailure: () => void,
+    onMove: () => void,
   ): Promise<PinMapInstance>;
 }
 
@@ -89,7 +90,7 @@ function loadGoogleMaps(key: string): Promise<GoogleMaps> {
 
 export function googlePinMapAdapter(key: string): PinMapAdapter {
   return {
-    async mount(element, center, onIdle, onFailure) {
+    async mount(element, center, onIdle, onFailure, onMove) {
       const maps = await loadGoogleMaps(key);
       element.replaceChildren();
       authFailures.add(onFailure);
@@ -113,12 +114,14 @@ export function googlePinMapAdapter(key: string): PinMapAdapter {
         if (current)
           onIdle({ latitude: current.lat(), longitude: current.lng() });
       });
+      const movementListener = map.addListener("center_changed", onMove);
       return {
         recenter(next) {
           map.panTo({ lat: next.latitude, lng: next.longitude });
         },
         dispose() {
           listener.remove();
+          movementListener.remove();
           authFailures.delete(onFailure);
         },
       };
@@ -130,20 +133,29 @@ export function DeliveryPinMap({
   initial,
   adapter,
   onCandidate,
+  onMove,
   onStatus,
+  onRecenter,
 }: {
   initial: PinCoordinate;
   adapter: PinMapAdapter;
   onCandidate: (center: PinCoordinate) => void;
+  onMove: () => void;
   onStatus: (status: MapStatus) => void;
+  onRecenter: () => Promise<PinCoordinate | null>;
 }) {
   const canvas = useRef<HTMLDivElement>(null);
   const instance = useRef<PinMapInstance | null>(null);
   const [status, setStatus] = useState<MapStatus>("loading");
+  const [recentering, setRecentering] = useState(false);
   const onCandidateRef = useRef(onCandidate);
+  const onMoveRef = useRef(onMove);
   const onStatusRef = useRef(onStatus);
+  const onRecenterRef = useRef(onRecenter);
   onCandidateRef.current = onCandidate;
+  onMoveRef.current = onMove;
   onStatusRef.current = onStatus;
+  onRecenterRef.current = onRecenter;
 
   useEffect(() => {
     let active = true;
@@ -162,6 +174,9 @@ export function DeliveryPinMap({
           if (active) onCandidateRef.current(center);
         },
         () => update("unavailable"),
+        () => {
+          if (active) onMoveRef.current();
+        },
       )
       .then((mounted) => {
         if (!active) return mounted.dispose();
@@ -208,9 +223,14 @@ export function DeliveryPinMap({
         <button
           type="button"
           className="delivery-pin-map__recenter"
+          disabled={recentering}
           onClick={() => {
-            instance.current?.recenter(initial);
-            onCandidateRef.current(initial);
+            onMoveRef.current();
+            setRecentering(true);
+            void onRecenterRef.current().then((next) => {
+              if (next) instance.current?.recenter(next);
+              setRecentering(false);
+            });
           }}
         >
           Recenter

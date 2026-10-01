@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Address } from "../addresses/contracts";
 import { AddressForm } from "../addresses/AddressForm";
 import { AddressTransitionError } from "../checkout/components";
@@ -90,23 +90,17 @@ export function DeliveryLocationSetup({
         }
       : null,
   );
-  const mapInitial = useMemo(
-    () =>
-      location
-        ? { latitude: location.latitude, longitude: location.longitude }
-        : null,
-    [location],
-  );
-  const [locationTitle, setLocationTitle] = useState(
-    initialMode === "confirm" ? (selected?.label ?? "Saved address") : "",
-  );
-  const [candidate, setCandidate] = useState<PinCoordinate | null>(
+  const [mapInitial, setMapInitial] = useState<PinCoordinate | null>(
     initialMode === "confirm" && selected && hasDeliveryCoordinates(selected)
       ? { latitude: selected.latitude!, longitude: selected.longitude! }
       : null,
   );
+  const [returnToChoose, setReturnToChoose] = useState(false);
+  const [candidate, setCandidate] = useState<PinCoordinate | null>(null);
+  const [previewPhase, setPreviewPhase] = useState<
+    "pending" | "resolved" | "error"
+  >("pending");
   const [mapStatus, setMapStatus] = useState<MapStatus>("loading");
-  const [reverseError, setReverseError] = useState("");
   const [busy, setBusy] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [savedForAssignment, setSavedForAssignment] = useState<Address | null>(
@@ -122,6 +116,9 @@ export function DeliveryLocationSetup({
   const searchAbort = useRef<AbortController | null>(null);
   const resolveAbort = useRef<AbortController | null>(null);
   const reverseAbort = useRef<AbortController | null>(null);
+  const reverseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pinGeneration = useRef(0);
+  const resolvedGeneration = useRef(-1);
   const generation = useRef(0);
   const currentStarted = useRef(false);
   const input = useRef<HTMLInputElement>(null);
@@ -131,6 +128,7 @@ export function DeliveryLocationSetup({
       searchAbort.current?.abort();
       resolveAbort.current?.abort();
       reverseAbort.current?.abort();
+      if (reverseTimer.current) clearTimeout(reverseTimer.current);
       port.dispose?.();
     },
     [port],
@@ -140,7 +138,7 @@ export function DeliveryLocationSetup({
   }, [stage]);
 
   const openSearch = () => {
-    reverseAbort.current?.abort();
+    invalidatePin();
     token.current = crypto.randomUUID();
     setQuery("");
     setSuggestions([]);
@@ -221,7 +219,7 @@ export function DeliveryLocationSetup({
 
   const currentLocation = async () => {
     if (busy || state.readOnly) return;
-    reverseAbort.current?.abort();
+    invalidatePin();
     ++generation.current;
     searchAbort.current?.abort();
     token.current = null;
@@ -230,10 +228,9 @@ export function DeliveryLocationSetup({
     try {
       const found = await port.requestCurrentLocation();
       setLocation(found);
-      setCandidate({ latitude: found.latitude, longitude: found.longitude });
+      setMapInitial({ latitude: found.latitude, longitude: found.longitude });
       setMapStatus("loading");
-      setReverseError("");
-      setLocationTitle("Your current location");
+      setReturnToChoose(true);
       setStage("confirm");
     } catch (error) {
       if (error instanceof DeliveryLocationError && error.kind === "denied") {
@@ -270,14 +267,14 @@ export function DeliveryLocationSetup({
         abort.signal,
       );
       if (abort.signal.aborted) return;
+      invalidatePin();
       setLocation(resolved);
-      setCandidate({
+      setMapInitial({
         latitude: resolved.latitude,
         longitude: resolved.longitude,
       });
       setMapStatus("loading");
-      setReverseError("");
-      setLocationTitle(suggestion.primaryText);
+      setReturnToChoose(false);
       token.current = null;
       setStage("confirm");
     } catch {
@@ -287,30 +284,87 @@ export function DeliveryLocationSetup({
     }
   };
 
-  const confirmPin = async () => {
-    if (!candidate || !locationSearch || mapStatus !== "ready" || busy) return;
-    const pin = { ...candidate };
-    const abort = new AbortController();
+  function invalidatePin() {
+    ++pinGeneration.current;
     reverseAbort.current?.abort();
-    reverseAbort.current = abort;
-    setBusy(true);
-    setReverseError("");
+    if (reverseTimer.current) clearTimeout(reverseTimer.current);
+    reverseTimer.current = null;
+    setCandidate(null);
+    setPreviewPhase("pending");
+  }
+
+  const pinIdle = (pin: PinCoordinate) => {
+    invalidatePin();
+    const requestGeneration = pinGeneration.current;
+    setCandidate(pin);
+    reverseTimer.current = setTimeout(() => {
+      reverseTimer.current = null;
+      if (!locationSearch || pinGeneration.current !== requestGeneration)
+        return;
+      const abort = new AbortController();
+      reverseAbort.current = abort;
+      void locationSearch
+        .reverse(pin, abort.signal)
+        .then((address) => {
+          if (
+            abort.signal.aborted ||
+            pinGeneration.current !== requestGeneration
+          )
+            return;
+          if (
+            address.latitude !== pin.latitude ||
+            address.longitude !== pin.longitude ||
+            !address.formattedAddress?.trim() ||
+            !address.addressLine1?.trim() ||
+            !address.city?.trim() ||
+            !address.state?.trim()
+          ) {
+            setPreviewPhase("error");
+            return;
+          }
+          setLocation(address);
+          resolvedGeneration.current = requestGeneration;
+          setPreviewPhase("resolved");
+        })
+        .catch(() => {
+          if (
+            !abort.signal.aborted &&
+            pinGeneration.current === requestGeneration
+          )
+            setPreviewPhase("error");
+        })
+        .finally(() => {
+          if (reverseAbort.current === abort) reverseAbort.current = null;
+        });
+    }, 500);
+  };
+
+  const recenterPin = async (): Promise<PinCoordinate | null> => {
+    const requestGeneration = pinGeneration.current;
     try {
-      const address = await locationSearch.reverse(pin, abort.signal);
-      if (abort.signal.aborted) return;
-      if (
-        address.latitude !== pin.latitude ||
-        address.longitude !== pin.longitude
-      )
-        throw new DeliveryLocationError("invalid");
-      setLocation(address);
-      setStage("details");
+      const found = await port.requestCurrentLocation();
+      if (pinGeneration.current !== requestGeneration) return null;
+      return { latitude: found.latitude, longitude: found.longitude };
     } catch {
-      if (!abort.signal.aborted)
-        setReverseError("We couldn't confirm that pin right now. Try again.");
-    } finally {
-      setBusy(false);
+      if (pinGeneration.current === requestGeneration) setPreviewPhase("error");
+      return null;
     }
+  };
+
+  const confirmPin = () => {
+    if (
+      !candidate ||
+      !location ||
+      previewPhase !== "resolved" ||
+      mapStatus !== "ready" ||
+      busy ||
+      resolvedGeneration.current !== pinGeneration.current ||
+      location.latitude !== candidate.latitude ||
+      location.longitude !== candidate.longitude
+    )
+      return;
+    setMapInitial(candidate);
+    setStage("details");
   };
 
   const finishSave = async (saved: Address) => {
@@ -378,10 +432,8 @@ export function DeliveryLocationSetup({
   const back = () => {
     if (stage === "search") closeSearch();
     else if (stage === "confirm") {
-      reverseAbort.current?.abort();
-      locationTitle === "Your current location"
-        ? setStage("choose")
-        : openSearch();
+      invalidatePin();
+      returnToChoose ? setStage("choose") : openSearch();
     } else if (stage === "details") guardNavigation(() => setStage("confirm"));
     else if (onCancel) guardNavigation(onCancel);
   };
@@ -569,20 +621,34 @@ export function DeliveryLocationSetup({
           <DeliveryPinMap
             initial={mapInitial}
             adapter={mapAdapter}
-            onCandidate={setCandidate}
-            onStatus={setMapStatus}
+            onCandidate={pinIdle}
+            onMove={invalidatePin}
+            onRecenter={recenterPin}
+            onStatus={(status) => {
+              setMapStatus(status);
+              if (status === "ready") pinIdle(mapInitial);
+              if (status === "unavailable") invalidatePin();
+            }}
           />
           <div className="delivery-flow__location">
             <span className="delivery-flow__pin">
               <PinIcon className="h-6 w-6" />
             </span>
-            <strong>{locationTitle}</strong>
-            <p>{locationCopy(location)}</p>
+            <strong>Selected delivery location</strong>
+            {previewPhase === "resolved" ? (
+              <p>{locationCopy(location)}</p>
+            ) : previewPhase === "pending" ? (
+              <p role="status">Finding this address…</p>
+            ) : (
+              <div role="alert">
+                <p>We couldn't identify this location yet.</p>
+                <p>Move the pin slightly or search for another location.</p>
+              </div>
+            )}
           </div>
           {mapStatus === "ready" && (
-            <p>Move the map so the pin is at your delivery entrance.</p>
+            <p>Move the map until the pin is at your delivery entrance.</p>
           )}
-          {reverseError && <p role="alert">{reverseError}</p>}
           {mapStatus === "unavailable" ? (
             <div className="delivery-flow__map-fallback">
               <button
@@ -607,19 +673,24 @@ export function DeliveryLocationSetup({
                 type="button"
                 className="delivery-setup__secondary"
                 onClick={() => {
-                  reverseAbort.current?.abort();
-                  setStage("choose");
+                  openSearch();
                 }}
               >
-                Change location
+                Search another location
               </button>
               <button
                 type="button"
                 className="delivery-setup__primary"
-                onClick={() => void confirmPin()}
-                disabled={mapStatus !== "ready" || busy}
+                onClick={confirmPin}
+                disabled={
+                  mapStatus !== "ready" ||
+                  busy ||
+                  previewPhase !== "resolved" ||
+                  !candidate ||
+                  resolvedGeneration.current !== pinGeneration.current
+                }
               >
-                {busy ? "Confirming location…" : "Confirm this location"}
+                Confirm this location
               </button>
             </>
           )}
