@@ -35,7 +35,9 @@ export function CatalogueProvider({
         phase:
           c.profilePhase === "error" || c.listPhase === "error"
             ? "error"
-            : c.profilePhase === "loading" || c.listPhase === "loading"
+            : c.profilePhase === "loading" ||
+                c.listPhase === "loading" ||
+                c.busy
               ? "loading"
               : "ready",
         readOnly: c.readOnly,

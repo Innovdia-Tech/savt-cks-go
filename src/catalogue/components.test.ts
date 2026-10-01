@@ -179,13 +179,20 @@ it.each([
   },
 );
 
-it("uses the reviewer-approved Home serviceability copy", () => {
+it("renders a saved selected address with a warm no-coverage Home action", () => {
   const unavailable = renderToStaticMarkup(
     createElement(CatalogueStatus, {
-      phase: "error",
+      phase: "no-service",
       error: "CUSTOMER_NO_SERVICEABLE_OUTLET",
+      selectedAddress: {
+        label: "Home",
+        addressLine1: "Lot 12, Jalan Pintas",
+        city: "Tuaran",
+        state: "Sabah",
+      },
       onRetry: () => {},
       onManage: () => {},
+      onAdd: () => {},
     }),
   );
   const failed = renderToStaticMarkup(
@@ -197,8 +204,12 @@ it("uses the reviewer-approved Home serviceability copy", () => {
     }),
   );
 
-  expect(unavailable).toContain("Delivery is not available for this address.");
-  expect(unavailable).toContain("Change address");
+  expect(unavailable).toContain("We&#x27;re not delivering here yet");
+  expect(unavailable).toContain("Your address has been saved");
+  expect(unavailable).toContain("Lot 12, Jalan Pintas");
+  expect(unavailable).toContain("Choose another address");
+  expect(unavailable).toContain("Add new address");
+  expect(unavailable).not.toContain("CUSTOMER_NO_SERVICEABLE_OUTLET");
   expect(failed).toContain(
     "We couldn&#x27;t check delivery availability. Please try again.",
   );

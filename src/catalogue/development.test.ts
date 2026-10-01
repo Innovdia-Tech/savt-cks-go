@@ -26,6 +26,24 @@ async function setup(scenario = "success", now = Date.now) {
 }
 it("cannot construct a production fixture adapter", () =>
   expect(() => new DevelopmentCatalogueAdapter(true)).toThrow());
+it("uses a moved synthetic pin to demonstrate no coverage for only that saved address", async () => {
+  const { adapter, api } = await setup();
+  adapter.setAddressLookup((id) =>
+    id === address.id ? { latitude: 5.9186, longitude: 116.082 } : undefined,
+  );
+  await expect(api.assign(address)).rejects.toMatchObject({
+    code: "CUSTOMER_NO_SERVICEABLE_OUTLET",
+  });
+  await expect(
+    api.assign({ id: "44444444-4444-4444-8444-444444444444", rowVersion: 1 }),
+  ).resolves.toMatchObject({ outlet: { availability: "AVAILABLE" } });
+});
+it("uses a second synthetic pin for a different authoritative outlet", async () => {
+  const { adapter, api } = await setup();
+  adapter.setAddressLookup(() => ({ latitude: 5.9186, longitude: 116.0816 }));
+  const assigned = await api.assign(address);
+  expect(assigned.outlet.displayReference).toBe("DEMO-02");
+});
 it("supplies strict paginated data, development artwork URLs and detail", async () => {
   const { api } = await setup();
   const a = await api.assign(address);

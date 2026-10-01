@@ -9,6 +9,7 @@ import { CustomerProfileScreen } from "../customer/components";
 import { DeliveryAddressPicker } from "../customer/DeliveryAddressPicker";
 import { DeliveryLocationSetup } from "../customer/DeliveryLocationSetup";
 import { hasDeliveryCoordinates } from "../customer/delivery-readiness";
+import type { Address } from "../addresses/contracts";
 import { useCustomer } from "../customer/context";
 import { useCatalogue } from "./context";
 import type { Product } from "./contracts";
@@ -324,15 +325,58 @@ export function CatalogueStatus({
   phase,
   error,
   hasAssignment = false,
+  selectedAddress,
   onRetry,
   onManage,
+  onAdd,
 }: {
   phase: CatalogueState["phase"];
   error: string | null;
   hasAssignment?: boolean;
+  selectedAddress?: Pick<Address, "label" | "addressLine1" | "city" | "state">;
   onRetry: () => void;
   onManage: () => void;
+  onAdd?: () => void;
 }) {
+  if (phase === "no-service")
+    return (
+      <section
+        className="catalogue-no-service"
+        aria-label="Delivery availability"
+      >
+        {selectedAddress && (
+          <div className="catalogue-no-service__address">
+            <span>Delivering to</span>
+            <strong>{selectedAddress.label}</strong>
+            <p>
+              {[
+                selectedAddress.addressLine1,
+                selectedAddress.city,
+                selectedAddress.state,
+              ]
+                .filter(Boolean)
+                .join(", ")}
+            </p>
+          </div>
+        )}
+        <SystemState
+          tone="empty"
+          title="We're not delivering here yet"
+          description="Your address has been saved, but CKS Go doesn't currently have an available outlet that can deliver here. Choose another delivery address to continue shopping."
+          actionLabel="Choose another address"
+          onAction={onManage}
+        />
+        {onAdd && (
+          <button
+            type="button"
+            className="catalogue-no-service__add"
+            onClick={onAdd}
+          >
+            + Add new address
+          </button>
+        )}
+      </section>
+    );
   const phases: Partial<Record<CatalogueState["phase"], [string, string]>> = {
     "address-loading": [
       "Loading your address",
@@ -402,7 +446,7 @@ export function CatalogueStatus({
 }
 function readRoute() {
   const value = window.location.hash.slice(1);
-  return /^(home|categories|profile|delivery-address|cart|orders|detail\/[0-9a-f-]{36}|order\/[0-9a-f-]{36})$/.test(
+  return /^(home|categories|profile|delivery-address(?:\/new)?|cart|orders|detail\/[0-9a-f-]{36}|order\/[0-9a-f-]{36})$/.test(
     value,
   )
     ? value
@@ -420,7 +464,7 @@ export function routeTitle(route: string) {
           ? "Cart"
           : route === "orders"
             ? "Orders"
-            : route === "delivery-address"
+            : route === "delivery-address" || route === "delivery-address/new"
               ? "Delivery address"
               : route === "profile"
                 ? "Profile and addresses"
@@ -749,9 +793,10 @@ export function CatalogueApp({
     );
   }
 
-  if (route === "delivery-address") {
+  if (route === "delivery-address" || route === "delivery-address/new") {
     return (
       <DeliveryAddressPicker
+        initialAdd={route === "delivery-address/new"}
         onDone={() => {
           navigate("home");
           void controller.retry();
@@ -832,6 +877,11 @@ export function CatalogueApp({
           </>
         ) : (
           <>
+            {customer.state.notice && (
+              <p className="catalogue-notice" role="status">
+                {customer.state.notice}
+              </p>
+            )}
             <div
               className={`catalogue-heading ${route === "home" ? "catalogue-heading--hidden" : ""}`}
             >
@@ -912,7 +962,7 @@ export function CatalogueApp({
               />
             ) : (
               <>
-                {browse && (
+                {browse && state.phase === "ready" && (
                   <SearchField
                     className="catalogue-search"
                     id="catalogue-search"
@@ -1030,8 +1080,10 @@ export function CatalogueApp({
                     phase={state.phase}
                     error={state.error}
                     hasAssignment={Boolean(state.assignment)}
+                    selectedAddress={selectedAddress}
                     onRetry={() => void controller.retry()}
                     onManage={() => navigate("delivery-address")}
+                    onAdd={() => navigate("delivery-address/new")}
                   />
                 ) : detailId ? (
                   p && (

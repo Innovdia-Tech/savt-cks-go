@@ -40,7 +40,7 @@ export function DeliveryLocationSetup({
   onDone: () => void;
   address?: Address | null;
   onCancel?: () => void;
-  initialMode?: "choose" | "search" | "current";
+  initialMode?: "choose" | "search" | "current" | "confirm";
 }) {
   const {
     state,
@@ -53,22 +53,43 @@ export function DeliveryLocationSetup({
   const [fallbackMapAdapter] = useState(() => googlePinMapAdapter(""));
   const mapAdapter = pinMapAdapter ?? fallbackMapAdapter;
   const checkout = useCheckout();
-  const originalIds = useRef(new Set(state.addresses.map((item) => item.id)));
-  const originalIdsReady = useRef(state.listPhase === "ready");
   const selected =
     address === undefined ? controller.selectedAddress() : address;
+  const originalSelectedId = useRef(controller.selectedAddress()?.id ?? null);
   const repairing = Boolean(selected && !hasDeliveryCoordinates(selected));
   const [port] = useState(
     () => currentLocationPort ?? new BrowserDeliveryLocationPort(),
   );
   const [stage, setStage] = useState<Stage>(
-    initialMode === "search" ? "search" : "choose",
+    initialMode === "search"
+      ? "search"
+      : initialMode === "confirm"
+        ? "confirm"
+        : "choose",
   );
   const [query, setQuery] = useState("");
   const [composing, setComposing] = useState(false);
   const [searchPhase, setSearchPhase] = useState<SearchPhase>("initial");
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
-  const [location, setLocation] = useState<DeliveryLocation | null>(null);
+  const [location, setLocation] = useState<DeliveryLocation | null>(() =>
+    initialMode === "confirm" && selected && hasDeliveryCoordinates(selected)
+      ? {
+          latitude: selected.latitude!,
+          longitude: selected.longitude!,
+          formattedAddress: [
+            selected.addressLine1,
+            selected.city,
+            selected.state,
+          ]
+            .filter(Boolean)
+            .join(", "),
+          addressLine1: selected.addressLine1,
+          city: selected.city,
+          state: selected.state,
+          postcode: selected.postcode ?? undefined,
+        }
+      : null,
+  );
   const mapInitial = useMemo(
     () =>
       location
@@ -76,12 +97,21 @@ export function DeliveryLocationSetup({
         : null,
     [location],
   );
-  const [locationTitle, setLocationTitle] = useState("");
-  const [candidate, setCandidate] = useState<PinCoordinate | null>(null);
+  const [locationTitle, setLocationTitle] = useState(
+    initialMode === "confirm" ? (selected?.label ?? "Saved address") : "",
+  );
+  const [candidate, setCandidate] = useState<PinCoordinate | null>(
+    initialMode === "confirm" && selected && hasDeliveryCoordinates(selected)
+      ? { latitude: selected.latitude!, longitude: selected.longitude! }
+      : null,
+  );
   const [mapStatus, setMapStatus] = useState<MapStatus>("loading");
   const [reverseError, setReverseError] = useState("");
   const [busy, setBusy] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [savedForAssignment, setSavedForAssignment] = useState<Address | null>(
+    null,
+  );
   const [awaitingAssignmentId, setAwaitingAssignmentId] = useState<
     string | null
   >(null);
@@ -105,12 +135,6 @@ export function DeliveryLocationSetup({
     },
     [port],
   );
-  useEffect(() => {
-    if (!originalIdsReady.current && state.listPhase === "ready") {
-      originalIds.current = new Set(state.addresses.map((item) => item.id));
-      originalIdsReady.current = true;
-    }
-  }, [state.addresses, state.listPhase]);
   useEffect(() => {
     if (stage === "search") input.current?.focus();
   }, [stage]);
@@ -289,12 +313,10 @@ export function DeliveryLocationSetup({
     }
   };
 
-  const finishSave = async () => {
+  const finishSave = async (saved: Address) => {
+    setSavedForAssignment(saved);
     const snapshot = controller.getSnapshot();
-    const savedId =
-      selected?.id ??
-      snapshot.addresses.find((item) => !originalIds.current.has(item.id))?.id;
-    if (!savedId || snapshot.listPhase !== "ready") {
+    if (snapshot.listPhase !== "ready") {
       setSaveError(
         "Address saved. Reload your addresses before selecting it for delivery.",
       );
@@ -302,25 +324,44 @@ export function DeliveryLocationSetup({
     }
     setBusy(true);
     setSaveError("");
-    const result = await checkout.selectAddress(savedId);
+    const result = await checkout.selectAddress(saved.id);
     setBusy(false);
     if (result === "committed") onDone();
-    else if (result === "confirmation") setAwaitingAssignmentId(savedId);
-    else if (result === "error")
-      setSaveError(
-        "We couldn’t check delivery for this address. Please try again.",
-      );
+    else if (result === "confirmation") setAwaitingAssignmentId(saved.id);
+    else if (result === "error") {
+      if (!checkout.state.lines.length) {
+        controller.select(saved.id);
+        onDone();
+      } else {
+        setSaveError(
+          "Address saved. We couldn’t check delivery yet. Try again or keep your current delivery address.",
+        );
+      }
+    }
   };
 
   useEffect(() => {
     if (!awaitingAssignmentId || checkout.state.transitionPhase !== "idle")
       return;
+    if (
+      savedForAssignment &&
+      originalSelectedId.current &&
+      savedForAssignment.id !== originalSelectedId.current
+    ) {
+      controller.announce(
+        state.selectedId === awaitingAssignmentId
+          ? "New address saved and selected for delivery. Your previous cart was cleared."
+          : "New address saved. Your current delivery address and cart remain unchanged.",
+      );
+    }
     setAwaitingAssignmentId(null);
-    if (state.selectedId === awaitingAssignmentId) onDone();
+    onDone();
   }, [
     awaitingAssignmentId,
     checkout.state.transitionPhase,
     state.selectedId,
+    savedForAssignment,
+    controller,
     onDone,
   ]);
 
@@ -598,13 +639,39 @@ export function DeliveryLocationSetup({
               Change location
             </button>
           </div>
-          <DataFeedback onRetried={() => void finishSave()} />
-          <AddressForm
-            address={selected ?? undefined}
-            location={location}
-            onDone={() => void finishSave()}
-            onCancel={() => setStage("confirm")}
-          />
+          <DataFeedback onRetried={(saved) => void finishSave(saved)} />
+          {!savedForAssignment && (
+            <AddressForm
+              address={selected ?? undefined}
+              location={location}
+              onDone={(saved) => {
+                if (saved) void finishSave(saved);
+              }}
+              onDeleted={onDone}
+              onCancel={() => setStage("confirm")}
+            />
+          )}
+          {savedForAssignment &&
+            !busy &&
+            !awaitingAssignmentId &&
+            saveError && (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  className="customer-button customer-primary"
+                  onClick={() => void finishSave(savedForAssignment)}
+                >
+                  Try delivery check again
+                </button>
+                <button
+                  type="button"
+                  className="customer-button"
+                  onClick={onDone}
+                >
+                  Keep current delivery address
+                </button>
+              </div>
+            )}
           {busy && <p role="status">Checking delivery for this address…</p>}
           {saveError && (
             <p role="alert" className="delivery-setup__message">

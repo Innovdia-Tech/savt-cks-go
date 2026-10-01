@@ -56,6 +56,27 @@ const bind = (c: CatalogueController, patch: Record<string, unknown> = {}) =>
     ...patch,
   } as never);
 describe("assignment state isolation", () => {
+  it("treats zero coverage as an address availability state and drops old catalogue data", async () => {
+    const { c, api } = setup();
+    bind(c);
+    await settle();
+    expect(c.getSnapshot().phase).toBe("ready");
+    vi.mocked(api.assign).mockRejectedValueOnce(
+      new CatalogueError("CUSTOMER_NO_SERVICEABLE_OUTLET"),
+    );
+
+    bind(c, { address: { ...address, rowVersion: 2 } });
+    await settle();
+
+    expect(c.getSnapshot()).toMatchObject({
+      phase: "no-service",
+      assignment: null,
+      categories: [],
+      products: null,
+    });
+    c.dispose();
+  });
+
   it("gates loading, no active address and missing coordinates", async () => {
     const { c, api } = setup();
     bind(c, { phase: "loading" });

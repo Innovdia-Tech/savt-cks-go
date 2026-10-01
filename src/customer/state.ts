@@ -72,6 +72,9 @@ export class CustomerDataController {
     this.state.addresses.find(
       (a) => a.id === this.state.selectedId && a.status === "ACTIVE",
     );
+  announce(message: string) {
+    this.update({ notice: message });
+  }
   select(id: string) {
     if (
       this.state.addresses.some((a) => a.id === id && a.status === "ACTIVE")
@@ -131,7 +134,7 @@ export class CustomerDataController {
     kind: AddressAction,
     id?: string,
     input?: AddressInput,
-  ): Promise<boolean> {
+  ): Promise<Address | false> {
     if (
       this.state.busy ||
       this.pending ||
@@ -155,11 +158,11 @@ export class CustomerDataController {
     }
     return this.execute();
   }
-  async retryOperation(): Promise<boolean> {
+  async retryOperation(): Promise<Address | false> {
     if (!this.pending || this.state.busy) return false;
     return this.execute();
   }
-  private async execute(): Promise<boolean> {
+  private async execute(): Promise<Address | false> {
     const op = this.pending!;
     const generation = ++this.generation;
     this.update({
@@ -169,9 +172,11 @@ export class CustomerDataController {
       notice: "",
     });
     try {
-      await this.api.mutate(op);
+      const saved = await this.api.mutate(op);
       if (generation !== this.generation) return false;
       this.pending = undefined;
+      if (op.kind === "create" && this.selectedAddress())
+        this.explicitSelection = true;
       this.update({ notice: "Address saved.", listPhase: "loading" });
       try {
         const addresses = await this.api.addresses();
@@ -187,7 +192,9 @@ export class CustomerDataController {
         });
       }
       this.update({ busy: false });
-      return true;
+      return this.state.listPhase === "ready"
+        ? (this.state.addresses.find((item) => item.id === saved.id) ?? false)
+        : false;
     } catch (error) {
       if (generation !== this.generation) return false;
       const safe = this.safeError(error);

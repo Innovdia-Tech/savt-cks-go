@@ -115,6 +115,9 @@ export class DevelopmentCatalogueAdapter {
   private paymentResults = 0;
   private orderScenario: OrderScenario = "active";
   private readonly repairedAddressIds = new Set<string>();
+  private addressLookup?: (
+    id: string,
+  ) => { latitude: number | null; longitude: number | null } | undefined;
   constructor(
     production: boolean,
     private readonly now = Date.now,
@@ -139,6 +142,13 @@ export class DevelopmentCatalogueAdapter {
   }
   currentScenario() {
     return this.scenario;
+  }
+  setAddressLookup(
+    lookup: (
+      id: string,
+    ) => { latitude: number | null; longitude: number | null } | undefined,
+  ) {
+    this.addressLookup = lookup;
   }
   expire() {
     this.assignment = null;
@@ -515,13 +525,20 @@ export class DevelopmentCatalogueAdapter {
       if (!h.get("x-cks-csrf")) return failure(403, "CUSTOMER_CSRF_INVALID");
       if (this.scenario === "incomplete")
         return failure(503, "CUSTOMER_ASSIGNMENT_INCOMPLETE");
-      if (this.scenario === "no-service")
+      const body = JSON.parse(String(init.body));
+      const location = this.addressLookup?.(body.customerAddressId);
+      if (
+        this.scenario === "no-service" ||
+        (location?.longitude != null && location.longitude > 116.0819)
+      ) {
+        this.assignment = null;
         return failure(422, "CUSTOMER_NO_SERVICEABLE_OUTLET");
+      }
       if (this.scenario === "address-changed")
         return failure(409, "CUSTOMER_ADDRESS_CHANGED");
-      const body = JSON.parse(String(init.body));
       const t = this.now();
       const outletId =
+        (location?.longitude != null && location.longitude < 116.0817) ||
         body.customerAddressId === "55555555-5555-4555-8555-555555555555"
           ? id(2)
           : id(1);

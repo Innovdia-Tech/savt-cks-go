@@ -59,6 +59,7 @@ export function CheckoutProvider({
   );
   useEffect(() => {
     const address = customer.selectedAddress();
+    controller.bindSelectedAddress(address);
     const assignment = catalogue.state.assignment;
     if (
       address &&
@@ -81,7 +82,10 @@ export function CheckoutProvider({
       <AddressChangeDialog
         state={state}
         controller={controller}
-        onCommit={(addressId) => customer.select(addressId)}
+        onCommit={(addressId) => {
+          customer.select(addressId);
+          customer.announce("Delivery address changed. Your cart was cleared.");
+        }}
       />
     </Context.Provider>
   );
@@ -96,4 +100,16 @@ export function useCheckout() {
     context.controller.getSnapshot,
   );
   return { ...context, state };
+}
+
+const noCheckoutSubscribe = () => () => {};
+const noCheckoutSnapshot = () => null;
+export function useOptionalCheckout() {
+  const context = useContext(Context);
+  const state = useSyncExternalStore(
+    context?.controller.subscribe ?? noCheckoutSubscribe,
+    context?.controller.getSnapshot ?? noCheckoutSnapshot,
+    context?.controller.getSnapshot ?? noCheckoutSnapshot,
+  );
+  return context ? { ...context, state: state! } : null;
 }

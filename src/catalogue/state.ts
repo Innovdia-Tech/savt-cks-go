@@ -19,6 +19,7 @@ export type CatalogueState = {
     | "address-loading"
     | "address-error"
     | "no-address"
+    | "no-service"
     | "coordinates"
     | "assignment-loading"
     | "loading"
@@ -306,12 +307,17 @@ export class CatalogueController {
         }
         this.update({
           phase:
-            code === "CUSTOMER_SESSION_INVALID" ? "session-expired" : "error",
+            code === "CUSTOMER_SESSION_INVALID"
+              ? "session-expired"
+              : code === "CUSTOMER_NO_SERVICEABLE_OUTLET"
+                ? "no-service"
+                : "error",
           error: code,
           products: null,
           detail: null,
           categories: [],
-          ...(renewCodes.includes(code) ||
+          ...(code === "CUSTOMER_NO_SERVICEABLE_OUTLET" ||
+          renewCodes.includes(code) ||
           code === "CUSTOMER_SESSION_INVALID" ||
           code.startsWith("CUSTOMER_ADDRESS_")
             ? { assignment: null }

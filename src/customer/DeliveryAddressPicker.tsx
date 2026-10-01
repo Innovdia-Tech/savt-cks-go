@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Address } from "../addresses/contracts";
 import { AddressForm } from "../addresses/AddressForm";
+import { editAddressName } from "../addresses/presentation";
 import { AddressTransitionError } from "../checkout/components";
 import { useCheckout } from "../checkout/context";
 import { PinIcon, SearchIcon } from "../components/Icons";
@@ -13,7 +14,7 @@ type Action =
   | {
       kind: "location";
       address: Address | null;
-      mode: "choose" | "search" | "current";
+      mode: "choose" | "search" | "current" | "confirm";
     }
   | { kind: "edit"; address: Address }
   | null;
@@ -22,14 +23,18 @@ export function DeliveryAddressPicker({
   onDone,
   onBack,
   onManage,
+  initialAdd = false,
 }: {
   onDone: () => void;
   onBack: () => void;
   onManage: () => void;
+  initialAdd?: boolean;
 }) {
   const { state, controller } = useCustomer();
   const checkout = useCheckout();
-  const [action, setAction] = useState<Action>(null);
+  const [action, setAction] = useState<Action>(
+    initialAdd ? { kind: "location", address: null, mode: "choose" } : null,
+  );
   const [checkingId, setCheckingId] = useState<string | null>(null);
   const [confirmationId, setConfirmationId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -98,6 +103,14 @@ export function DeliveryAddressPicker({
           address={action.address}
           onDone={() => setAction(null)}
           onCancel={() => setAction(null)}
+          onDeleted={() => setAction(null)}
+          onChangeLocation={() =>
+            setAction({
+              kind: "location",
+              address: action.address,
+              mode: "confirm",
+            })
+          }
         />
       </main>
     );
@@ -197,7 +210,7 @@ export function DeliveryAddressPicker({
                 )
               }
               disabled={blocked || Boolean(checkingId)}
-              aria-label={`Edit ${address.label}`}
+              aria-label={editAddressName(address, active)}
             >
               Edit <span aria-hidden="true">›</span>
             </button>
