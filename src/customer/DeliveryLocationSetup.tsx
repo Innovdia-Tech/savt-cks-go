@@ -404,8 +404,8 @@ export function DeliveryLocationSetup({
     ) {
       controller.announce(
         state.selectedId === awaitingAssignmentId
-          ? "New address saved and selected for delivery. Your previous cart was cleared."
-          : "New address saved. Your current delivery address and cart remain unchanged.",
+          ? "New address saved and selected for delivery. Your previous basket was cleared."
+          : "New address saved. Your current delivery address and basket remain unchanged.",
       );
     }
     setAwaitingAssignmentId(null);

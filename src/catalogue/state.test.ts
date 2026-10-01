@@ -55,6 +55,26 @@ const bind = (c: CatalogueController, patch: Record<string, unknown> = {}) =>
     readOnly: false,
     ...patch,
   } as never);
+it("keeps the authoritative initial category page for Home after Browse pagination", async () => {
+  const first = page([{ id: "fresh", name: "Fresh Produce" }]);
+  const second = page([{ id: "other", name: "Other" }]);
+  const categories = vi.fn(async (_a, filter: { page: number }) =>
+    filter.page === 1 ? first : second,
+  );
+  const { c } = setup({ categories: categories as never });
+  bind(c);
+  await settle();
+  await c.categoryPage(2);
+  expect(c.getSnapshot().categories).toEqual(second.data);
+  expect(c.getSnapshot().homeCategories).toEqual(first.data);
+  await c.category("other");
+  expect(c.getSnapshot().categoryPage).toBe(2);
+  expect(c.getSnapshot().categories).toEqual(second.data);
+  await c.category("fresh", 1);
+  expect(c.getSnapshot().categoryPage).toBe(1);
+  expect(c.getSnapshot().homeCategories).toEqual(first.data);
+  c.dispose();
+});
 describe("assignment state isolation", () => {
   it("treats zero coverage as an address availability state and drops old catalogue data", async () => {
     const { c, api } = setup();

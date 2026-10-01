@@ -13,11 +13,12 @@ import { IconButton } from "./ui";
 
 type AppShellProps = {
   children: ReactNode;
-  active: "Home" | "Categories" | "Cart" | "Orders";
+  active: "Home" | "Browse" | "Basket" | "Orders";
   cartCount: number;
   onNavigate: (screen: Screen) => void;
   onLogout?: () => void;
   sticky?: ReactNode;
+  basketSummary?: { count: number; subtotal: string; onOpen: () => void };
   screenKey?: string;
   outlet?: Outlet | null;
   restoreScrollTop?: number;
@@ -43,6 +44,7 @@ export function AppShell({
   onNavigate,
   onLogout,
   sticky,
+  basketSummary,
   screenKey,
   outlet,
   restoreScrollTop,
@@ -93,6 +95,12 @@ export function AppShell({
           {children}
         </div>
         {sticky}
+        {basketSummary && active !== "Basket" && (
+          <BasketSummaryBar
+            key={`${basketSummary.count}-${basketSummary.subtotal}`}
+            {...basketSummary}
+          />
+        )}
         <BottomNavigation
           active={active}
           cartCount={cartCount}
@@ -100,6 +108,31 @@ export function AppShell({
         />
       </section>
     </main>
+  );
+}
+
+export function BasketSummaryBar({
+  count,
+  subtotal,
+  onOpen,
+}: {
+  count: number;
+  subtotal: string;
+  onOpen: () => void;
+}) {
+  if (count <= 0) return null;
+  return (
+    <button
+      type="button"
+      className="basket-summary"
+      onClick={onOpen}
+      aria-label={`View basket, ${count} ${count === 1 ? "item" : "items"}, merchandise subtotal ${subtotal}`}
+    >
+      <span>
+        Basket · {count} {count === 1 ? "item" : "items"}
+      </span>
+      <strong>{subtotal}</strong>
+    </button>
   );
 }
 
@@ -185,11 +218,13 @@ export function CartButton({
     <button
       type="button"
       onClick={onCart}
-      aria-label="Open cart"
+      aria-label="Open basket"
       className="app-header__cart"
     >
       <BagIcon className="h-5 w-5" />
-      {cartCount > 0 && <span>{cartCount}</span>}
+      {cartCount > 0 && (
+        <span aria-hidden="true">{cartCount > 99 ? "99+" : cartCount}</span>
+      )}
     </button>
   );
 }
@@ -251,12 +286,12 @@ export function BottomNavigation({
   const items = [
     { label: "Home", icon: HomeIcon, action: () => onNavigate("home") },
     {
-      label: "Categories",
+      label: "Browse",
       icon: GridIcon,
       action: () => onNavigate("listing"),
     },
     {
-      label: "Cart",
+      label: "Basket",
       icon: BagIcon,
       action: () => onNavigate("cart"),
       count: cartCount,
@@ -277,8 +312,8 @@ export function BottomNavigation({
             className={`bottom-navigation__item ${selected ? "is-active" : ""}`}
             aria-current={selected ? "page" : undefined}
             aria-label={
-              item.label === "Cart" && cartCount > 0
-                ? `Cart, ${cartCount} ${cartCount === 1 ? "item" : "items"}`
+              item.label === "Basket" && cartCount > 0
+                ? `Basket, ${cartCount} ${cartCount === 1 ? "item" : "items"}`
                 : item.label
             }
           >
@@ -286,9 +321,9 @@ export function BottomNavigation({
               <Icon className="h-5 w-5" />
             </span>
             <span className="bottom-navigation__label">{item.label}</span>
-            {!!item.count && item.label === "Cart" && (
+            {!!item.count && item.label === "Basket" && (
               <span className="bottom-navigation__badge" aria-hidden="true">
-                {item.count}
+                {item.count > 99 ? "99+" : item.count}
               </span>
             )}
           </button>

@@ -14,8 +14,10 @@ import { useCustomer } from "../customer/context";
 import { useCatalogue } from "./context";
 import type { Product } from "./contracts";
 import type { CatalogueState } from "./state";
+import { homeCategories, homeCategoryArtwork } from "./shopping";
 import type { Screen } from "../types";
 import { useCheckout } from "../checkout/context";
+import { cartMerchandiseSummary } from "../checkout/state";
 import { CartScreen } from "../checkout/components";
 import { MAX_LINE_QUANTITY } from "../checkout/contracts";
 import { QuantitySelector } from "../components/QuantitySelector";
@@ -139,7 +141,7 @@ export function ProductTile({
         aria-label={
           product.availability === "UNAVAILABLE"
             ? `${product.name} unavailable`
-            : `Add ${product.name} to cart`
+            : `Add ${product.name} to basket`
         }
       >
         {product.availability === "UNAVAILABLE" ? "Unavailable" : "Add"}
@@ -208,11 +210,11 @@ export function ProductDetailPurchase({
           disabled={orderingDisabled || paymentFrozen}
           onClick={onAdd}
         >
-          Add to Cart
+          Add to Basket
         </Button>
       ) : (
         <div className="catalogue-detail-quantity">
-          <span>In your cart</span>
+          <span>In your basket</span>
           <QuantitySelector
             label={`Quantity for ${product.name}`}
             quantity={quantity}
@@ -245,9 +247,16 @@ export function categoryIconFor(name?: string) {
 }
 
 export function CategoryArtwork({ name }: { name?: string }) {
+  const approved = name ? homeCategoryArtwork(name) : null;
   const reference = useCategoryArtworkUrl(name);
-  if (reference)
-    return <img className="catalogue-category-photo" src={reference} alt="" />;
+  if (approved || reference)
+    return (
+      <img
+        className="catalogue-category-photo"
+        src={approved ?? reference ?? ""}
+        alt=""
+      />
+    );
   const Icon = categoryIconFor(name);
   return <Icon className="catalogue-category-icon" />;
 }
@@ -459,16 +468,16 @@ export function routeTitle(route: string) {
     : route.startsWith("order/")
       ? "Order details"
       : route === "categories"
-        ? "Categories"
+        ? "Browse"
         : route === "cart"
-          ? "Cart"
+          ? "Basket"
           : route === "orders"
             ? "Orders"
             : route === "delivery-address" || route === "delivery-address/new"
               ? "Delivery address"
               : route === "profile"
                 ? "Profile and addresses"
-                : "Browse products";
+                : "Home";
   return `${page} | CKS Go`;
 }
 
@@ -748,9 +757,13 @@ export function CatalogueApp({
     />
   ) : null;
   const visibleProducts = state.products?.data ?? [];
-  const selectedCategoryName = state.categories.find(
-    (category) => category.id === state.categoryId,
-  )?.name;
+  const homePreview = homeCategories(state.homeCategories);
+  const basketSummary = cartMerchandiseSummary(checkout.state.lines);
+  const selectedCategoryName =
+    state.categories.find((category) => category.id === state.categoryId)
+      ?.name ??
+    state.homeCategories.find((category) => category.id === state.categoryId)
+      ?.name;
   const selectedAddress = customer.controller.selectedAddress();
   const needsDeliverySetup =
     (route === "home" || route === "categories" || Boolean(detailId)) &&
@@ -811,9 +824,9 @@ export function CatalogueApp({
     <AppShell
       active={
         route === "categories"
-          ? "Categories"
+          ? "Browse"
           : route === "cart"
-            ? "Cart"
+            ? "Basket"
             : route === "orders" || orderDetailId
               ? "Orders"
               : "Home"
@@ -823,6 +836,15 @@ export function CatalogueApp({
           ? 0
           : checkout.state.lines.reduce((sum, line) => sum + line.quantity, 0)
       }
+      basketSummary={
+        payment.state.phase !== "paid" && basketSummary.count > 0
+          ? {
+              count: basketSummary.count,
+              subtotal: money(basketSummary.subtotalMinor),
+              onOpen: () => navigate("cart"),
+            }
+          : undefined
+      }
       onNavigate={nav}
       onDeliveryAddress={() => navigate("delivery-address")}
       onLogout={onLogout}
@@ -831,13 +853,13 @@ export function CatalogueApp({
       developmentFixture={referenceFixture}
       title={
         route === "categories"
-          ? (selectedCategoryName ?? "Categories")
+          ? "Browse"
           : detailId
             ? "Product details"
             : route === "cart"
               ? payment.state.phase === "paid"
                 ? "Order confirmed"
-                : "Your Cart"
+                : "Your basket"
               : route === "orders"
                 ? "My Orders"
                 : orderDetailId
@@ -901,13 +923,13 @@ export function CatalogueApp({
                 {route === "home"
                   ? "CKS Go home"
                   : route === "categories"
-                    ? (selectedCategoryName ?? "Categories")
+                    ? "Browse"
                     : detailId
                       ? "Product details"
                       : route === "cart"
                         ? payment.state.phase === "paid"
                           ? "Order confirmed"
-                          : `Your Cart (${checkout.state.lines.reduce((sum, line) => sum + line.quantity, 0)})`
+                          : `Your basket (${basketSummary.count})`
                         : orderDetailId
                           ? "Order details"
                           : "Orders"}
@@ -995,7 +1017,7 @@ export function CatalogueApp({
                     onNavigate={(target) => navigate(target)}
                   />
                 )}
-                {route === "home" && state.categories.length > 0 && (
+                {route === "home" && homePreview.length > 0 && (
                   <section
                     className="catalogue-home-categories"
                     aria-labelledby="home-categories-title"
@@ -1005,19 +1027,22 @@ export function CatalogueApp({
                       <button
                         type="button"
                         className="catalogue-link"
-                        onClick={() => navigate("categories")}
+                        onClick={() => {
+                          navigate("categories");
+                          void controller.category(undefined, 1);
+                        }}
                       >
                         See all
                       </button>
                     </div>
                     <div className="catalogue-category-tiles">
-                      {state.categories.slice(0, 4).map((category) => (
+                      {homePreview.map((category) => (
                         <button
                           type="button"
                           key={category.id}
                           onClick={() => {
-                            void controller.category(category.id);
                             navigate("categories");
+                            void controller.category(category.id, 1);
                           }}
                         >
                           <span aria-hidden="true">
@@ -1031,13 +1056,19 @@ export function CatalogueApp({
                 )}
                 {route === "categories" &&
                   (state.categories.length > 0 || state.categoryPage > 1) && (
-                    <section aria-label="Product categories">
+                    <section aria-labelledby="browse-categories-title">
+                      <h2
+                        id="browse-categories-title"
+                        className="catalogue-browse-heading"
+                      >
+                        Shop by category
+                      </h2>
                       <div className="catalogue-categories">
                         <button
                           aria-pressed={!state.categoryId}
                           onClick={() => void controller.category()}
                         >
-                          All products
+                          All
                         </button>
                         {state.categories.map((c) => (
                           <button
@@ -1128,12 +1159,7 @@ export function CatalogueApp({
                         <h2>
                           {route === "home"
                             ? "Featured for You"
-                            : state.categoryId
-                              ? (state.categories.find(
-                                  (category) =>
-                                    category.id === state.categoryId,
-                                )?.name ?? "Groceries")
-                              : "All products"}
+                            : "Product results"}
                         </h2>
                         {route === "categories" && (
                           <p className="catalogue-caption">
@@ -1146,7 +1172,10 @@ export function CatalogueApp({
                         <button
                           type="button"
                           className="catalogue-link"
-                          onClick={() => navigate("categories")}
+                          onClick={() => {
+                            navigate("categories");
+                            void controller.category(undefined, 1);
+                          }}
                         >
                           See all
                         </button>

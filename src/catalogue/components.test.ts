@@ -67,7 +67,7 @@ it("does not call a read-only available product unavailable", () => {
   );
   expect(html).toMatch(/<button[^>]+disabled[^>]*>Add<\/button>/);
   expect(html).not.toContain(">Unavailable</button>");
-  expect(html).toContain('aria-label="Add Rice to cart"');
+  expect(html).toContain('aria-label="Add Rice to basket"');
 });
 
 it("keeps decrement available and increment disabled for an unavailable basket line", () => {
@@ -95,7 +95,7 @@ it("supports the shared image-led product-card composition", () => {
   );
 
   expect(html).toContain("catalogue-tile--grid");
-  expect(html).toContain('aria-label="Add Rice to cart"');
+  expect(html).toContain('aria-label="Add Rice to basket"');
   expect(html).toContain(">Add</button>");
   expect(html).not.toContain("line-clamp-2");
   expect(html).toContain("1 kg");
@@ -128,7 +128,7 @@ it("uses one quantity pattern after a detail product has been added", async () =
     }),
   );
 
-  expect(html).toContain("In your cart");
+  expect(html).toContain("In your basket");
   expect(html).toContain('aria-label="Quantity for Rice"');
   expect(html).not.toContain("Add another");
   expect(html).not.toContain(">Add to cart<");
@@ -149,7 +149,7 @@ it("uses the accepted detail purchase bar for ordinary catalogue data", () => {
   );
   expect(html).toContain("catalogue-detail-purchase--shopping");
   expect(html).toContain("12.34");
-  expect(html).toContain("Add to Cart");
+  expect(html).toContain("Add to Basket");
   expect(html).not.toContain("Final prices and availability");
 });
 
@@ -282,9 +282,9 @@ it("formats integer minor units in MYR", () =>
   expect(money(1234)).toMatch(/(?:RM|MYR).*12\.34/));
 
 it.each([
-  ["home", "Browse products | CKS Go"],
-  ["categories", "Categories | CKS Go"],
-  ["cart", "Cart | CKS Go"],
+  ["home", "Home | CKS Go"],
+  ["categories", "Browse | CKS Go"],
+  ["cart", "Basket | CKS Go"],
   ["orders", "Orders | CKS Go"],
   ["detail/00000000-0000-4000-8000-000000000001", "Product details | CKS Go"],
   ["order/00000000-0000-4000-8000-000000000001", "Order details | CKS Go"],

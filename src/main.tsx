@@ -64,13 +64,18 @@ async function start() {
             await import("./catalogue/development")
           ).DevelopmentCatalogueAdapter(production)
         : undefined;
+    const localScenario = new URLSearchParams(window.location.search).get(
+      "scenario",
+    );
     if (
       import.meta.env.DEV &&
       catalogueDevelopment &&
-      new URLSearchParams(window.location.search).get("scenario") ===
-        "ux03-reference-match"
+      (localScenario === "ux03-reference-match" ||
+        localScenario === "cust-shop01" ||
+        localScenario === "cust-shop01-no-frozen" ||
+        localScenario === "cust-shop01-images")
     )
-      catalogueDevelopment.reset("ux03-reference-match");
+      catalogueDevelopment.reset(localScenario);
     const DevelopmentControls =
       import.meta.env.DEV && config.developmentApi
         ? (await import("./catalogue/development-controls")).DevelopmentControls

@@ -29,6 +29,7 @@ export type CatalogueState = {
     | "session-expired";
   assignment: Assignment | null;
   categories: Category[];
+  homeCategories: Category[];
   categoryPage: number;
   categoryHasNext: boolean;
   products: Page<Product> | null;
@@ -44,6 +45,7 @@ const empty = (): CatalogueState => ({
   phase: "address-loading",
   assignment: null,
   categories: [],
+  homeCategories: [],
   categoryPage: 1,
   categoryHasNext: false,
   products: null,
@@ -128,8 +130,14 @@ export class CatalogueController {
     this.update({ q, page: 1, detail: null, detailId: undefined });
     return this.load();
   }
-  category(categoryId?: string) {
-    this.update({ categoryId, page: 1, detail: null, detailId: undefined });
+  category(categoryId?: string, categoryPage = this.state.categoryPage) {
+    this.update({
+      categoryId,
+      categoryPage,
+      page: 1,
+      detail: null,
+      detailId: undefined,
+    });
     return this.load();
   }
   resetFilters() {
@@ -177,6 +185,7 @@ export class CatalogueController {
           products: null,
           detail: null,
           categories: [],
+          homeCategories: [],
           page: 1,
           error: "CUSTOMER_ASSIGNMENT_CONTEXT_EXPIRED",
         });
@@ -221,6 +230,7 @@ export class CatalogueController {
             products: null,
             detail: null,
             categories: [],
+            homeCategories: [],
             page: 1,
             categoryPage: 1,
             error: null,
@@ -271,6 +281,9 @@ export class CatalogueController {
         this.update({
           phase: "ready",
           categories: categories.data,
+          ...(this.state.categoryPage === 1
+            ? { homeCategories: categories.data }
+            : {}),
           categoryHasNext: categories.meta.hasNextPage,
           assignment: { ...a, outlet: result.meta.outlet },
           ...(detailId
@@ -298,6 +311,7 @@ export class CatalogueController {
           this.update({
             assignment: null,
             categories: [],
+            homeCategories: [],
             products: null,
             detail: null,
             page: 1,
@@ -316,6 +330,7 @@ export class CatalogueController {
           products: null,
           detail: null,
           categories: [],
+          homeCategories: [],
           ...(code === "CUSTOMER_NO_SERVICEABLE_OUTLET" ||
           renewCodes.includes(code) ||
           code === "CUSTOMER_SESSION_INVALID" ||

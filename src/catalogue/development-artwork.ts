@@ -9,6 +9,24 @@ export const developmentAppleUrl =
   "https://cks-go-development.invalid/artwork/apple.svg";
 export const developmentRiceUrl =
   "https://cks-go-development.invalid/artwork/rice.svg";
+export const developmentPortraitUrl =
+  "https://cks-go-development.invalid/artwork/portrait.svg";
+export const developmentWideUrl =
+  "https://cks-go-development.invalid/artwork/wide.svg";
+export const developmentTransparentUrl =
+  "https://cks-go-development.invalid/artwork/transparent.svg";
+export const developmentFailedUrl =
+  "https://cks-go-development.invalid/artwork/failed.svg";
+
+const portraitArtworkUrl = image(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="320" viewBox="0 0 160 320"><rect x="34" y="12" width="92" height="296" rx="22" fill="#2e7bcb"/><rect x="42" y="90" width="76" height="134" rx="9" fill="#f4f8fa"/><circle cx="80" cy="157" r="26" fill="#56aa69"/></svg>`,
+);
+const wideArtworkUrl = image(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="120" viewBox="0 0 320 120"><rect x="8" y="20" width="304" height="80" rx="16" fill="#e2a444"/><rect x="30" y="36" width="112" height="48" rx="7" fill="#fff8e8"/><circle cx="245" cy="60" r="25" fill="#8d4e20"/></svg>`,
+);
+const transparentArtworkUrl = image(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220"><path d="M110 14 204 110 110 206 16 110Z" fill="#6aba72"/><circle cx="110" cy="110" r="45" fill="#fff"/></svg>`,
+);
 
 export const appleArtworkUrl =
   image(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320">
@@ -48,5 +66,8 @@ export const groceryBannerArtworkUrl =
 export function developmentArtworkFor(url: string | null): string | null {
   if (url === developmentAppleUrl) return appleArtworkUrl;
   if (url === developmentRiceUrl) return riceArtworkUrl;
+  if (url === developmentPortraitUrl) return portraitArtworkUrl;
+  if (url === developmentWideUrl) return wideArtworkUrl;
+  if (url === developmentTransparentUrl) return transparentArtworkUrl;
   return null;
 }

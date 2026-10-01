@@ -130,7 +130,7 @@ function PrototypeApp({ onLogout }: { onLogout?: () => void }) {
     guardNavigation(() => setScreen(nextScreen));
   };
 
-  const activeNav = screen === "listing" ? "Categories" : ["cart", "checkout"].includes(screen) ? "Cart" : screen === "tracking" ? "Orders" : "Home";
+  const activeNav = screen === "listing" ? "Browse" : ["cart", "checkout"].includes(screen) ? "Basket" : screen === "tracking" ? "Orders" : "Home";
 
   return (
     <AppShell
@@ -142,7 +142,7 @@ function PrototypeApp({ onLogout }: { onLogout?: () => void }) {
       sticky={
         screen === "detail" ? (
           <StickyCta
-            label={`Add to cart - ${currency(selectedProduct.memberPrice)}`}
+            label={`Add to basket - ${currency(selectedProduct.memberPrice)}`}
             sublabel={`Earn ${selectedProduct.points} pts + ${selectedProduct.cashback}% cashback`}
             onClick={() => {
               addToCart(selectedProduct);
@@ -377,7 +377,7 @@ function ProductDetail({ product, onProduct, onAdd }: { product: Product; onProd
         <SectionHeader title="Suggested products" />
         <ProductGrid products={products.filter((item) => item.id !== product.id).slice(0, 2)} onProduct={onProduct} onAdd={onAdd} />
       </div>
-      <button onClick={() => onAdd(product)} className="sr-only">Add to cart</button>
+      <button onClick={() => onAdd(product)} className="sr-only">Add to basket</button>
     </div>
   );
 }
@@ -402,7 +402,7 @@ function CartScreen({
           <div className="mx-auto grid h-20 w-20 place-items-center rounded-[28px] bg-savt-light text-savt-dark">
             <BagIcon className="h-9 w-9" />
           </div>
-          <h1 className="mt-5 text-2xl font-black text-slate-950">Your cart is empty</h1>
+          <h1 className="mt-5 text-2xl font-black text-slate-950">Your basket is empty</h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">Add fresh groceries from your nearest CKS branch to start your order.</p>
         </div>
       </div>
@@ -413,7 +413,7 @@ function CartScreen({
     <div className="space-y-4 px-5 py-4">
       <div>
         <p className="text-xs font-black uppercase tracking-[0.18em] text-savt-dark">CKS GO basket</p>
-        <h1 className="mt-1 text-[28px] font-black leading-8 text-slate-950">Your cart</h1>
+        <h1 className="mt-1 text-[28px] font-black leading-8 text-slate-950">Your basket</h1>
       </div>
       {cart.map((item) => (
         <CartRow key={item.product.id} item={item} onQuantity={onQuantity} />
