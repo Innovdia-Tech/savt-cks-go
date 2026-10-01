@@ -1,8 +1,8 @@
 import type { Category } from "./contracts";
-import freshProduce from "../assets/categories/fresh-produce.png";
-import household from "../assets/categories/household.png";
-import frozen from "../assets/categories/frozen.png";
-import beverages from "../assets/categories/beverages.png";
+import freshProduce from "../assets/categories/fresh-produce.webp";
+import household from "../assets/categories/household.webp";
+import frozen from "../assets/categories/frozen.webp";
+import beverages from "../assets/categories/beverages.webp";
 
 const preferred = ["fresh produce", "household", "frozen", "beverages"];
 const normalize = (name: string) =>

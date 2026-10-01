@@ -25,10 +25,10 @@ it("selects only available Phase 1 Home categories in the preferred order", () =
 });
 
 it("maps each preferred category to its supplied artwork", () => {
-  expect(homeCategoryArtwork("Fresh Produce")).toContain("fresh-produce.png");
-  expect(homeCategoryArtwork("Household")).toContain("household.png");
-  expect(homeCategoryArtwork("Frozen")).toContain("frozen.png");
-  expect(homeCategoryArtwork("Beverages")).toContain("beverages.png");
+  expect(homeCategoryArtwork("Fresh Produce")).toContain("fresh-produce.webp");
+  expect(homeCategoryArtwork("Household")).toContain("household.webp");
+  expect(homeCategoryArtwork("Frozen")).toContain("frozen.webp");
+  expect(homeCategoryArtwork("Beverages")).toContain("beverages.webp");
   expect(homeCategoryArtwork("Pantry")).toBeNull();
 });
 
