@@ -1,4 +1,10 @@
-import type { Assignment, Category, Detail, Outlet } from "./contracts";
+import type {
+  Assignment,
+  Category,
+  CustomerCategory,
+  Detail,
+  Outlet,
+} from "./contracts";
 import type { CustomerOrderStage, OrderListItem } from "../orders/contracts";
 import {
   developmentAppleUrl,
@@ -19,22 +25,36 @@ import {
 } from "./reference-match/content";
 const id = (n: number) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
-const categories: Category[] = [
-  { id: id(10), name: "Pantry" },
-  { id: id(11), name: "Fresh food" },
-  { id: id(12), name: "Empty category" },
+const categories: CustomerCategory[] = [
+  { id: id(10), code: "PANTRY", name: "Pantry" },
+  { id: id(11), code: "FRESH_FOOD", name: "Fresh food" },
+  { id: id(12), code: "EMPTY_CATEGORY", name: "Empty category" },
 ];
 // Local API-shaped data for the CUST-SHOP01 browser acceptance scenario only.
-const shoppingAcceptanceCategories: Category[] = [
-  { id: id(20), name: "Fresh Produce" },
-  { id: id(21), name: "Household" },
-  { id: id(22), name: "Frozen" },
-  { id: id(23), name: "Beverages" },
-  { id: id(24), name: "Pantry" },
+const shoppingAcceptanceCategories: CustomerCategory[] = [
+  { id: id(20), code: "FRESH_PRODUCE", name: "Fresh Produce" },
+  { id: id(21), code: "HOUSEHOLD", name: "Household" },
+  { id: id(22), code: "FROZEN", name: "Frozen" },
+  { id: id(23), code: "BEVERAGES", name: "Beverages" },
+  { id: id(24), code: "PANTRY", name: "Pantry" },
 ];
 const shoppingWithoutFrozenCategories = shoppingAcceptanceCategories.filter(
-  ({ name }) => name !== "Frozen",
+  ({ code }) => code !== "FROZEN",
 );
+const shoppingRepairCategories: CustomerCategory[] = [
+  { id: id(30), code: "BEVERAGES", name: "Beverages" },
+  { id: id(31), code: "OTHER_CATEGORY", name: "Snacks" },
+  { id: id(32), code: "FROZEN", name: "Frozen Food" },
+  { id: id(33), code: "HOUSEHOLD", name: "Household Essentials" },
+  { id: id(34), code: "FRESH_PRODUCE", name: "Fresh Fruits & Vegetables" },
+];
+const shoppingRepairWithoutFrozenCategories = shoppingRepairCategories.filter(
+  ({ code }) => code !== "FROZEN",
+);
+const productCategory = ({ id, name }: CustomerCategory): Category => ({
+  id,
+  name,
+});
 const failure = (status: number, code: string) =>
   Response.json(
     {
@@ -53,6 +73,8 @@ export const scenarios = [
   "empty-categories",
   "empty-search",
   "empty-category",
+  "cust-shop01r",
+  "cust-shop01r-no-frozen",
   "expiry",
   "renewal",
   "address-changed",
@@ -225,17 +247,25 @@ export class DevelopmentCatalogueAdapter {
             : i % 2
               ? developmentRiceUrl
               : developmentAppleUrl,
-      category:
-        this.scenario === "cust-shop01-no-frozen"
-          ? shoppingWithoutFrozenCategories[
-              i % shoppingWithoutFrozenCategories.length
-            ]
-          : this.scenario === "cust-shop01" ||
-              this.scenario === "cust-shop01-images"
-            ? shoppingAcceptanceCategories[
-                i % shoppingAcceptanceCategories.length
+      category: productCategory(
+        this.scenario === "cust-shop01r" ||
+          this.scenario === "cust-shop01r-no-frozen"
+          ? [
+              shoppingRepairCategories[3],
+              shoppingRepairCategories[0],
+              shoppingRepairCategories[1],
+            ][i % 3]
+          : this.scenario === "cust-shop01-no-frozen"
+            ? shoppingWithoutFrozenCategories[
+                i % shoppingWithoutFrozenCategories.length
               ]
-            : categories[i % 2],
+            : this.scenario === "cust-shop01" ||
+                this.scenario === "cust-shop01-images"
+              ? shoppingAcceptanceCategories[
+                  i % shoppingAcceptanceCategories.length
+                ]
+              : categories[i % 2],
+      ),
       subcategory: null,
       brand: null,
       uom: { code: "PACK", name: "Pack" },
@@ -910,12 +940,16 @@ export class DevelopmentCatalogueAdapter {
         ? []
         : this.scenario === referenceScenario
           ? referenceCategories
-          : this.scenario === "cust-shop01-no-frozen"
-            ? shoppingWithoutFrozenCategories
-            : this.scenario === "cust-shop01" ||
-                this.scenario === "cust-shop01-images"
-              ? shoppingAcceptanceCategories
-              : categories
+          : this.scenario === "cust-shop01r-no-frozen"
+            ? shoppingRepairWithoutFrozenCategories
+            : this.scenario === "cust-shop01r"
+              ? shoppingRepairCategories
+              : this.scenario === "cust-shop01-no-frozen"
+                ? shoppingWithoutFrozenCategories
+                : this.scenario === "cust-shop01" ||
+                    this.scenario === "cust-shop01-images"
+                  ? shoppingAcceptanceCategories
+                  : categories
       : products
           .filter(
             (p) =>

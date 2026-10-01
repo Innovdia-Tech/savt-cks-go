@@ -1,26 +1,26 @@
-import type { Category } from "./contracts";
+import type { CustomerCategory } from "./contracts";
 import freshProduce from "../assets/categories/fresh-produce.webp";
 import household from "../assets/categories/household.webp";
 import frozen from "../assets/categories/frozen.webp";
 import beverages from "../assets/categories/beverages.webp";
 
-const preferred = ["fresh produce", "household", "frozen", "beverages"];
-const normalize = (name: string) =>
-  name.trim().toLowerCase().replace(/\s+/g, " ");
+const preferred = ["FRESH_PRODUCE", "HOUSEHOLD", "FROZEN", "BEVERAGES"];
 const artwork: Record<string, string> = {
-  "fresh produce": freshProduce,
-  household,
-  frozen,
-  beverages,
+  FRESH_PRODUCE: freshProduce,
+  HOUSEHOLD: household,
+  FROZEN: frozen,
+  BEVERAGES: beverages,
 };
 
-export function homeCategoryArtwork(name: string): string | null {
-  return artwork[normalize(name)] ?? null;
+export function homeCategoryArtwork(code: string): string | null {
+  return artwork[code] ?? null;
 }
 
-export function homeCategories(categories: Category[]): Category[] {
-  return preferred.flatMap((name) => {
-    const category = categories.find((item) => normalize(item.name) === name);
+export function homeCategories(
+  categories: CustomerCategory[],
+): CustomerCategory[] {
+  return preferred.flatMap((code) => {
+    const category = categories.find((item) => item.code === code);
     return category ? [category] : [];
   });
 }

@@ -2,7 +2,7 @@ import type { Address } from "../addresses/contracts";
 import { CatalogueError, type CataloguePort } from "./api";
 import type {
   Assignment,
-  Category,
+  CustomerCategory,
   Product,
   DetailEnvelope,
   DetailMeta,
@@ -28,8 +28,8 @@ export type CatalogueState = {
     | "expired"
     | "session-expired";
   assignment: Assignment | null;
-  categories: Category[];
-  homeCategories: Category[];
+  categories: CustomerCategory[];
+  homeCategories: CustomerCategory[];
   categoryPage: number;
   categoryHasNext: boolean;
   products: Page<Product> | null;
@@ -278,11 +278,33 @@ export class CatalogueController {
           throw new CatalogueError("INVALID_RESPONSE");
         if (!detailId && (result as Page<Product>).meta.page !== filter.page)
           throw new CatalogueError("INVALID_RESPONSE");
+        let homeDirectory = categories.data;
+        if (this.state.categoryPage === 1) {
+          let hasNextPage = categories.meta.hasNextPage;
+          let nextPage = categories.meta.page + 1;
+          while (hasNextPage) {
+            const next = await this.api.categories(
+              a,
+              { page: nextPage },
+              signal,
+            );
+            if (!current()) return;
+            this.validateMeta(next.meta, a);
+            if (
+              next.meta.page !== nextPage ||
+              next.meta.pageSize !== categories.meta.pageSize
+            )
+              throw new CatalogueError("INVALID_RESPONSE");
+            homeDirectory = [...homeDirectory, ...next.data];
+            hasNextPage = next.meta.hasNextPage;
+            nextPage++;
+          }
+        }
         this.update({
           phase: "ready",
           categories: categories.data,
           ...(this.state.categoryPage === 1
-            ? { homeCategories: categories.data }
+            ? { homeCategories: homeDirectory }
             : {}),
           categoryHasNext: categories.meta.hasNextPage,
           assignment: { ...a, outlet: result.meta.outlet },

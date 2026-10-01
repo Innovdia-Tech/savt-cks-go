@@ -246,8 +246,14 @@ export function categoryIconFor(name?: string) {
   return GridIcon;
 }
 
-export function CategoryArtwork({ name }: { name?: string }) {
-  const approved = name ? homeCategoryArtwork(name) : null;
+export function CategoryArtwork({
+  name,
+  code,
+}: {
+  name?: string;
+  code?: string;
+}) {
+  const approved = code ? homeCategoryArtwork(code) : null;
   const reference = useCategoryArtworkUrl(name);
   if (approved || reference)
     return (
@@ -1046,7 +1052,10 @@ export function CatalogueApp({
                           }}
                         >
                           <span aria-hidden="true">
-                            <CategoryArtwork name={category.name} />
+                            <CategoryArtwork
+                              name={category.name}
+                              code={category.code}
+                            />
                           </span>
                           <span>{category.name}</span>
                         </button>
@@ -1154,6 +1163,11 @@ export function CatalogueApp({
                         No categories are available for this outlet.
                       </p>
                     )}
+                    {route === "categories" && selectedCategoryName && (
+                      <p className="catalogue-caption">
+                        Browse &gt; {selectedCategoryName}
+                      </p>
+                    )}
                     <div className="catalogue-section-heading catalogue-products-heading">
                       <div>
                         <h2>
@@ -1229,23 +1243,35 @@ export function CatalogueApp({
                         title={
                           state.q
                             ? "No search results"
-                            : "No products in this selection"
+                            : state.categoryId
+                              ? "No products are available in this category right now."
+                              : "No products in this selection"
                         }
                         description={
                           state.q
                             ? "Try another product name or clear your search."
-                            : "Choose another category or try again later."
+                            : state.categoryId
+                              ? "Choose another category or return to All."
+                              : "Choose another category or try again later."
                         }
+                        actionLabel={
+                          route === "categories" && state.categoryId && !state.q
+                            ? "Show all products"
+                            : undefined
+                        }
+                        onAction={() => void controller.category(undefined, 1)}
                       />
                     )}
-                    {state.products && route === "categories" && (
-                      <CatalogueProductPages
-                        page={state.page}
-                        total={state.products.meta.total}
-                        hasNextPage={state.products.meta.hasNextPage}
-                        onPage={(page) => void controller.nextPage(page)}
-                      />
-                    )}
+                    {state.products &&
+                      route === "categories" &&
+                      state.products.meta.total > 0 && (
+                        <CatalogueProductPages
+                          page={state.page}
+                          total={state.products.meta.total}
+                          hasNextPage={state.products.meta.hasNextPage}
+                          onPage={(page) => void controller.nextPage(page)}
+                        />
+                      )}
                   </>
                 )}
                 {controls && !referenceFixture && (

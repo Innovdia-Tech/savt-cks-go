@@ -54,8 +54,9 @@ describe("closed R2 projections", () => {
   it("accepts complete assignment and catalogue shapes", () => {
     expect(parseAssignment(assignment).data.addressRowVersion).toBe(1);
     expect(
-      parseCategories({ data: [{ id, name: "Pantry" }], meta }).data[0].name,
-    ).toBe("Pantry");
+      parseCategories({ data: [{ id, code: "PANTRY", name: "Pantry" }], meta })
+        .data[0],
+    ).toEqual({ id, code: "PANTRY", name: "Pantry" });
     expect(
       parseProducts({ data: [product], meta }).data[0].sellingPriceMinor,
     ).toBe(1234);
@@ -114,6 +115,7 @@ describe("closed R2 projections", () => {
     { currency: "USD" },
     { sku: "private" },
     { category: { id, name: "Pantry", status: "ACTIVE" } },
+    { category: { id, code: "PANTRY", name: "Pantry" } },
     { name: "x".repeat(201) },
   ])("rejects unsafe product projection %j", (patch) =>
     expect(() =>
@@ -138,7 +140,7 @@ describe("closed R2 projections", () => {
     ).toThrow();
     expect(() =>
       parseCategories({
-        data: [{ id, name: "Pantry" }],
+        data: [{ id, code: "PANTRY", name: "Pantry" }],
         meta: { ...meta, pageSize: 101 },
       }),
     ).toThrow();
@@ -177,10 +179,14 @@ it.each([
   ).toThrow();
 });
 it.each([
-  { id: "wrong", name: "A" },
-  { id, name: 3 },
-  { id, name: "" },
-  { id, name: "A", private: true },
+  { id: "wrong", code: "PANTRY", name: "A" },
+  { id, name: "A" },
+  { id, code: "PANTRY", name: 3 },
+  { id, code: "PANTRY", name: "" },
+  { id, code: "-PANTRY", name: "A" },
+  { id, code: "PANT RY", name: "A" },
+  { id, code: "P".repeat(41), name: "A" },
+  { id, code: "PANTRY", name: "A", private: true },
 ])("rejects invalid category %j", (item) =>
   expect(() => parseCategories({ data: [item], meta })).toThrow(),
 );

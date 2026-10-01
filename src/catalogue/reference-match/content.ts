@@ -1,5 +1,5 @@
 import sample from "./reference-sample-content.json";
-import type { Category, Detail } from "../contracts";
+import type { CustomerCategory, Detail } from "../contracts";
 
 // The imported package is a local design fixture, never a catalogue seed.
 export const referenceSample = sample;
@@ -7,9 +7,10 @@ export const referenceScenario = "ux03-reference-match";
 export const referenceId = (n: number) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 
-export const referenceCategories: Category[] =
+export const referenceCategories: CustomerCategory[] =
   sample.categoryLabelsShownInBoard.map((name, index) => ({
     id: referenceId(10 + index),
+    code: `REFERENCE_${index + 1}`,
     name,
   }));
 
@@ -22,7 +23,10 @@ export const referenceProducts: Detail[] = sample.catalogue.map(
     outletProductId: referenceId(200 + index),
     name: item.name,
     imageUrl: `https://cks-go-development.invalid/reference-match/${item.key}.png`,
-    category: referenceCategories[0],
+    category: {
+      id: referenceCategories[0].id,
+      name: referenceCategories[0].name,
+    },
     subcategory: fruitKeys.has(item.key)
       ? { id: referenceId(20), name: "Fruits" }
       : vegetableKeys.has(item.key)

@@ -47,6 +47,20 @@ async function setup(fetcher: typeof fetch, timeout = 100) {
   return { session, api: new CatalogueApi("", session, fetcher, timeout) };
 }
 describe("catalogue HTTP boundary", () => {
+  it("returns the closed category directory with stable codes from the customer endpoint", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({
+        data: [{ id, code: "HOUSEHOLD", name: "Household Essentials" }],
+        meta: { ...empty.meta, total: 1 },
+      }),
+    );
+    const { api } = await setup(fetcher);
+    const result = await api.categories(assignment.data as never);
+    expect(result.data).toEqual([
+      { id, code: "HOUSEHOLD", name: "Household Essentials" },
+    ]);
+    expect(fetcher.mock.calls[0][0]).toContain(`/outlets/${id}/categories?`);
+  });
   it("sends exact assignment body, credentials and memory CSRF", async () => {
     const fetcher = vi
       .fn<typeof fetch>()
