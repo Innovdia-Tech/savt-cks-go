@@ -386,6 +386,64 @@ try {
   await login();
   await page.getByRole("button", { name: "＋ Add a new address" }).click();
   await confirmLocation({ label: "Work" });
+  await page.getByText("Synthetic development fixtures").click();
+  await page.locator("#catalogue-scenario").selectOption("coordinates");
+  await page.getByRole("heading", { name: "Set delivery location" }).waitFor();
+  await page
+    .getByRole("button", { name: /Search building, street or postcode/ })
+    .click();
+  await page.getByPlaceholder("Building, street or postcode").fill("ITCC");
+  await page.getByText("ITCC Shopping Mall").click();
+  await page.getByLabel("Centered delivery pin").waitFor();
+  await page.getByRole("button", { name: "Confirm this location" }).click();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await page.getByPlaceholder("Search products…").waitFor();
+  await page
+    .getByRole("button", { name: /Add .* to cart/ })
+    .first()
+    .click();
+  await page.getByRole("button", { name: "Cart, 1 item" }).click();
+  await page.getByRole("button", { name: "Review order" }).click();
+  await page.getByRole("button", { name: /^Pay RM/ }).waitFor();
+  await page.getByRole("button", { name: "Home", exact: true }).click();
+  await page.getByText("Deliver to", { exact: true }).click();
+  await page.getByRole("button", { name: "Manage all addresses" }).click();
+  await page.getByRole("button", { name: "Edit Work" }).click();
+  await page.getByRole("button", { name: "Delete address" }).click();
+  await page
+    .getByRole("dialog", { name: "Delete this address?" })
+    .getByText(/without a confirmed location keeps your cart/)
+    .waitFor();
+  await page
+    .getByRole("dialog", { name: "Delete this address?" })
+    .getByRole("button", { name: "Delete address" })
+    .click();
+  await page.getByRole("heading", { name: "Saved addresses" }).waitFor();
+  assert.equal(
+    await page.getByRole("button", { name: "Edit Work" }).count(),
+    0,
+  );
+  const unreadyFallback = page.locator("article.customer-card").filter({
+    has: page.getByRole("button", { name: "Edit Demo home" }),
+  });
+  await unreadyFallback.getByText("Selected for delivery").waitFor();
+  await page.getByRole("button", { name: "Home", exact: true }).click();
+  await page.getByRole("heading", { name: "Set delivery location" }).waitFor();
+  await page.getByRole("button", { name: "Open cart" }).click();
+  await page.getByRole("heading", { name: "Your Cart (1)" }).waitFor();
+  assert.equal(
+    await page.getByRole("button", { name: "Review order" }).isDisabled(),
+    true,
+  );
+  assert.equal(await page.getByRole("button", { name: /^Pay RM/ }).count(), 0);
+  assert.equal(await page.getByText(/From Outlet/).count(), 0);
+  console.log("UX02 browser selected-delete unready fallback passed.");
+
+  await page.close();
+  page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await login();
+  await page.getByRole("button", { name: "＋ Add a new address" }).click();
+  await confirmLocation({ label: "Work" });
   await page
     .getByRole("button", { name: /Add .* to cart/ })
     .first()

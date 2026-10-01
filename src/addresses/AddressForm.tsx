@@ -177,7 +177,6 @@ export function AddressForm({
             controller.select(address.id);
             return;
           }
-          checkout.controller.clear();
           checkout.controller.bindSelectedAddress(fallback);
           (onDeleted ?? onDone)();
           return;
@@ -450,9 +449,10 @@ export function AddressForm({
           </p>
           {state.selectedId === address?.id && checkout?.state.lines.length ? (
             <p className="mb-4 text-sm">
-              If your cart cannot be used with another saved address, we’ll ask
-              before clearing it. If no ready address remains, deleting this
-              address clears the cart.
+              We’ll ask before clearing your cart to switch delivery areas. An
+              address without a confirmed location keeps your cart but pauses
+              checkout until you set its location. If no active address remains,
+              deleting this address clears the cart.
             </p>
           ) : null}
           <div className="flex flex-wrap gap-2">
