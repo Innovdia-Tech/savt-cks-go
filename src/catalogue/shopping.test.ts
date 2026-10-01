@@ -3,14 +3,14 @@ import { homeCategories, homeCategoryArtwork } from "./shopping";
 import { cartMerchandiseSummary } from "../checkout/state";
 
 const categories = [
-  { id: "other", name: "Pantry" },
-  { id: "drinks", name: " Beverages " },
-  { id: "frozen", name: "Frozen" },
-  { id: "fresh", name: "Fresh   Produce" },
-  { id: "house", name: "Household" },
+  { id: "other", code: "OTHER_CATEGORY", name: "Snacks" },
+  { id: "drinks", code: "BEVERAGES", name: "Drinks" },
+  { id: "frozen", code: "FROZEN", name: "Frozen Food" },
+  { id: "fresh", code: "FRESH_PRODUCE", name: "Fresh Fruits & Vegetables" },
+  { id: "house", code: "HOUSEHOLD", name: "Household Essentials" },
 ];
 
-it("selects only available Phase 1 Home categories in the preferred order", () => {
+it("selects authoritative Phase 1 Home categories by code in preferred order", () => {
   expect(homeCategories(categories).map(({ id }) => id)).toEqual([
     "fresh",
     "house",
@@ -22,14 +22,20 @@ it("selects only available Phase 1 Home categories in the preferred order", () =
       ({ id }) => id,
     ),
   ).toEqual(["fresh", "house", "drinks"]);
+  expect(
+    homeCategories([
+      { id: "impostor", code: "OTHER_CATEGORY", name: "Frozen" },
+    ]),
+  ).toEqual([]);
 });
 
-it("maps each preferred category to its supplied artwork", () => {
-  expect(homeCategoryArtwork("Fresh Produce")).toContain("fresh-produce.webp");
-  expect(homeCategoryArtwork("Household")).toContain("household.webp");
-  expect(homeCategoryArtwork("Frozen")).toContain("frozen.webp");
-  expect(homeCategoryArtwork("Beverages")).toContain("beverages.webp");
-  expect(homeCategoryArtwork("Pantry")).toBeNull();
+it("maps stable codes to approved WebP artwork even after HQ renames categories", () => {
+  expect(homeCategoryArtwork("FRESH_PRODUCE")).toContain("fresh-produce.webp");
+  expect(homeCategoryArtwork("HOUSEHOLD")).toContain("household.webp");
+  expect(homeCategoryArtwork("FROZEN")).toContain("frozen.webp");
+  expect(homeCategoryArtwork("BEVERAGES")).toContain("beverages.webp");
+  expect(homeCategoryArtwork("OTHER_CATEGORY")).toBeNull();
+  expect(homeCategoryArtwork("Frozen Food")).toBeNull();
 });
 
 it("totals basket units and merchandise minor units from the current cart lines", () => {

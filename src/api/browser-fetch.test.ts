@@ -30,6 +30,7 @@ const outlet = {
 };
 
 const category = { id: categoryId, name: "Pantry" };
+const customerCategory = { ...category, code: "PANTRY" };
 const product = {
   productId,
   outletProductId,
@@ -185,7 +186,7 @@ describe("default browser fetch receiver", () => {
       };
       if (url.pathname.endsWith("/categories")) {
         return Response.json({
-          data: [category],
+          data: [customerCategory],
           meta: {
             ...meta,
             page: 1,
@@ -223,7 +224,7 @@ describe("default browser fetch receiver", () => {
 
     const assignment = await api.assign({ id: addressId, rowVersion: 7 });
     await expect(api.categories(assignment)).resolves.toMatchObject({
-      data: [category],
+      data: [customerCategory],
     });
     await expect(api.products(assignment, { page: 1 })).resolves.toMatchObject({
       data: [{ outletProductId }],

@@ -52,7 +52,11 @@ export function DevelopmentControls({
           setOrderResult("active");
           adapter.reset(e.target.value);
           const url = new URL(window.location.href);
-          if (e.target.value === "ux03-reference-match")
+          if (
+            e.target.value === "ux03-reference-match" ||
+            e.target.value === "cust-shop01r" ||
+            e.target.value === "cust-shop01r-no-frozen"
+          )
             url.searchParams.set("scenario", e.target.value);
           else url.searchParams.delete("scenario");
           window.history.replaceState(null, "", url);

@@ -73,7 +73,9 @@ async function start() {
       (localScenario === "ux03-reference-match" ||
         localScenario === "cust-shop01" ||
         localScenario === "cust-shop01-no-frozen" ||
-        localScenario === "cust-shop01-images")
+        localScenario === "cust-shop01-images" ||
+        localScenario === "cust-shop01r" ||
+        localScenario === "cust-shop01r-no-frozen")
     )
       catalogueDevelopment.reset(localScenario);
     const DevelopmentControls =

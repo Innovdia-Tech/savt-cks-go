@@ -246,6 +246,24 @@ it("renders vector category artwork without placeholder glyphs", async () => {
   expect(html).toContain("<svg");
   expect(html).not.toMatch(/[◇⌂]/);
 });
+it("renders approved Home WebP artwork by code while keeping renamed backend labels", async () => {
+  const catalogue =
+    (await import("./components")) as typeof import("./components") & {
+      CategoryArtwork?: (props: {
+        name?: string;
+        code?: string;
+      }) => React.ReactNode;
+    };
+  for (const [code, name, file] of [
+    ["HOUSEHOLD", "Household Essentials", "household.webp"],
+    ["FROZEN", "Frozen Food", "frozen.webp"],
+  ]) {
+    const html = renderToStaticMarkup(
+      createElement(catalogue.CategoryArtwork!, { code, name }),
+    );
+    expect(html).toContain(file);
+  }
+});
 it("uses approved returned image URLs without inventing sources", () => {
   const html = renderToStaticMarkup(
     createElement(ProductImage, {

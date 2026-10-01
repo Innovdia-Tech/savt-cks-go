@@ -17,6 +17,7 @@ export type Assignment = {
   expiresAt: string;
 };
 export type Category = { id: string; name: string };
+export type CustomerCategory = Category & { code: string };
 export type Product = {
   productId: string;
   outletProductId: string;
@@ -91,6 +92,17 @@ function category(v: unknown): Category {
   const d = obj(v, ["id", "name"]);
   if (!uuid(d.id) || !str(d.name, 160)) return fail();
   return { id: d.id, name: d.name };
+}
+function customerCategory(v: unknown): CustomerCategory {
+  const d = obj(v, ["id", "code", "name"]);
+  if (
+    !uuid(d.id) ||
+    typeof d.code !== "string" ||
+    !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,39}$/.test(d.code) ||
+    !str(d.name, 160)
+  )
+    return fail();
+  return { id: d.id, code: d.code, name: d.name };
 }
 const managedProductImagePath =
   /^\/api\/v1\/product-media\/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/;
@@ -235,8 +247,8 @@ function page<T>(
   if (new Set(data.map(id)).size !== data.length) return fail();
   return { data, meta: m };
 }
-export const parseCategories = (v: unknown): Page<Category> =>
-  page(v, 100, category, (d) => d.id);
+export const parseCategories = (v: unknown): Page<CustomerCategory> =>
+  page(v, 100, customerCategory, (d) => d.id);
 export const parseProducts = (v: unknown): Page<Product> => {
   const result = page(
     v,

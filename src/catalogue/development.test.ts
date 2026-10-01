@@ -7,6 +7,7 @@ import { DevelopmentBridgeAdapter } from "../webview/bridge";
 import { QuoteApi } from "../checkout/api";
 import { PaymentApi } from "../payment/api";
 import { OrdersApi } from "../orders/api";
+import { homeCategories } from "./shopping";
 const address = { id: "22222222-2222-4222-8222-222222222222", rowVersion: 1 };
 async function setup(scenario = "success", now = Date.now) {
   const adapter = new DevelopmentCatalogueAdapter(false, now);
@@ -111,6 +112,47 @@ it("omits unavailable Frozen from the local customer-visible category response",
   expect(products.every((product) => product.category.name !== "Frozen")).toBe(
     true,
   );
+});
+it("exposes five active directory entries while empty preferred categories stay on Home", async () => {
+  const { api } = await setup("cust-shop01r");
+  const assignment = await api.assign(address);
+  const directory = (await api.categories(assignment)).data;
+  expect(directory.map(({ code, name }) => [code, name])).toEqual([
+    ["BEVERAGES", "Beverages"],
+    ["OTHER_CATEGORY", "Snacks"],
+    ["FROZEN", "Frozen Food"],
+    ["HOUSEHOLD", "Household Essentials"],
+    ["FRESH_PRODUCE", "Fresh Fruits & Vegetables"],
+  ]);
+  expect(homeCategories(directory).map(({ code }) => code)).toEqual([
+    "FRESH_PRODUCE",
+    "HOUSEHOLD",
+    "FROZEN",
+    "BEVERAGES",
+  ]);
+  for (const code of ["FRESH_PRODUCE", "FROZEN"]) {
+    const category = directory.find((item) => item.code === code);
+    expect(category).toBeDefined();
+    expect(
+      (await api.products(assignment, { page: 1, categoryId: category!.id }))
+        .data,
+    ).toEqual([]);
+  }
+  expect(
+    (await api.products(assignment, { page: 1, categoryId: directory[1].id }))
+      .data.length,
+  ).toBeGreaterThan(0);
+});
+it("removes inactive Frozen from the synthetic directory and Home without a dead tile", async () => {
+  const { api } = await setup("cust-shop01r-no-frozen");
+  const assignment = await api.assign(address);
+  const directory = (await api.categories(assignment)).data;
+  expect(directory.map(({ code }) => code)).not.toContain("FROZEN");
+  expect(homeCategories(directory).map(({ code }) => code)).toEqual([
+    "FRESH_PRODUCE",
+    "HOUSEHOLD",
+    "BEVERAGES",
+  ]);
 });
 it("provides local portrait, wide, transparent, missing and failed image cases", async () => {
   const { api } = await setup("cust-shop01-images");

@@ -2,7 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { CatalogueController } from "./state";
 import { CatalogueError, type CataloguePort } from "./api";
 import { syntheticAddress } from "../customer/fixtures";
-import type { Assignment, Page, Product, Category } from "./contracts";
+import type { Assignment, Page, Product, CustomerCategory } from "./contracts";
+import { homeCategories } from "./shopping";
 const now = Date.parse("2026-09-19T00:00:00.000Z");
 const address = { ...syntheticAddress, latitude: 5, longitude: 116 };
 const session = {};
@@ -36,7 +37,7 @@ const page = <T>(data: T[]): Page<T> => ({
 function setup(overrides: Partial<CataloguePort> = {}) {
   const api = {
     assign: vi.fn(async () => assignment),
-    categories: vi.fn(async () => page<Category>([])),
+    categories: vi.fn(async () => page<CustomerCategory>([])),
     products: vi.fn(async () => page<Product>([])),
     detail: vi.fn(),
     ...overrides,
@@ -56,8 +57,10 @@ const bind = (c: CatalogueController, patch: Record<string, unknown> = {}) =>
     ...patch,
   } as never);
 it("keeps the authoritative initial category page for Home after Browse pagination", async () => {
-  const first = page([{ id: "fresh", name: "Fresh Produce" }]);
-  const second = page([{ id: "other", name: "Other" }]);
+  const first = page([
+    { id: "fresh", code: "FRESH_PRODUCE", name: "Fresh Produce" },
+  ]);
+  const second = page([{ id: "other", code: "OTHER_CATEGORY", name: "Other" }]);
   const categories = vi.fn(async (_a, filter: { page: number }) =>
     filter.page === 1 ? first : second,
   );
@@ -73,6 +76,46 @@ it("keeps the authoritative initial category page for Home after Browse paginati
   await c.category("fresh", 1);
   expect(c.getSnapshot().categoryPage).toBe(1);
   expect(c.getSnapshot().homeCategories).toEqual(first.data);
+  c.dispose();
+});
+it("finds active Home slots beyond the first directory page while Browse stays paginated", async () => {
+  const first = {
+    ...page(
+      Array.from({ length: 50 }, (_, index) => ({
+        id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+        code: `OTHER_${index + 1}`,
+        name: `Other ${index + 1}`,
+      })),
+    ),
+    meta: { ...page([]).meta, pageSize: 50, total: 51, hasNextPage: true },
+  };
+  const second = {
+    ...page([
+      {
+        id: "00000000-0000-4000-8000-000000000051",
+        code: "FRESH_PRODUCE",
+        name: "Fresh Fruits & Vegetables",
+      },
+    ]),
+    meta: {
+      ...page([]).meta,
+      page: 2,
+      pageSize: 50,
+      total: 51,
+      hasNextPage: false,
+    },
+  };
+  const categories = vi.fn(async (_a, filter: { page: number }) =>
+    filter.page === 1 ? first : second,
+  );
+  const { c } = setup({ categories: categories as never });
+  bind(c);
+  await settle();
+
+  expect(
+    homeCategories(c.getSnapshot().homeCategories).map(({ code }) => code),
+  ).toEqual(["FRESH_PRODUCE"]);
+  expect(c.getSnapshot().categories).toEqual(first.data);
   c.dispose();
 });
 describe("assignment state isolation", () => {
