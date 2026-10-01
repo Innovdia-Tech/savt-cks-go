@@ -1,6 +1,13 @@
 import type { Assignment, Category, Detail, Outlet } from "./contracts";
 import type { CustomerOrderStage, OrderListItem } from "../orders/contracts";
-import { developmentAppleUrl, developmentRiceUrl } from "./development-artwork";
+import {
+  developmentAppleUrl,
+  developmentRiceUrl,
+  developmentPortraitUrl,
+  developmentWideUrl,
+  developmentTransparentUrl,
+  developmentFailedUrl,
+} from "./development-artwork";
 import {
   referenceCategories,
   referenceCategoryGrid,
@@ -17,6 +24,17 @@ const categories: Category[] = [
   { id: id(11), name: "Fresh food" },
   { id: id(12), name: "Empty category" },
 ];
+// Local API-shaped data for the CUST-SHOP01 browser acceptance scenario only.
+const shoppingAcceptanceCategories: Category[] = [
+  { id: id(20), name: "Fresh Produce" },
+  { id: id(21), name: "Household" },
+  { id: id(22), name: "Frozen" },
+  { id: id(23), name: "Beverages" },
+  { id: id(24), name: "Pantry" },
+];
+const shoppingWithoutFrozenCategories = shoppingAcceptanceCategories.filter(
+  ({ name }) => name !== "Frozen",
+);
 const failure = (status: number, code: string) =>
   Response.json(
     {
@@ -196,10 +214,28 @@ export class DevelopmentCatalogueAdapter {
       imageUrl:
         this.scenario === "null-images"
           ? null
-          : i % 2
-            ? developmentRiceUrl
-            : developmentAppleUrl,
-      category: categories[i % 2],
+          : this.scenario === "cust-shop01-images"
+            ? [
+                developmentPortraitUrl,
+                developmentWideUrl,
+                developmentTransparentUrl,
+                null,
+                developmentFailedUrl,
+              ][i % 5]
+            : i % 2
+              ? developmentRiceUrl
+              : developmentAppleUrl,
+      category:
+        this.scenario === "cust-shop01-no-frozen"
+          ? shoppingWithoutFrozenCategories[
+              i % shoppingWithoutFrozenCategories.length
+            ]
+          : this.scenario === "cust-shop01" ||
+              this.scenario === "cust-shop01-images"
+            ? shoppingAcceptanceCategories[
+                i % shoppingAcceptanceCategories.length
+              ]
+            : categories[i % 2],
       subcategory: null,
       brand: null,
       uom: { code: "PACK", name: "Pack" },
@@ -874,7 +910,12 @@ export class DevelopmentCatalogueAdapter {
         ? []
         : this.scenario === referenceScenario
           ? referenceCategories
-          : categories
+          : this.scenario === "cust-shop01-no-frozen"
+            ? shoppingWithoutFrozenCategories
+            : this.scenario === "cust-shop01" ||
+                this.scenario === "cust-shop01-images"
+              ? shoppingAcceptanceCategories
+              : categories
       : products
           .filter(
             (p) =>

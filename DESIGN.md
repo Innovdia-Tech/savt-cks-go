@@ -67,7 +67,7 @@ Runtime ownership uses Model B: CSS custom properties in `src/styles.css` own ac
 
 ## Colors
 
-- CKS Red is the primary commerce/action role: Add to cart, checkout, payment, order actions, active customer navigation and cart emphasis.
+- CKS Red is the primary commerce/action role: Add to basket, checkout, payment, order actions, active customer navigation and Basket emphasis.
 - Savt Green and Savt Green Dark are reserved for Savt Cash, rewards, savings, earned benefits and positive Savt ecosystem messages. Green is not the universal CTA color.
 - Background, surface, border, ink and muted text follow the Figma neutrals. Info, warning and error are semantic and always paired with copy/icon/shape, never color alone.
 - Error red and brand red have different roles even when visually related: destructive/error messaging uses the error token; ordinary safe commerce uses CKS primary.
@@ -94,7 +94,8 @@ Buttons/fields use 14px radii, cards 16px, chips/badges full pills, and sheets 2
 - Secondary button: white/light surface, semantic border and dark text. Tertiary actions are restrained text buttons.
 - Product card: bordered white card, reserved image geometry, 14px name, CKS-red price/action, and only contract-supported availability. Reward chips appear only when reward data exists.
 - Search/input/textarea: white surface, semantic border, 14px radius, labelled control, visible focus and an app-owned clear action for search. Textareas do not expose manual resize.
-- Bottom navigation: Home, Categories, Cart and Orders only. Active commerce navigation uses CKS Red. Account is hidden until a supported route exists.
+- Bottom navigation: Home, Browse, Basket and Orders only. Browse shows backend-visible outlet categories; Home previews the preferred available Phase 1 subset with approved local artwork. Active commerce navigation uses CKS Red. Account is hidden until a supported route exists.
+- Basket summary: when nonempty, a CKS-red merchandise subtotal control sits immediately above bottom navigation. It uses the current cart lines, omits fees and trusted-quote adjustments, and hides on Basket. Its confirmation motion respects reduced-motion settings.
 - Loading/empty/error: shared stable-footprint components with human-readable copy and safe recovery. Raw backend codes never render.
 - Quantity sheet: native accessible dialog foundation, viewport-bounded with safe-area padding. Quantity controls are pill-shaped with named increment/decrement buttons.
 

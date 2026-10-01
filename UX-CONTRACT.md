@@ -13,11 +13,13 @@
 | Button         | src/components/ui.tsx                                           | DESIGN.md + runtime tokens       | Primary/secondary/tertiary/icon; stable busy and disabled states                   | Component semantics + browser keyboard  |
 | Status         | src/components/ui.tsx                                           | Closed catalogue/order contracts | Availability and customer order stages only; Figma promo labels are presentational | Component render + feature tests        |
 | System states  | src/components/ui.tsx                                           | Existing feature phases/errors   | Loading, empty and error with safe action callbacks                                | Component render + browser state matrix |
-| App shell      | src/components/Layout.tsx                                       | Existing hash routes             | Home, Categories, Cart, Orders; Account intentionally omitted                      | Shell tests + four viewport review      |
+| App shell      | src/components/Layout.tsx                                       | Existing hash routes             | Home, Browse, Basket, Orders; Account intentionally omitted                        | Shell tests + four viewport review      |
 
 Source authority: current CKS Go customer DTOs, controller, address service and session guards. Tests: customer/contracts, API, state and rendered presentation suites; local browser acceptance at the requested narrow sizes. No sensitive values in URLs, storage, logs or presentation session snapshots. Legacy mocked affordances remain outside this bounded package.
 
 CKS-first presentation rule: CKS Red is the safe commerce primary and active customer-navigation color. Savt Green remains for rewards, savings and positive Savt ecosystem meaning. This visual rule does not change lifecycle, authority, permissions, payment finality or order state.
+
+Customer shopping labels use Browse and Basket while internal `categories`, `cart`, and `CartController` remain stable. Home selects Fresh Produce, Household, Frozen and Beverages by normalized name from the initial customer outlet category page only, preserving that page independently of Browse pagination. A missing authoritative category has no Home tile. Browse uses all returned customer categories without a release-time category list. The Basket bar reuses the current cart-line merchandise subtotal and quantity, excludes trusted-quote fees, and is absent when empty or on Basket itself.
 
 ## CUST02B catalogue UI consequences
 

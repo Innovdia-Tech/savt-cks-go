@@ -77,6 +77,56 @@ it("provides a development-only mixed card alignment scenario", async () => {
   expect(products[1].name).toBe("Rice 02");
   expect(products[3].availability).toBe("UNAVAILABLE");
 });
+it("provides a local shopping acceptance catalogue with the four preferred categories", async () => {
+  const { api } = await setup("cust-shop01");
+  const assignment = await api.assign(address);
+  const categories = (await api.categories(assignment)).data;
+  expect(categories.map(({ name }) => name)).toEqual([
+    "Fresh Produce",
+    "Household",
+    "Frozen",
+    "Beverages",
+    "Pantry",
+  ]);
+  const selected = await api.products(assignment, {
+    page: 1,
+    categoryId: categories[0].id,
+  });
+  expect(selected.data.length).toBeGreaterThan(0);
+  expect(
+    selected.data.every((product) => product.category.id === categories[0].id),
+  ).toBe(true);
+});
+it("omits unavailable Frozen from the local customer-visible category response", async () => {
+  const { api } = await setup("cust-shop01-no-frozen");
+  const assignment = await api.assign(address);
+  const categories = (await api.categories(assignment)).data;
+  expect(categories.map(({ name }) => name)).toEqual([
+    "Fresh Produce",
+    "Household",
+    "Beverages",
+    "Pantry",
+  ]);
+  const products = (await api.products(assignment, { page: 1 })).data;
+  expect(products.every((product) => product.category.name !== "Frozen")).toBe(
+    true,
+  );
+});
+it("provides local portrait, wide, transparent, missing and failed image cases", async () => {
+  const { api } = await setup("cust-shop01-images");
+  const assignment = await api.assign(address);
+  const products = (await api.products(assignment, { page: 1 })).data;
+  expect(products.slice(0, 5).map((product) => product.imageUrl)).toEqual([
+    "https://cks-go-development.invalid/artwork/portrait.svg",
+    "https://cks-go-development.invalid/artwork/wide.svg",
+    "https://cks-go-development.invalid/artwork/transparent.svg",
+    null,
+    "https://cks-go-development.invalid/artwork/failed.svg",
+  ]);
+  expect(
+    (await api.categories(assignment)).data.map((category) => category.name),
+  ).toEqual(["Fresh Produce", "Household", "Frozen", "Beverages", "Pantry"]);
+});
 it("maps the supplied reference sample through the existing catalogue, quote and order contracts", async () => {
   const { api, quote, orders } = await setup("ux03-reference-match");
   const assignment = await api.assign(address);

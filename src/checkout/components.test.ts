@@ -54,6 +54,17 @@ const controller = {
 };
 
 describe("real cart and trusted quote presentation", () => {
+  it("uses Basket copy for the empty customer state", () => {
+    const html = renderToStaticMarkup(
+      createElement(CartScreen, {
+        state: { ...base, lines: [] },
+        controller,
+        onBrowse: () => {},
+      } as never),
+    );
+    expect(html).toContain("Your basket is empty");
+    expect(html).not.toContain("Your cart is empty");
+  });
   it("gates quote review when saved cart lines lack a current delivery assignment", () => {
     const html = renderToStaticMarkup(
       createElement(CartScreen, {
@@ -96,7 +107,7 @@ describe("real cart and trusted quote presentation", () => {
     expect(html).toContain("Tuaran, Sabah");
     expect(html).toContain("remains saved for later");
     expect(html).toContain("Keep current delivery address");
-    expect(html).toContain("Use this address &amp; clear cart");
+    expect(html).toContain("Use this address &amp; clear basket");
     expect(html).not.toContain("No serviceable outlet");
   });
   it("uses accepted checkout rows and server totals with ordinary data", () => {
@@ -321,10 +332,10 @@ describe("real cart and trusted quote presentation", () => {
         onCommit: () => {},
       } as never),
     );
-    expect(html).toContain("Clear cart and switch address?");
+    expect(html).toContain("Clear basket and switch address?");
     expect(html).toContain("Suburb outlet");
     expect(html).toContain("Keep current delivery address");
-    expect(html).toContain("Use this address &amp; clear cart");
+    expect(html).toContain("Use this address &amp; clear basket");
   });
 
   it.each([

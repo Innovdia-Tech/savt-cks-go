@@ -1,13 +1,44 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { BottomNavigation, HeaderActions } from "./Layout";
+import { BottomNavigation, HeaderActions, BasketSummaryBar } from "./Layout";
+
+it("shows an accessible Basket merchandise summary only for a nonempty basket", () => {
+  const render = (count: number) =>
+    renderToStaticMarkup(
+      createElement(BasketSummaryBar, {
+        count,
+        subtotal: "RM 11.99",
+        onOpen: () => {},
+      }),
+    );
+  expect(render(0)).toBe("");
+  expect(render(3)).toContain(
+    'aria-label="View basket, 3 items, merchandise subtotal RM 11.99"',
+  );
+  expect(render(3)).toContain("Basket · 3 items");
+  expect(render(3)).toContain("RM 11.99");
+});
 
 describe("BottomNavigation", () => {
+  it("labels Browse and Basket and caps the accessible quantity badge", () => {
+    const html = renderToStaticMarkup(
+      createElement(BottomNavigation, {
+        active: "Browse",
+        cartCount: 104,
+        onNavigate: () => {},
+      }),
+    );
+    expect(html).toContain('aria-label="Basket, 104 items"');
+    expect(html).toContain(">99+</span>");
+    expect(html).toContain(">Browse</span>");
+    expect(html).not.toContain(">Categories</span>");
+    expect(html).not.toContain(">Cart</span>");
+  });
   it("renders only supported routes and marks the active destination", () => {
     const html = renderToStaticMarkup(
       createElement(BottomNavigation, {
-        active: "Categories",
+        active: "Browse",
         cartCount: 0,
         onNavigate: () => {},
       }),
@@ -16,11 +47,11 @@ describe("BottomNavigation", () => {
     expect(html).toContain('aria-label="Primary navigation"');
     expect(html).toContain('aria-current="page"');
     expect(html).toContain("Home");
-    expect(html).toContain("Categories");
+    expect(html).toContain("Browse");
     expect(html).toContain(
-      '<span class="bottom-navigation__label">Categories</span>',
+      '<span class="bottom-navigation__label">Browse</span>',
     );
-    expect(html).toContain("Cart");
+    expect(html).toContain("Basket");
     expect(html).toContain("Orders");
     expect(html).not.toContain("Account");
   });
@@ -28,13 +59,13 @@ describe("BottomNavigation", () => {
   it("announces cart quantity without making the badge duplicate it", () => {
     const html = renderToStaticMarkup(
       createElement(BottomNavigation, {
-        active: "Cart",
+        active: "Basket",
         cartCount: 3,
         onNavigate: () => {},
       }),
     );
 
-    expect(html).toContain('aria-label="Cart, 3 items"');
+    expect(html).toContain('aria-label="Basket, 3 items"');
     expect(html).toMatch(/aria-hidden="true">3/);
   });
 });
@@ -50,7 +81,7 @@ describe("HeaderActions", () => {
       }),
     );
     expect(html).toContain("CKS Go");
-    expect(html).toContain('aria-label="Open cart"');
+    expect(html).toContain('aria-label="Open basket"');
     expect(html).toContain('aria-label="Close CKS Go"');
     expect(html).toContain("app-header__shopping-actions--shopping");
   });
@@ -190,7 +221,7 @@ describe("HeaderActions", () => {
       }),
     );
     expect(home).toContain("Home · Lot 57");
-    expect(home).toContain('aria-label="Open cart"');
+    expect(home).toContain('aria-label="Open basket"');
     expect(home).not.toContain(">CKS Go<");
     expect(home).not.toContain('aria-label="Close CKS Go"');
     expect(home).not.toContain('aria-label="Back"');

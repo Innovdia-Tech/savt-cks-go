@@ -84,7 +84,9 @@ export function CheckoutProvider({
         controller={controller}
         onCommit={(addressId) => {
           customer.select(addressId);
-          customer.announce("Delivery address changed. Your cart was cleared.");
+          customer.announce(
+            "Delivery address changed. Your basket was cleared.",
+          );
         }}
       />
     </Context.Provider>

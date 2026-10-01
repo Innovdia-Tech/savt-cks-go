@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState, type ComponentProps } from "react";
 import { PaymentPanel } from "../payment/components";
 import { MAX_LINE_QUANTITY } from "./contracts";
-import type { CartController, CartState } from "./state";
+import {
+  cartMerchandiseSummary,
+  type CartController,
+  type CartState,
+} from "./state";
 import { QuantitySelector } from "../components/QuantitySelector";
 import { BagIcon } from "../components/Icons";
 import { useProductArtworkUrl } from "../catalogue/reference-match/useArtwork";
@@ -21,15 +25,15 @@ const malaysiaTime = (value: string) =>
 const quoteErrors: Record<string, [string, string]> = {
   CHECKOUT_OUTLET_PRODUCT_NOT_FOUND: [
     "Product unavailable",
-    "A cart product was not found at this outlet. Remove it before requesting another quote.",
+    "A basket product was not found at this outlet. Remove it before requesting another quote.",
   ],
   CHECKOUT_PRODUCT_INACTIVE: [
     "Product unavailable",
-    "A cart product is no longer available. Remove it before requesting another quote.",
+    "A basket product is no longer available. Remove it before requesting another quote.",
   ],
   CHECKOUT_OUTLET_PRODUCT_UNAVAILABLE: [
     "Product unavailable",
-    "A cart product is no longer available at this outlet. Remove it before requesting another quote.",
+    "A basket product is no longer available at this outlet. Remove it before requesting another quote.",
   ],
   CHECKOUT_INSUFFICIENT_STOCK: [
     "Stock changed",
@@ -37,7 +41,7 @@ const quoteErrors: Record<string, [string, string]> = {
   ],
   CHECKOUT_OUTLET_ASSIGNMENT_MISMATCH: [
     "Assigned outlet changed",
-    "This cart no longer matches the outlet assigned to the address. Review the address before continuing.",
+    "This basket no longer matches the outlet assigned to the address. Review the address before continuing.",
   ],
   CUSTOMER_ADDRESS_CHANGED: [
     "Address changed",
@@ -53,7 +57,7 @@ const quoteErrors: Record<string, [string, string]> = {
   ],
   CUSTOMER_ASSIGNED_OUTLET_UNAVAILABLE: [
     "Assigned outlet unavailable",
-    "The assigned outlet cannot accept this cart right now.",
+    "The assigned outlet cannot accept this basket right now.",
   ],
   CHECKOUT_ADDRESS_NOT_SERVICEABLE: [
     "Address not serviceable",
@@ -88,15 +92,15 @@ const quoteErrors: Record<string, [string, string]> = {
 const transitionErrors: Record<string, [string, string]> = {
   CUSTOMER_ASSIGNMENT_INCOMPLETE: [
     "Assignment could not be completed",
-    "The assignment provider could not complete this address. Your current address and cart were kept.",
+    "The assignment provider could not complete this address. Your current address and basket were kept.",
   ],
   CUSTOMER_NO_SERVICEABLE_OUTLET: [
     "No serviceable outlet",
-    "No outlet can serve that address right now. Your current address and cart were kept.",
+    "No outlet can serve that address right now. Your current address and basket were kept.",
   ],
   CUSTOMER_ADDRESS_CHANGED: [
     "Address changed",
-    "The saved address changed before assignment. Reload addresses before trying again; your current address and cart were kept.",
+    "The saved address changed before assignment. Reload addresses before trying again; your current address and basket were kept.",
   ],
 };
 
@@ -104,7 +108,7 @@ export function AddressTransitionError({ error }: { error: string | null }) {
   if (!error) return null;
   const [title, message] = transitionErrors[error] ?? [
     "Assigned outlet unavailable",
-    "We could not verify the assigned outlet for that address. Your current address and cart were kept.",
+    "We could not verify the assigned outlet for that address. Your current address and basket were kept.",
   ];
   return (
     <section className="quote-error" role="alert">
@@ -274,21 +278,18 @@ export function CartScreen({
   if (!state.lines.length)
     return (
       <section className="catalogue-state cart-empty" role="status">
-        <h2>Your cart is empty</h2>
+        <h2>Your basket is empty</h2>
         <p>Add available products from your assigned outlet.</p>
         <button className="customer-button customer-primary" onClick={onBrowse}>
           Browse products
         </button>
       </section>
     );
-  const subtotal = state.lines.reduce(
-    (sum, line) => sum + line.displayedUnitPriceMinor * line.quantity,
-    0,
-  );
+  const subtotal = cartMerchandiseSummary(state.lines).subtotalMinor;
   const error = state.error
     ? (quoteErrors[state.error] ?? [
         "Quote unavailable",
-        "The trusted quote could not be created. Review the cart and try again.",
+        "The trusted quote could not be created. Review the basket and try again.",
       ])
     : null;
   return (
@@ -321,7 +322,7 @@ export function CartScreen({
       <section className="cart-lines" aria-labelledby="cart-lines-title">
         <div className="cart-section-heading">
           <h2 id="cart-lines-title" className="sr-only">
-            Cart items
+            Basket items
           </h2>
         </div>
         {state.lines.map((line) => (
@@ -469,7 +470,7 @@ export function AddressChangeDialog({
     >
       <h2 id="cart-switch-title">
         {pending.assignment
-          ? "Clear cart and switch address?"
+          ? "Clear basket and switch address?"
           : "Change delivery address?"}
       </h2>
       <div id="cart-switch-description">
@@ -480,13 +481,13 @@ export function AddressChangeDialog({
         </p>
         <p>
           {pending.assignment
-            ? `This address is assigned to ${pending.assignment.outletDisplayName}. Your current cart belongs to another outlet.`
+            ? `This address is assigned to ${pending.assignment.outletDisplayName}. Your current basket belongs to another outlet.`
             : "This address has been saved, but we are not delivering there yet."}
         </p>
         <p>
-          Keep your current delivery address and cart, or use this address and
-          clear the cart and quote. This address remains saved for later if you
-          keep your current delivery address.
+          Keep your current delivery address and basket, or use this address and
+          clear the basket and quote. This address remains saved for later if
+          you keep your current delivery address.
         </p>
       </div>
       <div className="cart-dialog-actions">
@@ -504,7 +505,7 @@ export function AddressChangeDialog({
             if (addressId) onCommit(addressId);
           }}
         >
-          Use this address &amp; clear cart
+          Use this address &amp; clear basket
         </button>
       </div>
     </dialog>

@@ -35,6 +35,18 @@ export type CartLine = {
   displayedUnitPriceMinor: number;
   currency: "MYR";
 };
+export function cartMerchandiseSummary(
+  lines: Pick<CartLine, "quantity" | "displayedUnitPriceMinor">[],
+) {
+  return lines.reduce(
+    (summary, line) => ({
+      count: summary.count + line.quantity,
+      subtotalMinor:
+        summary.subtotalMinor + line.quantity * line.displayedUnitPriceMinor,
+    }),
+    { count: 0, subtotalMinor: 0 },
+  );
+}
 export type CartAssignment = {
   outletId: string;
   outletDisplayName: string;
