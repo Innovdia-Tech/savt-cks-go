@@ -2,7 +2,7 @@ import type { PinCoordinate, PinMapAdapter } from "./DeliveryPinMap";
 
 /** Local visual acceptance adapter. No Google script or network request is made. */
 export const developmentPinMapAdapter: PinMapAdapter = {
-  async mount(element, initial, onIdle) {
+  async mount(element, initial, onIdle, _onFailure, onMove) {
     if (new URLSearchParams(window.location.search).has("map-loading"))
       return new Promise(() => undefined);
     if (new URLSearchParams(window.location.search).has("map-unavailable"))
@@ -39,6 +39,7 @@ export const developmentPinMapAdapter: PinMapAdapter = {
       button.setAttribute("aria-label", direction.title);
       button.textContent = direction.symbol;
       button.addEventListener("click", () => {
+        onMove();
         center = {
           latitude: center.latitude + direction.latitude,
           longitude: center.longitude + direction.longitude,
@@ -60,6 +61,7 @@ export const developmentPinMapAdapter: PinMapAdapter = {
     element.append(scene);
     return {
       recenter(next) {
+        onMove();
         center = next;
         testCenters?.push({ ...center });
         scene.style.setProperty("--pan-x", "0px");
