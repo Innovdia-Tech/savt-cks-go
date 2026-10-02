@@ -57,9 +57,7 @@ const bind = (c: CatalogueController, patch: Record<string, unknown> = {}) =>
     ...patch,
   } as never);
 it("keeps the authoritative initial category page for Home after Browse pagination", async () => {
-  const first = page([
-    { id: "fresh", code: "FRESH_PRODUCE", name: "Fresh Produce" },
-  ]);
+  const first = page([{ id: "fresh", code: "001", name: "Fresh Produce" }]);
   const second = page([{ id: "other", code: "OTHER_CATEGORY", name: "Other" }]);
   const categories = vi.fn(async (_a, filter: { page: number }) =>
     filter.page === 1 ? first : second,
@@ -93,7 +91,7 @@ it("finds active Home slots beyond the first directory page while Browse stays p
     ...page([
       {
         id: "00000000-0000-4000-8000-000000000051",
-        code: "FRESH_PRODUCE",
+        code: "001",
         name: "Fresh Fruits & Vegetables",
       },
     ]),
@@ -114,7 +112,7 @@ it("finds active Home slots beyond the first directory page while Browse stays p
 
   expect(
     homeCategories(c.getSnapshot().homeCategories).map(({ code }) => code),
-  ).toEqual(["FRESH_PRODUCE"]);
+  ).toEqual(["001"]);
   expect(c.getSnapshot().categories).toEqual(first.data);
   c.dispose();
 });

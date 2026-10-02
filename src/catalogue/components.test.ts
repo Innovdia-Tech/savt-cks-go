@@ -261,8 +261,10 @@ it("renders approved Home WebP artwork by code while keeping renamed backend lab
       }) => React.ReactNode;
     };
   for (const [code, name, file] of [
-    ["HOUSEHOLD", "Household Essentials", "household.webp"],
-    ["FROZEN", "Frozen Food", "frozen.webp"],
+    ["001", "Seasonal picks", "fresh-produce.webp"],
+    ["002", "Household Essentials", "household.webp"],
+    ["003", "Frozen Food", "frozen.webp"],
+    ["004", "Drinks", "beverages.webp"],
   ]) {
     const html = renderToStaticMarkup(
       createElement(catalogue.CategoryArtwork!, { code, name }),

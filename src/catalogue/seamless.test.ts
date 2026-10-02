@@ -9,10 +9,17 @@ const fixture = vi.hoisted(() => ({
   catalogue: {
     phase: "ready",
     q: "",
-    categories: [{ id: "frozen", code: "FROZEN", name: "Frozen Food" }],
+    categories: [{ id: "frozen", code: "003", name: "Frozen Food" }],
     homeCategories: [
-      { id: "frozen", code: "FROZEN", name: "Frozen Food" },
-      { id: "household", code: "HOUSEHOLD", name: "Household" },
+      { id: "drinks", code: "004", name: "Beverages" },
+      {
+        id: "unrelated",
+        code: "SYNTHETIC_OTHER",
+        name: "Other active category",
+      },
+      { id: "frozen", code: "003", name: "Frozen Food" },
+      { id: "household", code: "002", name: "Household" },
+      { id: "fresh", code: "001", name: "Fresh Produce" },
     ],
     categoryId: undefined as string | undefined,
     categoryPage: 1,
@@ -78,9 +85,51 @@ it("shows accumulated later-page categories in Browse without manual directory p
   window.location.hash = "#categories";
   const html = render();
   expect(html).toContain("Household");
+  for (const category of fixture.catalogue.homeCategories)
+    expect(html).toContain(category.name);
   expect(html).toContain("All products");
   expect(html).not.toContain("Previous categories");
   expect(html).not.toContain("More categories");
+});
+
+it("renders exactly four Home shortcuts in fixed code order with backend labels and approved artwork", () => {
+  const html = render();
+  const shortcuts =
+    html.split('class="catalogue-category-tiles"')[1]?.split("</section>")[0] ??
+    "";
+  expect(html).toContain('id="home-categories-title">Categories');
+  expect(html).toContain("See all");
+  const expected = [
+    ["Fresh Produce", "fresh-produce.webp"],
+    ["Household", "household.webp"],
+    ["Frozen Food", "frozen.webp"],
+    ["Beverages", "beverages.webp"],
+  ];
+  expect(shortcuts.match(/<button/g)).toHaveLength(4);
+  let position = -1;
+  for (const [name, file] of expected) {
+    const artworkPosition = shortcuts.indexOf(file);
+    expect(artworkPosition).toBeGreaterThan(position);
+    position = shortcuts.indexOf(`<span>${name}</span>`, artworkPosition);
+    expect(position).toBeGreaterThan(artworkPosition);
+  }
+  expect(shortcuts).not.toContain("Other active category");
+});
+
+it("keeps code-selected Fresh artwork and exposes the renamed backend label", () => {
+  const fresh = fixture.catalogue.homeCategories.find(
+    (category) => category.code === "001",
+  )!;
+  const originalName = fresh.name;
+  fresh.name = "Seasonal picks";
+  try {
+    const html = render();
+    expect(html).toContain("fresh-produce.webp");
+    expect(html).toContain("<span>Seasonal picks</span>");
+    expect(html).not.toContain("Fresh Produce");
+  } finally {
+    fresh.name = originalName;
+  }
 });
 
 it("uses the selected category as screen and search context and offers a normal empty recovery", () => {
