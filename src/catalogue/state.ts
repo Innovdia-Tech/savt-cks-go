@@ -124,7 +124,7 @@ export class CatalogueController {
     )
       phase = "coordinates";
     this.update({ phase, readOnly: binding.readOnly });
-    if (phase === "assignment-loading") void this.load();
+    if (phase === "assignment-loading") return this.load();
   }
   search(q: string) {
     this.update({ q, page: 1, detail: null, detailId: undefined });
@@ -170,6 +170,12 @@ export class CatalogueController {
   retry() {
     return this.load();
   }
+  async refresh(binding: Binding): Promise<boolean> {
+    const generation = this.generation;
+    const rebound = this.bind(binding);
+    if (generation !== this.generation) return (await rebound) ?? false;
+    return this.load(true);
+  }
   private armExpiry(a: Assignment) {
     clearTimeout(this.timer);
     this.timer = setTimeout(
@@ -202,7 +208,7 @@ export class CatalogueController {
     if (Date.parse(a.expiresAt) <= this.now())
       throw new CatalogueError("CUSTOMER_ASSIGNMENT_CONTEXT_EXPIRED");
   }
-  private async load() {
+  private async load(background = false): Promise<boolean> {
     const binding = this.binding;
     if (
       !binding?.session ||
@@ -212,7 +218,15 @@ export class CatalogueController {
       binding.address.latitude === null ||
       binding.address.longitude === null
     )
-      return;
+      return false;
+    let retained =
+      background &&
+      (this.state.phase === "no-service" ||
+        (this.state.phase === "ready" &&
+          this.state.assignment &&
+          Date.parse(this.state.assignment.expiresAt) > this.now()))
+        ? this.state
+        : null;
     this.cancel();
     const generation = this.generation;
     const controller = new AbortController();
@@ -224,22 +238,23 @@ export class CatalogueController {
       try {
         let a = this.state.assignment;
         if (!a || Date.parse(a.expiresAt) <= this.now()) {
-          this.update({
-            phase: "assignment-loading",
-            assignment: null,
-            products: null,
-            detail: null,
-            categories: [],
-            homeCategories: [],
-            page: 1,
-            categoryPage: 1,
-            error: null,
-          });
+          if (!retained)
+            this.update({
+              phase: "assignment-loading",
+              assignment: null,
+              products: null,
+              detail: null,
+              categories: [],
+              homeCategories: [],
+              page: 1,
+              categoryPage: 1,
+              error: null,
+            });
           a = await this.api.assign(
             { id: binding.address.id, rowVersion: binding.address.rowVersion },
             signal,
           );
-          if (!current()) return;
+          if (!current()) return false;
           if (
             a.customerAddressId !== binding.address.id ||
             a.addressRowVersion !== binding.address.rowVersion
@@ -250,12 +265,13 @@ export class CatalogueController {
           this.update({ assignment: a });
         }
         this.armExpiry(a);
-        this.update({
-          phase: "loading",
-          products: null,
-          detail: null,
-          error: null,
-        });
+        if (!retained || !this.state.assignment)
+          this.update({
+            phase: "loading",
+            products: null,
+            detail: null,
+            error: null,
+          });
         const filter = {
           page: this.state.page,
           q: this.state.q,
@@ -268,7 +284,7 @@ export class CatalogueController {
             ? this.api.detail(a, detailId, signal)
             : this.api.products(a, filter, signal),
         ]);
-        if (!current()) return;
+        if (!current()) return false;
         this.validateMeta(categories.meta, a);
         this.validateMeta(result.meta, a);
         if (
@@ -288,7 +304,7 @@ export class CatalogueController {
               { page: nextPage },
               signal,
             );
-            if (!current()) return;
+            if (!current()) return false;
             this.validateMeta(next.meta, a);
             if (
               next.meta.page !== nextPage ||
@@ -313,9 +329,9 @@ export class CatalogueController {
             : { products: result as Page<Product> }),
         });
         this.armExpiry(a);
-        return;
+        return true;
       } catch (error) {
-        if (!current()) return;
+        if (!current()) return false;
         const code =
           error instanceof CatalogueError ? error.code : "INVALID_RESPONSE";
         if (
@@ -325,11 +341,12 @@ export class CatalogueController {
         ) {
           this.bootstrapSession = binding.session;
           await this.reloadCustomer();
-          if (!current()) return;
+          if (!current()) return false;
           attempt--;
           continue;
         }
         if (attempt === 0 && renewCodes.includes(code)) {
+          retained = null;
           this.update({
             assignment: null,
             categories: [],
@@ -340,6 +357,19 @@ export class CatalogueController {
             categoryPage: 1,
           });
           continue;
+        }
+        if (
+          retained &&
+          ["NETWORK_ERROR", "REQUEST_TIMEOUT"].includes(code) &&
+          (retained.phase === "no-service" ||
+            (retained.assignment &&
+              this.state.assignment?.assignmentContextId ===
+                retained.assignment.assignmentContextId &&
+              Date.parse(retained.assignment.expiresAt) > this.now()))
+        ) {
+          this.update(retained);
+          if (retained.assignment) this.armExpiry(retained.assignment);
+          return false;
         }
         this.update({
           phase:
@@ -361,8 +391,9 @@ export class CatalogueController {
             : {}),
         });
         if (this.state.assignment) this.armExpiry(this.state.assignment);
-        return;
+        return code === "CUSTOMER_NO_SERVICEABLE_OUTLET";
       }
     }
+    return false;
   }
 }

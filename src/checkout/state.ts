@@ -218,9 +218,11 @@ export class CartController {
       current.addressRowVersion === next.addressRowVersion
     )
       return;
+    // Retained lines still own their outlet after an incomplete address rebind.
+    const basketOutlet = current?.outletId ?? this.state.lines[0]?.outletId;
     if (
-      current &&
-      current.outletId !== next.outletId &&
+      basketOutlet &&
+      basketOutlet !== next.outletId &&
       this.state.lines.length
     ) {
       this.update({

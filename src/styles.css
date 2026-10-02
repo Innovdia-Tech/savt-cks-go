@@ -2,6 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
+.app-shell--shopping {
+  position: relative;
+}
+.app-pull-refresh {
+  position: absolute;
+  z-index: var(--z-toast);
+  top: calc(0.5rem + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-chip);
+  padding: 0.4rem 0.75rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.app-pull-refresh__arrow,
+.app-pull-refresh .ui-spinner {
+  color: var(--color-cks-primary);
+}
+.customer-status-toast {
+  position: fixed;
+  z-index: var(--z-toast);
+  bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: min(350px, calc(100vw - 2rem));
+  margin: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  padding: 0.65rem 0.85rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  pointer-events: none;
+}
+.customer-status-toast__check {
+  color: var(--color-savt-reward-dark);
+}
+.catalogue-no-service__refresh-hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  text-align: center;
+  font-size: 0.8125rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-pull-refresh .ui-spinner {
+    animation: none;
+  }
+}
+
 @font-face {
   font-family: Inter;
   src: url("./assets/fonts/Inter-Regular.otf") format("opentype");
@@ -293,6 +354,10 @@ a[href] {
     grid-template-columns: minmax(0, 1fr);
     align-items: center;
     gap: var(--space-2);
+  }
+
+  .app-header__embedded-shopping--refresh {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .app-header__embedded-title {

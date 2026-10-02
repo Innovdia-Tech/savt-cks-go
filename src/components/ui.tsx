@@ -171,6 +171,7 @@ export function SystemState({
   actionLabel,
   onAction,
   busy = false,
+  icon,
 }: {
   tone: "loading" | "empty" | "error";
   title: string;
@@ -178,6 +179,7 @@ export function SystemState({
   actionLabel?: string;
   onAction?: () => void;
   busy?: boolean;
+  icon?: ReactNode;
 }) {
   return (
     <section
@@ -187,13 +189,14 @@ export function SystemState({
       aria-busy={busy || undefined}
     >
       <span className="ui-system-state__mark" aria-hidden="true">
-        {tone === "loading" ? (
-          <span className="ui-spinner" />
-        ) : tone === "error" ? (
-          "!"
-        ) : (
-          "—"
-        )}
+        {icon ??
+          (tone === "loading" ? (
+            <span className="ui-spinner" />
+          ) : tone === "error" ? (
+            "!"
+          ) : (
+            "—"
+          ))}
       </span>
       <h2>{title}</h2>
       <p>{description}</p>

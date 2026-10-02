@@ -21,6 +21,8 @@ async function render(
     | typeof CheckoutAddress
     | typeof CustomerProfileScreen
     | typeof DeliveryAddressLink,
+  notice?: "success" | "persistent",
+  shellOwnsTransientNotice = false,
 ) {
   const session = new CustomerSessionController(
     new DevelopmentCustomerApi(false),
@@ -36,14 +38,39 @@ async function render(
   );
   await session.start();
   await controller.load();
-  return renderToStaticMarkup(
+  if (notice === "success")
+    controller.announceTransient("Address saved", "success");
+  if (notice === "persistent") controller.announce("Reload the list");
+  const html = renderToStaticMarkup(
     createElement(CustomerDataProvider, {
       controller,
-      children: createElement(component, { onManage: () => {} }),
+      children:
+        component === CustomerProfileScreen
+          ? createElement(CustomerProfileScreen, { shellOwnsTransientNotice })
+          : createElement(
+              component as
+                | typeof ProfileSummary
+                | typeof CheckoutAddress
+                | typeof DeliveryAddressLink,
+              { onManage: () => {} },
+            ),
     }),
   );
+  controller.dispose();
+  return html;
 }
 describe("customer presentation", () => {
+  it("lets the shell own transient Profile notices while keeping persistent recovery", async () => {
+    expect(
+      await render("mixed", CustomerProfileScreen, "success", true),
+    ).not.toContain("customer-status-toast");
+    expect(await render("mixed", CustomerProfileScreen, "success")).toContain(
+      "customer-status-toast",
+    );
+    expect(
+      await render("mixed", CustomerProfileScreen, "persistent", true),
+    ).toContain("Reload the list");
+  });
   it("renders a safe profile and stale warning", async () => {
     const html = await render("stale", ProfileSummary);
     expect(html).toContain("Synthetic member");
