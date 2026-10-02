@@ -153,8 +153,8 @@ describe("real cart and trusted quote presentation", () => {
     expect(html.indexOf('aria-label="Quantity for Rice"')).toBeLessThan(
       html.indexOf("Item subtotal"),
     );
-    expect(html.indexOf("Item subtotal")).toBeLessThan(
-      html.indexOf('aria-label="Remove Rice"'),
+    expect(html.indexOf('aria-label="Remove Rice"')).toBeLessThan(
+      html.indexOf("Item subtotal"),
     );
     expect(html).toContain("Remove Rice");
     expect(html).toContain('role="group"');
@@ -164,6 +164,54 @@ describe("real cart and trusted quote presentation", () => {
     expect(html).not.toMatch(
       /<(?:button|a)[^>]*>[^<]*(?:pay|confirm order|tracking)/i,
     );
+  });
+
+  it.each([1, 6])(
+    "keeps quantity %i bound to its unit price and only repeats a subtotal for multiple units",
+    (quantity) => {
+      const html = renderToStaticMarkup(
+        createElement(CartScreen, {
+          state: { ...base, lines: [{ ...line, quantity }] },
+          controller,
+          onBrowse: () => {},
+        } as never),
+      );
+      expect(html).toContain('aria-label="Quantity for Rice"');
+      expect(html).toContain(`<span aria-live="polite">${quantity}</span>`);
+      expect(html).toContain('aria-label="Remove Rice"');
+      expect(html).toContain("1 kg");
+      expect(html).toMatch(/cart-line-copy[^]*RM[^<]*4\.50/);
+      if (quantity === 1) expect(html).not.toContain("Item subtotal</span>");
+      else expect(html).toMatch(/Item subtotal<\/span><strong>RM[^<]*27\.00/);
+    },
+  );
+
+  it("keeps many products within one Your items surface and freezes each product's controls", () => {
+    const lines = Array.from({ length: 10 }, (_, index) => ({
+      ...line,
+      outletProductId: `item-${index}`,
+      product: { ...line.product, name: `Rice ${index + 1}` },
+      quantity: index === 0 ? 6 : 1,
+    }));
+    const html = renderToStaticMarkup(
+      createElement(CartScreen, {
+        state: { ...base, lines, paymentFrozen: true },
+        controller,
+        onBrowse: () => {},
+      } as never),
+    );
+    expect(html.match(/class="cart-lines"/g)).toHaveLength(1);
+    expect(html.match(/class="cart-line"/g)).toHaveLength(10);
+    expect(html.match(/disabled=""/g)).toHaveLength(31);
+    expect(html.match(/Item subtotal<\/span>/g)).toHaveLength(1);
+    for (const item of lines) {
+      expect(html).toContain(`Quantity for ${item.product.name}`);
+      expect(html).toContain(`Remove ${item.product.name}`);
+      expect(html).toContain(`Image unavailable for ${item.product.name}`);
+    }
+    expect(html).toMatch(/cart-display-total[^]*RM[^<]*67\.50/);
+    expect(html).toContain('<h2 id="cart-lines-title">Your items</h2>');
+    expect(html).not.toContain("Your items (10)");
   });
 
   it("presents authoritative server lines, fees, total, timing and expiry", () => {

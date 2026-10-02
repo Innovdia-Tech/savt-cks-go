@@ -366,14 +366,6 @@ export function CartScreen({
                 controller.setQuantity(line.outletProductId, line.quantity + 1)
               }
             />
-            {line.quantity > 1 && (
-              <p className="cart-line-subtotal">
-                <span>Item subtotal</span>
-                <strong>
-                  {money(line.displayedUnitPriceMinor * line.quantity)}
-                </strong>
-              </p>
-            )}
             <button
               className="cart-remove"
               aria-label={`Remove ${line.product.name}`}
@@ -383,6 +375,14 @@ export function CartScreen({
               <TrashIcon className="h-4 w-4" />
               Remove
             </button>
+            {line.quantity > 1 && (
+              <p className="cart-line-subtotal">
+                <span>Item subtotal</span>
+                <strong>
+                  {money(line.displayedUnitPriceMinor * line.quantity)}
+                </strong>
+              </p>
+            )}
           </article>
         ))}
       </section>

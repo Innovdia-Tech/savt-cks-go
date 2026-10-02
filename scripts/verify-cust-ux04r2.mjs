@@ -227,8 +227,7 @@ try {
       return {
         quantityBottom: rect(".cart-quantity").bottom,
         subtotalTop: rect(".cart-line-subtotal").top,
-        subtotalBottom: rect(".cart-line-subtotal").bottom,
-        removeTop: rect(".cart-remove").top,
+        removeBottom: rect(".cart-remove").bottom,
         labelVisible:
           getComputedStyle(n.querySelector(".cart-line-subtotal span"))
             .display !== "none",
@@ -239,7 +238,7 @@ try {
     });
     assert(
       item.quantityBottom <= item.subtotalTop &&
-        item.subtotalBottom <= item.removeTop &&
+        item.removeBottom <= item.subtotalTop &&
         item.labelVisible,
     );
     assert(item.targets.every((h) => h >= 44));
