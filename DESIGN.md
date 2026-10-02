@@ -6,11 +6,11 @@ colors:
   cks-primary-pressed: "#AB171C"
   savt-reward: "#4CAF50"
   savt-reward-dark: "#3F8E1E"
-  background: "#FAFAFA"
+  background: "#EBF3E3"
   surface: "#FFFFFF"
   border: "#E9E9E9"
   text: "#231F20"
-  text-muted: "#707070"
+  text-muted: "#666666"
   icon-muted: "#878787"
   info: "#3B82F6"
   warning: "#F59E0B"
@@ -50,7 +50,7 @@ components:
     textColor: "#3F8E1E"
     borderRadius: "999px"
   app-shell:
-    backgroundColor: "#FAFAFA"
+    backgroundColor: "#EBF3E3"
     maxWidth: "430px"
 ---
 
@@ -70,13 +70,13 @@ Runtime ownership uses Model B: CSS custom properties in `src/styles.css` own ac
 
 - CKS Red is the primary commerce/action role: Add to basket, checkout, payment, order actions, active customer navigation and Basket emphasis.
 - Savt Green and Savt Green Dark are reserved for Savt Cash, rewards, savings, earned benefits and positive Savt ecosystem messages. Green is not the universal CTA color.
-- CUST-UX04 aligns background, surface, border and ink with Savt’s neutral language. Supporting text uses #707070 for normal-text contrast; #878787 is reserved for neutral icons. Info, warning and error are semantic and always paired with copy/icon/shape, never color alone.
+- CUST-UX04R uses Savt Home’s soft green page family (#EBF3E3), white fields/cards and neutral ink. Supporting text uses #666666 for normal-text contrast on green and white; #878787 is reserved for neutral icons. Info, warning and error are semantic and always paired with copy/icon/shape, never color alone.
 - Error red and brand red have different roles even when visually related: destructive/error messaging uses the error token; ordinary safe commerce uses CKS primary.
 - Small CKS-red text uses a white surface to retain AA contrast with the exact brand red. Search actions, catalogue links and selected category chips preserve neutral white backing rather than introducing another red.
 
 ## Typography
 
-Inter uses the same locally bundled regular, medium, semibold and bold assets as Savt, with the system stack as fallback. Main titles are 20/28 at 700; sections 16/24 at 600; product names 14px at 600 with two lines; prices 16px at 700; body 14/20 at 400; supporting copy 13px at 400; meta 12/18 at 400; buttons 14/18 at 600; navigation labels 12px at 500. The Flutter host title is Inter 18px at 600. Feature files consume the shared type scale. Decorative lettering may retain a heavier weight, but ordinary customer hierarchy stops at 700.
+Inter uses the same locally bundled regular, medium, semibold and bold assets as Savt, with the system stack as fallback. Main titles and Home section headings are 20/28 at 700; other sections are 16/24 at 600; product names 14px at 600 with two lines; prices 16px at 700; body 14/20 at 400; supporting copy 13px at 400; meta 12/18 at 400; buttons 14/18 at 600; See all links 14px at 500; navigation labels 12px at 500. The Flutter host title is Inter 18px at 600. Feature files consume the shared type scale. Decorative lettering may retain a heavier weight, but ordinary customer hierarchy stops at 700.
 
 ## Layout
 
@@ -199,4 +199,4 @@ Typed search uses the authenticated CKS Go customer location API and bounded Goo
 
 ## CUST-UX04 Savt continuity
 
-Runtime changes retain the accepted Home sequence and all controller authority. Delivery context leads with Deliver to and a concise Change action. Featured products avoids unsupported personalization. Browse consumes the existing accumulated ACTIVE category directory used by Home, without a second source or customer directory pagination; selected categories supply the screen/search title. Category artwork stays 64–66px with medium two-line labels. The entire merchandise-only Basket bar remains tappable, with a decorative chevron. Primary buttons use flat elevation; inactive outline icons use #878787 while their labels use the accessible supporting neutral. Embedded Home relies on Flutter for Back, Close and the page-level CKS Go title. Prices/review errors use customer language; quote classes and payment finality remain internal and unchanged. Order stage PICK_AND_PACK renders Preparing your order.
+Runtime changes retain the accepted Home sequence and all controller authority. Embedded delivery context leads with Deliver to and a compact address chevron; standalone retains Change and its Basket shortcut. Embedded Home omits the redundant Basket circle; navigation and the merchandise-only sticky Basket bar remain available. Search retains its form, keyboard Search/Enter, debounce, composition and clear behavior without a separate visible submit button. The carousel retains slide authority, swipe, keyboard, named dots, pause/play and reduced-motion behavior; embedded controls use dots plus a small icon, while standalone arrows are restrained. Featured products avoids unsupported personalization. Browse consumes the existing accumulated ACTIVE category directory used by Home, without a second source or customer directory pagination; selected categories supply the screen/search title. Category artwork stays 64–66px with medium two-line labels. White product cards have contained images, light borders, no shadow and stable purchase targets. Inactive outline icons use #878787 while their labels use the accessible supporting neutral. Embedded Home relies on Flutter for Back, Close and the page-level CKS Go title. Prices/review errors use customer language; quote classes and payment finality remain internal and unchanged. Order stage PICK_AND_PACK renders Preparing your order.

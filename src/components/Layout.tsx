@@ -167,8 +167,7 @@ export function DeliveryHeader({
       <header className={`app-header app-header--${context} app-header--embedded`}>
         {context === "home" ? (
           <div className="app-header__embedded-shopping">
-            {addressLink ?? <DeliveryAddressLink onManage={onManage} />}
-            <CartButton onCart={onCart} cartCount={cartCount} />
+            {addressLink ?? <DeliveryAddressLink onManage={onManage} embeddedHome />}
           </div>
         ) : title ? (
           <div className="app-header__embedded-title">{title}</div>

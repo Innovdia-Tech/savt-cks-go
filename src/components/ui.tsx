@@ -101,6 +101,7 @@ type SearchFieldProps = Omit<
   onClear: () => void;
   onSubmit?: FormEventHandler<HTMLFormElement>;
   submitLabel?: string;
+  submitControl?: "button" | "keyboard";
 };
 
 export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
@@ -113,6 +114,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
       onClear,
       onSubmit,
       submitLabel = "Search",
+      submitControl = "button",
       className = "",
       ...props
     },
@@ -138,7 +140,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
               ×
             </IconButton>
           )}
-          {onSubmit && (
+          {onSubmit && submitControl === "button" && (
             <Button type="submit" variant="secondary">
               {submitLabel}
             </Button>

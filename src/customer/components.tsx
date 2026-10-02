@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ChevronRightIcon } from "../components/Icons";
 import { useCustomer } from "./context";
 import { errorMessage } from "./errors";
 import { DeliveryLocationSetup } from "./DeliveryLocationSetup";
@@ -366,7 +367,13 @@ export function CheckoutAddress({
     </section>
   );
 }
-export function DeliveryAddressLink({ onManage }: { onManage: () => void }) {
+export function DeliveryAddressLink({
+  onManage,
+  embeddedHome = false,
+}: {
+  onManage: () => void;
+  embeddedHome?: boolean;
+}) {
   const { state, controller } = useCustomer();
   const a = controller.selectedAddress();
   return (
@@ -386,9 +393,13 @@ export function DeliveryAddressLink({ onManage }: { onManage: () => void }) {
               : "Add delivery address"}
         </strong>
       </span>
-      <span className="delivery-address-link__change">
-        {a ? "Change" : "Add"}
-      </span>
+      {embeddedHome ? (
+        <ChevronRightIcon className="delivery-address-link__chevron" />
+      ) : (
+        <span className="delivery-address-link__change">
+          {a ? "Change" : "Add"}
+        </span>
+      )}
     </button>
   );
 }

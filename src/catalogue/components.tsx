@@ -32,6 +32,7 @@ import {
 } from "../components/ui";
 import {
   BabyIcon,
+  ChevronRightIcon,
   BagIcon,
   DairyIcon,
   DrinkIcon,
@@ -992,35 +993,40 @@ export function CatalogueApp({
               />
             ) : (
               <>
-                {browse && state.phase === "ready" && (
-                  <SearchField
-                    className="catalogue-search"
-                    id="catalogue-search"
-                    ref={search}
-                    label="Search products"
-                    maxLength={200}
-                    value={query}
-                    placeholder={
-                      route === "categories" && selectedCategoryName
-                        ? `Search ${selectedCategoryName}`
-                        : "Search products"
-                    }
-                    onCompositionStart={() => setComposing(true)}
-                    onCompositionEnd={() => setComposing(false)}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (!composing) void controller.search(query);
-                    }}
-                    onClear={() => {
-                      setQuery("");
-                      void controller.search("");
-                      search.current?.focus();
-                    }}
-                  />
-                )}
+                {browse &&
+                  (state.phase === "ready" || state.phase === "loading") && (
+                    <SearchField
+                      className="catalogue-search"
+                      id="catalogue-search"
+                      ref={search}
+                      label="Search products"
+                      submitControl="keyboard"
+                      enterKeyHint="search"
+                      aria-busy={state.phase === "loading" || undefined}
+                      maxLength={200}
+                      value={query}
+                      placeholder={
+                        route === "categories" && selectedCategoryName
+                          ? `Search ${selectedCategoryName}`
+                          : "Search products"
+                      }
+                      onCompositionStart={() => setComposing(true)}
+                      onCompositionEnd={() => setComposing(false)}
+                      onChange={(e) => setQuery(e.target.value)}
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (!composing) void controller.search(query);
+                      }}
+                      onClear={() => {
+                        setQuery("");
+                        void controller.search("");
+                        search.current?.focus();
+                      }}
+                    />
+                  )}
                 {route === "home" && state.phase === "ready" && (
                   <AdvertisingCarousel
+                    embeddedHost={embeddedHost}
                     slides={advertisingSlides}
                     onNavigate={(target) => navigate(target)}
                   />
@@ -1040,7 +1046,7 @@ export function CatalogueApp({
                           void controller.category(undefined, 1);
                         }}
                       >
-                        See all
+                        See all <ChevronRightIcon className="h-4 w-4" />
                       </button>
                     </div>
                     <div className="catalogue-category-tiles">
@@ -1163,7 +1169,7 @@ export function CatalogueApp({
                             void controller.category(undefined, 1);
                           }}
                         >
-                          See all
+                          See all <ChevronRightIcon className="h-4 w-4" />
                         </button>
                       )}
                     </div>

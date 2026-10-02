@@ -20,6 +20,33 @@ const errors = [];
 
 async function capture(page, width, name) {
   await page.evaluate(() => document.fonts.ready);
+  // Wait for navigation color transitions to finish before measuring/capturing.
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+  const navigation = await page
+    .locator(".bottom-navigation button")
+    .evaluateAll((nodes) =>
+      nodes.map((n) => ({
+        active: n.classList.contains("is-active"),
+        icon: getComputedStyle(n.querySelector("svg")).color,
+        label: getComputedStyle(n.querySelector(".bottom-navigation__label"))
+          .color,
+      })),
+    );
+  for (const item of navigation) {
+    assert.equal(
+      item.icon,
+      item.active ? "rgb(229, 35, 41)" : "rgb(135, 135, 135)",
+    );
+    assert.equal(
+      item.label,
+      item.active ? "rgb(229, 35, 41)" : "rgb(102, 102, 102)",
+    );
+  }
   await page
     .locator(".catalogue-dev")
     .evaluateAll((nodes) => nodes.forEach((n) => (n.open = false)));
@@ -120,6 +147,10 @@ async function capture(page, width, name) {
   const customer = await page.locator("body").innerText();
   const withoutFixtures = customer.split("Synthetic development fixtures")[0];
   assert(
+    !/CKS (?:GO|go)\b/.test(withoutFixtures),
+    `${name}: customer-facing casing`,
+  );
+  assert(
     !/\b(?:assignment|serviceable|trusted quote|quote request|projection|Order identity|payment intent|idempotency)\b/i.test(
       withoutFixtures,
     ),
@@ -174,6 +205,307 @@ async function basketWithItem(page) {
   await page.getByRole("button", { name: /^View basket, / }).click();
 }
 
+async function refinedHome(page, width) {
+  assert.equal(
+    await page.locator('.app-header [aria-label^="Open basket"]').count(),
+    0,
+  );
+  assert.equal(
+    await page.locator('.catalogue-search button[type="submit"]').count(),
+    0,
+  );
+  assert.equal(await page.locator(".advertising-carousel__arrow").count(), 0);
+  assert.equal(
+    await page.locator(".advertising-carousel__play").innerText(),
+    "",
+  );
+  const metrics = await page.evaluate(() => {
+    const style = (selector) =>
+      getComputedStyle(document.querySelector(selector));
+    const type = (selector) => {
+      const s = style(selector);
+      return [s.fontSize, s.fontWeight];
+    };
+    const rect = (selector) =>
+      document.querySelector(selector).getBoundingClientRect();
+    return {
+      background: style(".app-shell").backgroundColor,
+      field: style(".catalogue-search input").backgroundColor,
+      input: type(".catalogue-search input"),
+      headings: [
+        ...document.querySelectorAll(".catalogue-section-heading h2"),
+      ].map((n) => [
+        getComputedStyle(n).fontSize,
+        getComputedStyle(n).fontWeight,
+      ]),
+      seeAll: type(".catalogue-section-heading .catalogue-link"),
+      categoryColumns: style(
+        ".catalogue-category-tiles",
+      ).gridTemplateColumns.split(" ").length,
+      categoryArtwork: rect(".catalogue-category-tiles button > span").width,
+      categoryLabel: type(".catalogue-category-tiles button > span:last-child"),
+      unit: type(".catalogue-unit"),
+      price: type(".catalogue-price"),
+      productSurface: style(".catalogue-tile").backgroundColor,
+      productShadow: style(".catalogue-tile").boxShadow,
+      headerHeight: rect(".app-header").height,
+      bannerHeight: rect(".advertising-carousel").height,
+      slideHeight: rect(".advertising-carousel__slide").height,
+      nav: [...document.querySelectorAll(".bottom-navigation button")].map(
+        (n) => {
+          const label = getComputedStyle(
+            n.querySelector(".bottom-navigation__label"),
+          );
+          const icon = n.querySelector("svg").getBoundingClientRect();
+          return {
+            size: label.fontSize,
+            weight: label.fontWeight,
+            icon: [icon.width, icon.height],
+            underline: getComputedStyle(n, "::after").content,
+            decoration: label.textDecorationLine,
+          };
+        },
+      ),
+    };
+  });
+  assert.equal(metrics.background, "rgb(235, 243, 227)");
+  assert.equal(metrics.field, "rgb(255, 255, 255)");
+  assert.deepEqual(metrics.input, ["16px", "400"]);
+  assert(metrics.headings.every((h) => h[0] === "20px" && h[1] === "700"));
+  assert.deepEqual(metrics.seeAll, ["14px", "500"]);
+  assert.equal(metrics.categoryColumns, 4);
+  assert(metrics.categoryArtwork >= 64 && metrics.categoryArtwork <= 68);
+  assert.deepEqual(metrics.categoryLabel, ["12px", "500"]);
+  assert.deepEqual(metrics.unit, ["12px", "400"]);
+  assert.deepEqual(metrics.price, ["16px", "700"]);
+  assert.equal(metrics.productSurface, "rgb(255, 255, 255)");
+  assert.equal(metrics.productShadow, "none");
+  assert(metrics.headerHeight <= (width === 320 ? 110 : 96));
+  assert(Math.abs(metrics.bannerHeight - metrics.slideHeight) < 1);
+  assert.equal(metrics.nav.length, 4);
+  for (const item of metrics.nav) {
+    assert.equal(item.size, "12px");
+    assert(["400", "500"].includes(item.weight));
+    assert.deepEqual(item.icon, [24, 24]);
+    assert(["none", "normal"].includes(item.underline));
+    assert.equal(item.decoration, "none");
+  }
+  const dots = page.locator(".advertising-carousel__dots button");
+  await dots.first().focus();
+  await page.keyboard.press("ArrowRight");
+  assert.equal(await dots.nth(1).getAttribute("aria-current"), "true");
+  await page.locator(".advertising-carousel").evaluate((n) => {
+    n.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        bubbles: true,
+        pointerType: "touch",
+        clientX: 240,
+        clientY: 80,
+      }),
+    );
+    n.dispatchEvent(
+      new PointerEvent("pointerup", {
+        bubbles: true,
+        pointerType: "touch",
+        clientX: 140,
+        clientY: 82,
+      }),
+    );
+  });
+  assert.equal(await dots.nth(2).getAttribute("aria-current"), "true");
+  await dots.first().click();
+  assert(
+    ["0s", "0.01ms", "1e-05s"].includes(
+      await page
+        .locator(".advertising-carousel__track")
+        .evaluate((n) => getComputedStyle(n).transitionDuration),
+    ),
+  );
+  const search = page.getByPlaceholder("Search products");
+  await search.evaluate((n) => {
+    window.__searchSubmissions = 0;
+    n.form.addEventListener("submit", () => window.__searchSubmissions++);
+  });
+  await search.fill("Rice");
+  await search.press("Enter");
+  assert.equal(await page.evaluate(() => window.__searchSubmissions), 1);
+  await page
+    .getByRole("button", { name: /^View Rice/ })
+    .first()
+    .waitFor();
+  assert.equal(
+    await page.getByRole("button", { name: /^View Apples/ }).count(),
+    0,
+  );
+  await search.dispatchEvent("compositionstart", { data: "Ap" });
+  await search.fill("Apples");
+  await page.waitForTimeout(400);
+  assert.equal(
+    await page.getByRole("button", { name: /^View Apples/ }).count(),
+    0,
+  );
+  await search.dispatchEvent("compositionend", { data: "Apples" });
+  await page
+    .getByRole("button", { name: /^View Apples/ })
+    .first()
+    .waitFor();
+  await page.getByRole("button", { name: "Clear search", exact: true }).click();
+  await page
+    .getByRole("button", { name: /^View Rice/ })
+    .first()
+    .waitFor();
+  assert.equal(await search.inputValue(), "");
+  assert.equal(
+    await search.evaluate((n) => document.activeElement === n),
+    true,
+  );
+  await search.blur();
+  await page
+    .getByRole("button", { name: /^Add .* to basket$/ })
+    .first()
+    .click();
+  await page.getByRole("button", { name: /^View basket, / }).waitFor();
+  await capture(page, width, "H-sticky-basket");
+  await page
+    .getByRole("button", { name: "Decrease quantity", exact: true })
+    .first()
+    .click();
+  assert.equal(await page.locator(".basket-summary").count(), 0);
+  await page.locator(".app-shell__scroll").evaluate((n) => n.scrollTo(0, 0));
+  results.push({
+    width,
+    refinement: "C–G",
+    metrics,
+    keyboardSearch: "PASS",
+    composition: "PASS",
+    swipe: "PASS",
+    keyboardCarousel: "PASS",
+  });
+}
+
+async function verifyRotation() {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.addInitScript(() => {
+    window.SavtCksGoBridge = { postMessage() {} };
+  });
+  await page.goto(`${origin}/?scenario=cust-shop01r`);
+  await page.getByText("Featured products", { exact: true }).waitFor();
+  const current = () =>
+    page
+      .locator('.advertising-carousel__dots button[aria-current="true"]')
+      .getAttribute("aria-label");
+  await page.mouse.move(0, 0);
+  const first = await current();
+  await page.waitForTimeout(6500);
+  assert.notEqual(await current(), first);
+  await page
+    .getByRole("button", { name: "Pause banner rotation", exact: true })
+    .click();
+  const paused = await current();
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(6500);
+  assert.equal(await current(), paused);
+  await page
+    .getByRole("button", { name: "Play banner rotation", exact: true })
+    .click();
+  await page.getByPlaceholder("Search products").focus();
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(6500);
+  assert.notEqual(await current(), paused);
+  await page.close();
+
+  const reduced = await browser.newPage({
+    viewport: { width: 390, height: 844 },
+    reducedMotion: "reduce",
+  });
+  reduced.on("pageerror", (error) => errors.push(error.message));
+  await reduced.addInitScript(() => {
+    window.SavtCksGoBridge = { postMessage() {} };
+  });
+  await reduced.goto(`${origin}/?scenario=cust-shop01r`);
+  await reduced.getByText("Featured products", { exact: true }).waitFor();
+  assert.equal(
+    await reduced.locator(".advertising-carousel__play").isDisabled(),
+    true,
+  );
+  const staticSlide = await reduced
+    .locator('.advertising-carousel__dots button[aria-current="true"]')
+    .getAttribute("aria-label");
+  await reduced.waitForTimeout(6500);
+  assert.equal(
+    await reduced
+      .locator('.advertising-carousel__dots button[aria-current="true"]')
+      .getAttribute("aria-label"),
+    staticSlide,
+  );
+  await reduced
+    .locator(".advertising-carousel__artwork")
+    .first()
+    .dispatchEvent("error");
+  await reduced.waitForTimeout(100);
+  assert.equal(
+    await reduced.locator(".advertising-carousel__dots button").count(),
+    2,
+  );
+  await reduced.close();
+
+  const standalone = await browser.newPage({
+    viewport: { width: 320, height: 844 },
+    reducedMotion: "reduce",
+  });
+  await standalone.goto(`${origin}/?scenario=cust-shop01r`);
+  // Existing local DEV adapter only: no SMS or external identity service.
+  await standalone
+    .getByLabel("Mobile number", { exact: true })
+    .fill("0123456789");
+  await standalone
+    .getByRole("button", { name: "Send OTP", exact: true })
+    .click();
+  await standalone.getByLabel("One-time code", { exact: true }).fill("123456");
+  await standalone
+    .getByRole("button", { name: "Verify & continue", exact: true })
+    .click();
+  await standalone.getByText("Featured products", { exact: true }).waitFor();
+  assert.equal(
+    await standalone.locator('.app-header [aria-label^="Open basket"]').count(),
+    1,
+  );
+  assert.equal(
+    await standalone.locator(".advertising-carousel__arrow").count(),
+    2,
+  );
+  assert.equal(
+    await standalone.locator(".advertising-carousel__play").innerText(),
+    "",
+  );
+  assert.deepEqual(
+    await standalone
+      .locator(".advertising-carousel__arrow svg")
+      .first()
+      .evaluate((n) => [
+        n.getBoundingClientRect().width,
+        n.getBoundingClientRect().height,
+      ]),
+    [28, 28],
+  );
+  await standalone.close();
+  results.push({
+    rotation: {
+      autoplay: "PASS",
+      pause: "PASS",
+      resume: "PASS",
+      reducedMotionNoAdvance: "PASS",
+      failedSlide: "PASS",
+      standaloneBasket: "PASS",
+      restrainedStandaloneArrows: "PASS",
+    },
+  });
+  console.log(
+    "Carousel autoplay, pause/resume, reduced motion, failure and standalone controls PASS",
+  );
+}
+
 try {
   for (const [width, height] of [
     [390, 844],
@@ -209,9 +541,10 @@ try {
         .count(),
       0,
     );
-    await capture(page, width, "A-home");
+    await refinedHome(page, width);
+    await capture(page, width, "C-home");
     await page.locator(".catalogue-tile").first().scrollIntoViewIfNeeded();
-    await capture(page, width, "C-product-cards");
+    await capture(page, width, "F-product-cards");
     const nameStyle = await page
       .locator(".catalogue-name")
       .first()
@@ -234,7 +567,7 @@ try {
         .count(),
       0,
     );
-    await capture(page, width, "B-browse");
+    await capture(page, width, "I-browse");
     await page
       .getByRole("button", { name: "Frozen Food", exact: true })
       .click();
@@ -264,7 +597,7 @@ try {
       })
       .waitFor();
     await page.getByRole("button", { name: /^View basket, / }).click();
-    await capture(page, width, "E-basket");
+    await capture(page, width, "H-basket");
     await page
       .getByRole("button", { name: "Review order", exact: true })
       .click();
@@ -280,7 +613,7 @@ try {
       .getByRole("button", { name: /^View order / })
       .first()
       .waitFor();
-    await capture(page, width, "G-orders");
+    await capture(page, width, "J-orders");
     await page
       .getByRole("button", { name: /^View order / })
       .first()
@@ -393,8 +726,11 @@ try {
     assert(!(await page.locator("body").innerText()).includes("configuration"));
     await capture(page, width, "J-startup-error");
     await page.close();
-    console.log(`${width}px: A–J and recovery states PASS`);
+    console.log(
+      `${width}px: C–J refinements and shopping recovery states PASS`,
+    );
   }
+  await verifyRotation();
   assert.deepEqual(errors, []);
   await writeFile(
     path.join(output, "results.json"),

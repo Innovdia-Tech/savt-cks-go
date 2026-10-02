@@ -196,7 +196,7 @@ describe("HeaderActions", () => {
     expect(orders).toContain('aria-label="Close CKS Go"');
   });
 
-  it("removes duplicate web chrome in the trusted embedded host while retaining delivery and cart controls", async () => {
+  it("retains embedded delivery context without duplicate title or Basket shortcut", async () => {
     const layout = (await import("./Layout")) as typeof import("./Layout") & {
       DeliveryHeader?: React.ComponentType<{
         context: "home" | "browse" | "transaction" | "orders";
@@ -221,7 +221,7 @@ describe("HeaderActions", () => {
       }),
     );
     expect(home).toContain("Home · Lot 57");
-    expect(home).toContain('aria-label="Open basket, 2 items"');
+    expect(home).not.toContain('aria-label="Open basket');
     expect(home).not.toContain(">CKS Go<");
     expect(home).not.toContain('aria-label="Close CKS Go"');
     expect(home).not.toContain('aria-label="Back"');

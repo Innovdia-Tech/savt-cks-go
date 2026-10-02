@@ -66,6 +66,26 @@ describe("shared customer UI primitives", () => {
     expect(html).toContain('aria-label="Clear search"');
   });
 
+  it("keeps native keyboard search submission and clear without a visible submit button", () => {
+    const html = renderToStaticMarkup(
+      createElement(SearchField, {
+        id: "products",
+        label: "Search products",
+        value: "rice",
+        onChange: () => {},
+        onClear: () => {},
+        onSubmit: () => {},
+        submitControl: "keyboard",
+        enterKeyHint: "search",
+      }),
+    );
+    expect(html).toContain("<form");
+    expect(html).toContain('enterKeyHint="search"');
+    expect(html).toContain('aria-label="Clear search"');
+    expect(html).not.toContain('type="submit"');
+    expect(html).not.toContain(">Search</button>");
+  });
+
   it("announces system state without exposing raw error codes", () => {
     const html = renderToStaticMarkup(
       createElement(SystemState, {

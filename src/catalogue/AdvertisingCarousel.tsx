@@ -7,7 +7,11 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from "react";
-import { ChevronLeftIcon, ChevronRightIcon } from "../components/Icons";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PlaybackIcon,
+} from "../components/Icons";
 
 export type AdvertisingTarget = "categories";
 
@@ -59,10 +63,12 @@ export function AdvertisingCarousel({
   slides,
   onNavigate,
   label = "Featured shopping",
+  embeddedHost = false,
 }: {
   slides: readonly AdvertisingSlide[];
   onNavigate: (target: AdvertisingTarget) => void;
   label?: string;
+  embeddedHost?: boolean;
 }) {
   const root = useRef<HTMLElement>(null);
   const pointerStart = useRef<{ x: number; y: number } | null>(null);
@@ -250,15 +256,19 @@ export function AdvertisingCarousel({
         })}
       </div>
       {multiple && (
-        <div className="advertising-carousel__controls">
-          <button
-            type="button"
-            className="advertising-carousel__arrow"
-            aria-label="Previous banner"
-            onClick={() => move(-1)}
-          >
-            <ChevronLeftIcon />
-          </button>
+        <div
+          className={`advertising-carousel__controls${embeddedHost ? " advertising-carousel__controls--embedded" : ""}`}
+        >
+          {!embeddedHost && (
+            <button
+              type="button"
+              className="advertising-carousel__arrow"
+              aria-label="Previous banner"
+              onClick={() => move(-1)}
+            >
+              <ChevronLeftIcon />
+            </button>
+          )}
           <div
             className="advertising-carousel__dots"
             aria-label="Choose banner"
@@ -282,16 +292,18 @@ export function AdvertisingCarousel({
             disabled={reducedMotion}
             onClick={() => setManuallyPaused((paused) => !paused)}
           >
-            {manuallyPaused ? "Play" : "Pause"}
+            <PlaybackIcon paused={manuallyPaused} />
           </button>
-          <button
-            type="button"
-            className="advertising-carousel__arrow"
-            aria-label="Next banner"
-            onClick={() => move(1)}
-          >
-            <ChevronRightIcon />
-          </button>
+          {!embeddedHost && (
+            <button
+              type="button"
+              className="advertising-carousel__arrow"
+              aria-label="Next banner"
+              onClick={() => move(1)}
+            >
+              <ChevronRightIcon />
+            </button>
+          )}
         </div>
       )}
     </section>

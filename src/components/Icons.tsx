@@ -2,6 +2,26 @@ type IconProps = {
   className?: string;
 };
 
+export function PlaybackIcon({
+  paused,
+  className = "h-5 w-5",
+}: IconProps & { paused: boolean }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={paused ? "m9 5 10 7-10 7V5Z" : "M9 6v12M15 6v12"} />
+    </svg>
+  );
+}
+
 export function SearchIcon({ className = "h-5 w-5" }: IconProps) {
   return (
     <svg
