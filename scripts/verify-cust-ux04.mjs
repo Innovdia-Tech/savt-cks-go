@@ -593,7 +593,7 @@ try {
       .click();
     await page
       .getByRole("button", {
-        name: /^View basket, 2 items, merchandise subtotal/,
+        name: /^View basket, 2 items, items subtotal/,
       })
       .waitFor();
     await page.getByRole("button", { name: /^View basket, / }).click();
@@ -601,7 +601,7 @@ try {
     await page
       .getByRole("button", { name: "Review order", exact: true })
       .click();
-    await page.getByText("Prices and fees are confirmed.").waitFor();
+    await page.getByText("Prices and fees confirmed").waitFor();
     await capture(page, width, "F-review-total");
     await page.getByRole("button", { name: /^Pay RM/ }).click();
     await page
@@ -665,7 +665,7 @@ try {
     await page
       .getByRole("button", { name: "Refresh total", exact: true })
       .click();
-    await page.getByText("Prices and fees are confirmed.").waitFor();
+    await page.getByText("Prices and fees confirmed").waitFor();
     await page.goto(`${origin}/?scenario=cust-shop01r`);
     await page.getByText("Featured products", { exact: true }).waitFor();
     await scenario(page, "quote-unavailable");

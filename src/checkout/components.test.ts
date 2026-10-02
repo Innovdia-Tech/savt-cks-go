@@ -140,14 +140,22 @@ describe("real cart and trusted quote presentation", () => {
       } as never),
     );
     expect(html).toContain("Rice");
-    expect(html).toContain("Estimated subtotal");
+    expect(html).toContain("Your items");
+    expect(html).toContain("Order summary");
+    expect(html).toContain("Items subtotal");
     expect(html).toMatch(/(?:RM|MYR).*9\.00/);
     expect(html).toContain("Review order");
     expect(html).toContain("Deliver to");
     expect(html).toContain("1 Example Street, Demo City, Sabah");
     expect(html).toContain('aria-label="Change delivery address"');
     expect(html).toContain("Demo outlet");
-    expect(html).toContain("Line subtotal");
+    expect(html).toContain("Item subtotal");
+    expect(html.indexOf('aria-label="Quantity for Rice"')).toBeLessThan(
+      html.indexOf("Item subtotal"),
+    );
+    expect(html.indexOf("Item subtotal")).toBeLessThan(
+      html.indexOf('aria-label="Remove Rice"'),
+    );
     expect(html).toContain("Remove Rice");
     expect(html).toContain('role="group"');
     expect(html).toContain('aria-label="Quantity for Rice"');
@@ -168,9 +176,9 @@ describe("real cart and trusted quote presentation", () => {
       } as never),
     );
     for (const text of [
-      "Review your order",
+      "Order summary",
       "Rice",
-      "Merchandise subtotal",
+      "Items subtotal",
       "Delivery fee",
       "Processing fee",
       "Total",
@@ -180,6 +188,24 @@ describe("real cart and trusted quote presentation", () => {
       "Demo outlet",
     ])
       expect(html).toContain(text);
+    expect(html).toContain('<h2 id="quote-title">Order summary</h2>');
+    expect(html).not.toContain("Merchandise subtotal");
+    expect(html).toContain("Prices and fees confirmed");
+    expect(html).toMatch(
+      /<details[^>]*><summary>Delivery details<svg[^>]*aria-hidden="true"/,
+    );
+    for (const [label, amount] of [
+      ["Items subtotal", "9.00"],
+      ["Delivery fee", "4.90"],
+      ["Processing fee", "0.42"],
+      ["Total", "14.32"],
+    ]) {
+      expect(html).toMatch(
+        new RegExp(
+          `<dt[^>]*>${label}</dt><dd[^>]*>RM[^<]*${amount.replace(".", "\\.")}</dd>`,
+        ),
+      );
+    }
     expect(html).not.toContain("Quote ID");
     expect(html).not.toContain(id("b"));
     expect(html).not.toContain(id("a"));
@@ -230,10 +256,18 @@ describe("real cart and trusted quote presentation", () => {
           },
         },
         onBrowse: () => {},
+        onChangeAddress: () => {},
       } as never),
     );
     expect(frozen).toContain("Payment pending");
-    expect(frozen.match(/disabled=""/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(frozen.match(/disabled=""/g)?.length).toBe(4);
+    expect(frozen).toMatch(/aria-label="Change delivery address" disabled=""/);
+    expect(frozen.indexOf("Payment pending")).toBeLessThan(
+      frozen.indexOf("Deliver to"),
+    );
+    expect(frozen.indexOf("Payment pending")).toBeLessThan(
+      frozen.indexOf("Your items"),
+    );
   });
 
   it("requires explicit acceptance of changed prices", () => {

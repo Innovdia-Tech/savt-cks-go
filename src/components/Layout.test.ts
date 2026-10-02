@@ -14,7 +14,7 @@ it("shows an accessible Basket merchandise summary only for a nonempty basket", 
     );
   expect(render(0)).toBe("");
   expect(render(3)).toContain(
-    'aria-label="View basket, 3 items, merchandise subtotal RM 11.99"',
+    'aria-label="View basket, 3 items, items subtotal RM 11.99"',
   );
   expect(render(3)).toContain("Basket · 3 items");
   expect(render(3)).toContain("RM 11.99");

@@ -127,7 +127,7 @@ export function BasketSummaryBar({
       type="button"
       className="basket-summary"
       onClick={onOpen}
-      aria-label={`View basket, ${count} ${count === 1 ? "item" : "items"}, merchandise subtotal ${subtotal}`}
+      aria-label={`View basket, ${count} ${count === 1 ? "item" : "items"}, items subtotal ${subtotal}`}
     >
       <span>
         Basket · {count} {count === 1 ? "item" : "items"}

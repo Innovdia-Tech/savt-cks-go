@@ -7,7 +7,12 @@ import {
   type CartState,
 } from "./state";
 import { QuantitySelector } from "../components/QuantitySelector";
-import { BagIcon } from "../components/Icons";
+import {
+  BagIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  TrashIcon,
+} from "../components/Icons";
 import { useProductArtworkUrl } from "../catalogue/reference-match/useArtwork";
 import { addressLocationText } from "../addresses/presentation";
 
@@ -139,9 +144,7 @@ function QuoteSummary({
     <section className="quote-card" aria-labelledby="quote-title">
       <div className="quote-card-heading">
         <div>
-          <h2 id="quote-title" className="sr-only">
-            Review your order
-          </h2>
+          <h2 id="quote-title">Order summary</h2>
         </div>
         <span className="quote-currency">{quote.currency}</span>
       </div>
@@ -191,7 +194,7 @@ function QuoteSummary({
         </ul>
       )}
       <dl className="quote-totals">
-        <dt>Merchandise subtotal</dt>
+        <dt>Items subtotal</dt>
         <dd>{money(quote.itemsSubtotalMinor)}</dd>
         <dt>Delivery fee</dt>
         <dd>{money(quote.finalDeliveryChargeMinor)}</dd>
@@ -201,7 +204,10 @@ function QuoteSummary({
         <dd className="quote-grand">{money(quote.grandTotalMinor)}</dd>
       </dl>
       <details className="quote-evidence-details">
-        <summary>Delivery details</summary>
+        <summary>
+          Delivery details
+          <ChevronDownIcon className="h-6 w-6" />
+        </summary>
         <dl className="quote-evidence">
           <dt>Estimated delivery</dt>
           <dd>{quote.estimatedTotalOrderMinutes} minutes</dd>
@@ -212,6 +218,7 @@ function QuoteSummary({
       {state.quotePhase === "price-review" && (
         <button
           className="customer-button customer-primary quote-action"
+          disabled={state.paymentFrozen}
           onClick={() => controller.acceptPriceChanges()}
         >
           Continue with {money(quote.grandTotalMinor)}
@@ -220,13 +227,17 @@ function QuoteSummary({
       {state.quotePhase === "expired" && (
         <button
           className="customer-button customer-primary quote-action"
+          disabled={state.paymentFrozen}
           onClick={() => void controller.requestQuote()}
         >
           Refresh total
         </button>
       )}
       {state.quotePhase === "ready" && (
-        <p className="quote-safe-note">Prices and fees are confirmed.</p>
+        <p className="quote-safe-note">
+          <CheckIcon className="h-4 w-4" />
+          Prices and fees confirmed
+        </p>
       )}
       {payment?.state.phase === "ready" && (
         <PaymentPanel {...payment} acceptedTotalMinor={quote.grandTotalMinor} />
@@ -290,8 +301,16 @@ export function CartScreen({
         "Check your basket and try again.",
       ])
     : null;
+  const paymentStatus =
+    payment && payment.state.phase !== "ready" ? (
+      <PaymentPanel
+        {...payment}
+        acceptedTotalMinor={state.quote?.grandTotalMinor}
+      />
+    ) : null;
   return (
     <div className="cart-stack cart-stack--shopping">
+      {state.paymentFrozen && paymentStatus}
       {state.assignment && (
         <section
           className="cart-delivery"
@@ -307,6 +326,7 @@ export function CartScreen({
             <button
               className="cart-change-address"
               aria-label="Change delivery address"
+              disabled={state.paymentFrozen}
               onClick={onChangeAddress}
             >
               Change
@@ -319,9 +339,7 @@ export function CartScreen({
       )}
       <section className="cart-lines" aria-labelledby="cart-lines-title">
         <div className="cart-section-heading">
-          <h2 id="cart-lines-title" className="sr-only">
-            Basket items
-          </h2>
+          <h2 id="cart-lines-title">Your items</h2>
         </div>
         {state.lines.map((line) => (
           <article className="cart-line" key={line.outletProductId}>
@@ -348,64 +366,69 @@ export function CartScreen({
                 controller.setQuantity(line.outletProductId, line.quantity + 1)
               }
             />
+            {line.quantity > 1 && (
+              <p className="cart-line-subtotal">
+                <span>Item subtotal</span>
+                <strong>
+                  {money(line.displayedUnitPriceMinor * line.quantity)}
+                </strong>
+              </p>
+            )}
             <button
               className="cart-remove"
               aria-label={`Remove ${line.product.name}`}
               disabled={state.paymentFrozen}
               onClick={() => controller.remove(line.outletProductId)}
             >
+              <TrashIcon className="h-4 w-4" />
               Remove
             </button>
-            {line.quantity > 1 && (
-              <p className="cart-line-subtotal">
-                <span>Line subtotal</span>
-                <strong>
-                  {money(line.displayedUnitPriceMinor * line.quantity)}
-                </strong>
-              </p>
-            )}
           </article>
         ))}
-        {!state.quote && (
+      </section>
+      {!state.quote && (
+        <section className="quote-card" aria-labelledby="cart-estimate-title">
+          <div className="quote-card-heading">
+            <h2 id="cart-estimate-title">Order summary</h2>
+          </div>
           <div className="cart-display-total">
-            <span>Estimated subtotal</span>
+            <span>Items subtotal</span>
             <strong>{money(subtotal)}</strong>
           </div>
-        )}
-        {!state.quote && (
           <p className="catalogue-caption">
             Item prices are estimates. Delivery and processing fees are
             confirmed at review.
           </p>
-        )}
-        {!state.assignment && (
-          <p className="catalogue-caption" role="status">
-            Choose a delivery address before reviewing your order.
-            {onChangeAddress && (
-              <button
-                className="customer-button mt-2"
-                onClick={onChangeAddress}
-              >
-                Choose address
-              </button>
-            )}
-          </p>
-        )}
-        {state.quotePhase === "idle" && (
-          <button
-            className="customer-button customer-primary quote-action"
-            disabled={!state.assignment}
-            onClick={() => void controller.requestQuote()}
-          >
-            Review order
-          </button>
-        )}
-        {state.quotePhase === "quoting" && (
-          <p className="quote-loading" role="status">
-            Checking prices and delivery…
-          </p>
-        )}
-      </section>
+          {!state.assignment && (
+            <p className="catalogue-caption" role="status">
+              Choose a delivery address before reviewing your order.
+              {onChangeAddress && (
+                <button
+                  className="customer-button mt-2"
+                  disabled={state.paymentFrozen}
+                  onClick={onChangeAddress}
+                >
+                  Choose address
+                </button>
+              )}
+            </p>
+          )}
+          {state.quotePhase === "idle" && (
+            <button
+              className="customer-button customer-primary quote-action"
+              disabled={!state.assignment || state.paymentFrozen}
+              onClick={() => void controller.requestQuote()}
+            >
+              Review order
+            </button>
+          )}
+          {state.quotePhase === "quoting" && (
+            <p className="quote-loading" role="status">
+              Checking prices and delivery…
+            </p>
+          )}
+        </section>
+      )}
       {error && (
         <section className="quote-error" role="alert">
           <h2>{error[0]}</h2>
@@ -413,6 +436,7 @@ export function CartScreen({
           {state.canRetry && (
             <button
               className="customer-button customer-primary"
+              disabled={state.paymentFrozen}
               onClick={() => void controller.retryQuote()}
             >
               Try again
@@ -421,6 +445,7 @@ export function CartScreen({
           {!state.canRetry && state.quotePhase !== "session-expired" && (
             <button
               className="customer-button"
+              disabled={state.paymentFrozen}
               onClick={() => void controller.requestQuote()}
             >
               Refresh total
@@ -429,12 +454,7 @@ export function CartScreen({
         </section>
       )}
       <QuoteSummary state={state} controller={controller} payment={payment} />
-      {payment && payment.state.phase !== "ready" && (
-        <PaymentPanel
-          {...payment}
-          acceptedTotalMinor={state.quote?.grandTotalMinor}
-        />
-      )}
+      {!state.paymentFrozen && paymentStatus}
     </div>
   );
 }

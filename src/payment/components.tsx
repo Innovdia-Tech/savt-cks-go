@@ -1,4 +1,5 @@
 import type { PaymentController, PaymentState } from "./state";
+import { ClockIcon } from "../components/Icons";
 
 type PaymentActions = Pick<
   PaymentController,
@@ -76,13 +77,17 @@ export function PaymentPanel({
     );
   if (state.phase === "pending")
     return (
-      <section className="payment-card" aria-live="polite">
-        <p className="quote-eyebrow">Waiting for confirmation</p>
-        <h2>Payment pending</h2>
-        <p>
-          Returning from the payment page does not confirm payment. Your order
-          will appear only after payment is confirmed.
-        </p>
+      <section
+        className="payment-card payment-pending"
+        role="status"
+        aria-live="polite"
+      >
+        <h2>
+          <ClockIcon className="h-6 w-6" />
+          Payment pending
+        </h2>
+        <p>We're checking your payment status.</p>
+        <p>Your order will appear once payment is confirmed.</p>
       </section>
     );
   if (state.phase === "checking")

@@ -82,6 +82,21 @@ describe("customer payment presentation", () => {
     }
   });
 
+  it("explains pending payment without claiming confirmation", () => {
+    const html = render({
+      ...base,
+      phase: "pending",
+      paymentIntentId: "intent-redacted",
+    });
+    expect(html).toContain("We&#x27;re checking your payment status.");
+    expect(html).toContain("Your order will appear once payment is confirmed.");
+    expect(html).toContain('role="status"');
+    expect(html).not.toContain("Returning from the payment page");
+    expect(html).not.toContain("Payment successful");
+    expect(html).not.toContain("Order confirmed");
+    expect(html).not.toContain("View order");
+  });
+
   it("offers only same-attempt recovery for a failed handoff", () => {
     const html = render({
       ...base,
