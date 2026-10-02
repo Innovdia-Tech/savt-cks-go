@@ -278,3 +278,68 @@ describe("standalone browser payment handoff", () => {
     ).rejects.toEqual(new BridgeError("unavailable"));
   });
 });
+
+describe("local simulator browser payment handoff", () => {
+  const checkoutUrl =
+    "http://127.0.0.1:4312/api/integrations/cks-go/v1/payment-simulator/ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq";
+  beforeEach(() => {
+    vi.stubEnv("DEV", true);
+    vi.stubEnv("PROD", false);
+    vi.stubEnv(
+      "VITE_CKS_GO_LOCAL_PAYMENT_SIMULATOR_ORIGIN",
+      "http://127.0.0.1:4312",
+    );
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it("opens the allowed simulator in a separate tab without replacing the app", async () => {
+    const open = vi.fn(() => null);
+    const navigate = vi.fn();
+    vi.stubGlobal("window", {
+      location: { href: "http://127.0.0.1:5173/" },
+      open,
+    });
+    await expect(
+      new BrowserBridgeAdapter(navigate).requestPaymentHandoff(checkoutUrl),
+    ).resolves.toBeUndefined();
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+      checkoutUrl,
+      "_blank",
+      "noopener,noreferrer",
+    );
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("reports a thrown local tab opening failure using the existing safe error", async () => {
+    const navigate = vi.fn();
+    vi.stubGlobal("window", {
+      location: { href: "http://127.0.0.1:5173/" },
+      open: () => {
+        throw new Error("private checkout URL");
+      },
+    });
+    await expect(
+      new BrowserBridgeAdapter(navigate).requestPaymentHandoff(checkoutUrl),
+    ).rejects.toEqual(new BridgeError("unavailable"));
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("keeps HTTPS handoff on its existing same-tab navigation", async () => {
+    const open = vi.fn();
+    const navigate = vi.fn();
+    vi.stubGlobal("window", {
+      location: { href: "http://127.0.0.1:5173/" },
+      open,
+    });
+    await new BrowserBridgeAdapter(navigate).requestPaymentHandoff(
+      "https://payments.example.test/checkout/approved",
+    );
+    expect(navigate).toHaveBeenCalledExactlyOnceWith(
+      "https://payments.example.test/checkout/approved",
+    );
+    expect(open).not.toHaveBeenCalled();
+  });
+});

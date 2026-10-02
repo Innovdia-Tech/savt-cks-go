@@ -3,6 +3,7 @@ import type { PaymentController, PaymentState } from "./state";
 import { ClockIcon } from "../components/Icons";
 import { SupportAction } from "../support/SupportAction";
 import { useSupportWhatsApp } from "../support/context";
+import { isLocalPaymentSimulatorBrowserEnabled } from "./local-simulator";
 
 type PaymentActions = Pick<
   PaymentController,
@@ -100,6 +101,14 @@ export function PaymentPanel({
         </h2>
         <p>We're checking your payment status.</p>
         <p>Your order will appear once payment is confirmed.</p>
+        {isLocalPaymentSimulatorBrowserEnabled() && (
+          <button
+            className="customer-button payment-action"
+            onClick={() => void controller.checkStatus()}
+          >
+            Check Payment Status
+          </button>
+        )}
       </section>
     );
   if (state.phase === "retryable-pending" || state.phase === "retrying")

@@ -1,9 +1,17 @@
-import { createElement } from "react";
+import {
+  Children,
+  createElement,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PaymentPanel } from "./components";
-import type { PaymentState } from "./state";
+import { PaymentController, type PaymentState } from "./state";
+import type { CheckoutQuote } from "../checkout/contracts";
+import { BrowserBridgeAdapter } from "../webview/bridge";
 
 const base: PaymentState = {
   phase: "ready",
@@ -367,5 +375,169 @@ describe("secondary payment error support", () => {
     );
     expect(JSON.stringify(frozen)).toBe(before);
     for (const fn of Object.values(actions)) expect(fn).not.toHaveBeenCalled();
+  });
+});
+
+describe("local simulator pending status action", () => {
+  const localOrigin = "http://127.0.0.1:4312";
+  const pending: PaymentState = {
+    ...base,
+    phase: "pending",
+    paymentIntentId: "20000000-0000-4000-8000-000000000002",
+  };
+  beforeEach(() => {
+    vi.stubEnv("DEV", true);
+    vi.stubEnv("PROD", false);
+    vi.stubEnv("VITE_CKS_GO_LOCAL_PAYMENT_SIMULATOR_ORIGIN", localOrigin);
+    vi.stubGlobal("window", {
+      location: { href: "http://127.0.0.1:5173/" },
+      open: () => null,
+    });
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  const findStatusButton = (
+    node: ReactNode,
+  ):
+    ReactElement<{ children?: ReactNode; onClick: () => void }> | undefined => {
+    if (!isValidElement<{ children?: ReactNode; onClick: () => void }>(node))
+      return undefined;
+    if (
+      node.type === "button" &&
+      node.props.children === "Check Payment Status"
+    )
+      return node;
+    for (const child of Children.toArray(node.props.children)) {
+      const button = findStatusButton(child);
+      if (button) return button;
+    }
+    return undefined;
+  };
+
+  it.each([
+    {
+      setting: "",
+      development: true,
+      production: false,
+      href: "http://127.0.0.1:5173/",
+    },
+    {
+      setting: undefined,
+      development: true,
+      production: false,
+      href: "http://127.0.0.1:5173/",
+    },
+    {
+      setting: localOrigin,
+      development: false,
+      production: false,
+      href: "http://127.0.0.1:5173/",
+    },
+    {
+      setting: localOrigin,
+      development: true,
+      production: true,
+      href: "http://127.0.0.1:5173/",
+    },
+    {
+      setting: localOrigin,
+      development: true,
+      production: false,
+      href: "https://127.0.0.1:5173/",
+    },
+    {
+      setting: localOrigin,
+      development: true,
+      production: false,
+      href: "http://customer.example.test/",
+    },
+    {
+      setting: "http://localhost:4312",
+      development: true,
+      production: false,
+      href: "http://127.0.0.1:5173/",
+    },
+  ])(
+    "hides the local status action outside its explicit development allowance: %o",
+    ({ setting, development, production, href }) => {
+      vi.stubEnv("DEV", development);
+      vi.stubEnv("PROD", production);
+      vi.stubEnv("VITE_CKS_GO_LOCAL_PAYMENT_SIMULATOR_ORIGIN", setting);
+      vi.stubGlobal("window", { location: { href } });
+      expect(render(pending)).not.toContain("Check Payment Status");
+    },
+  );
+
+  it("shows one explicit status action while local payment remains unconfirmed", () => {
+    const html = render(pending);
+    expect(html).toContain("Check Payment Status");
+    expect(html.match(/<button/g)).toHaveLength(1);
+    expect(html).not.toContain("Try Payment Again");
+    expect(html).not.toContain("Order confirmed");
+  });
+
+  it("reads status only on an explicit click without another create, retry or invented finality", async () => {
+    const quoteId = "10000000-0000-4000-8000-000000000001";
+    const paymentIntentId = pending.paymentIntentId!;
+    const api = {
+      create: vi.fn().mockResolvedValue({
+        checkoutReference: quoteId,
+        payment: {
+          paymentIntentId,
+          status: "PENDING",
+          checkoutUrl:
+            localOrigin +
+            "/api/integrations/cks-go/v1/payment-simulator/ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq",
+        },
+      }),
+      result: vi.fn().mockResolvedValue({
+        checkoutReference: quoteId,
+        status: "PENDING",
+        order: null,
+      }),
+      retry: vi.fn(),
+    };
+    const actual = new PaymentController(
+      api,
+      new BrowserBridgeAdapter(),
+      {
+        getSnapshot: () => ({ phase: "authenticated" }),
+        subscribe: () => () => {},
+      },
+      () => true,
+      () => {},
+      () => Date.parse("2026-09-21T02:00:00.000Z"),
+      () => "30000000-0000-4000-8000-000000000003",
+    );
+    actual.syncQuote(
+      {
+        quoteId,
+        quoteToken: "Q".repeat(43),
+        quoteExpiresAt: "2026-09-21T02:10:00.000Z",
+      } as CheckoutQuote,
+      "ready",
+    );
+    await actual.initiate();
+    expect(actual.getSnapshot().phase).toBe("pending");
+    expect(api.result).not.toHaveBeenCalled();
+    const button = findStatusButton(
+      PaymentPanel({ state: actual.getSnapshot(), controller: actual }),
+    );
+    expect(button).toBeDefined();
+    button!.props.onClick();
+    await vi.waitFor(() => {
+      expect(api.result).toHaveBeenCalledExactlyOnceWith(paymentIntentId);
+      expect(actual.getSnapshot()).toMatchObject({
+        phase: "pending",
+        order: null,
+        canRetryPayment: false,
+      });
+    });
+    expect(api.create).toHaveBeenCalledOnce();
+    expect(api.retry).not.toHaveBeenCalled();
+    actual.dispose();
   });
 });

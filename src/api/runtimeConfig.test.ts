@@ -93,3 +93,45 @@ describe("loadRuntimeConfig", () => {
     },
   );
 });
+
+describe("local payment simulator runtime configuration", () => {
+  const name = "VITE_CKS_GO_LOCAL_PAYMENT_SIMULATOR_ORIGIN";
+
+  it("allows an explicit simulator origin only in development", () => {
+    expect(() =>
+      loadRuntimeConfig({ [name]: "http://127.0.0.1:4312" }, false),
+    ).not.toThrow();
+  });
+
+  it.each(["http://127.0.0.1:4312", "invalid", " "])(
+    "rejects every nonempty local simulator setting in production: %s",
+    (setting) => {
+      expect(() => loadRuntimeConfig({ [name]: setting }, true)).toThrow(
+        RuntimeConfigurationError,
+      );
+    },
+  );
+
+  it.each([
+    "https://127.0.0.1:4312",
+    "http://localhost:4312",
+    "http://127.0.0.1",
+    "http://127.0.0.1:0",
+    "http://127.0.0.1:65536",
+    "http://127.0.0.1:04312",
+    "http://127.0.0.1:4312/",
+    "http://127.0.0.1:4312?",
+    "http://127.0.0.1:4312#",
+    "http://user:password@127.0.0.1:4312",
+    "http://2130706433:4312",
+    "http://127.1:4312",
+    " http://127.0.0.1:4312",
+  ])(
+    "rejects unsafe local simulator configuration in development: %s",
+    (setting) => {
+      expect(() => loadRuntimeConfig({ [name]: setting }, false)).toThrow(
+        RuntimeConfigurationError,
+      );
+    },
+  );
+});

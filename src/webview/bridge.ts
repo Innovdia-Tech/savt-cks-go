@@ -1,5 +1,6 @@
 import type { BootstrapData } from "../api/contracts";
 import { isSafeCheckoutUrl } from "../payment/contracts";
+import { isLocalPaymentSimulatorCheckoutUrl } from "../payment/local-simulator";
 
 export type BootstrapMessage = Pick<
   BootstrapData,
@@ -198,7 +199,12 @@ export class BrowserBridgeAdapter implements NativeBridgePort {
   async requestPaymentHandoff(checkoutUrl: string): Promise<void> {
     if (!isSafeCheckoutUrl(checkoutUrl)) throw new BridgeError("invalid");
     try {
-      this.navigate(checkoutUrl);
+      if (isLocalPaymentSimulatorCheckoutUrl(checkoutUrl)) {
+        // noopener returns null even for an opened tab; only a thrown error is actionable.
+        window.open(checkoutUrl, "_blank", "noopener,noreferrer");
+      } else {
+        this.navigate(checkoutUrl);
+      }
     } catch {
       throw new BridgeError("unavailable");
     }

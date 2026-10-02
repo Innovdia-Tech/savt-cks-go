@@ -1,3 +1,5 @@
+import { isLocalPaymentSimulatorOrigin } from "../payment/local-simulator";
+
 export type RuntimeConfig = {
   apiOrigin: string;
   developmentApi: boolean;
@@ -54,6 +56,18 @@ export const loadRuntimeConfig = (
   environment: Record<string, string | boolean | undefined>,
   production: boolean,
 ): RuntimeConfig => {
+  const localSimulatorOrigin = String(
+    environment.VITE_CKS_GO_LOCAL_PAYMENT_SIMULATOR_ORIGIN ?? "",
+  );
+  if (
+    localSimulatorOrigin !== "" &&
+    (production || !isLocalPaymentSimulatorOrigin(localSimulatorOrigin))
+  ) {
+    throw new RuntimeConfigurationError(
+      "Local payment simulator requires a development HTTP 127.0.0.1 origin with a port.",
+    );
+  }
+
   const developmentApi = environment.VITE_CKS_GO_DEVELOPMENT_API === "true";
   const developmentBridge =
     environment.VITE_CKS_GO_DEVELOPMENT_BRIDGE === "true";
