@@ -351,6 +351,7 @@ export function CatalogueStatus({
   onManage,
   onAdd,
   refreshEnabled = false,
+  supportWhatsApp = "",
 }: {
   phase: CatalogueState["phase"];
   error: string | null;
@@ -360,6 +361,7 @@ export function CatalogueStatus({
   onManage: () => void;
   onAdd?: () => void;
   refreshEnabled?: boolean;
+  supportWhatsApp?: string;
 }) {
   if (phase === "no-service")
     return (
@@ -404,6 +406,7 @@ export function CatalogueStatus({
             + Add new address
           </button>
         )}
+        <SupportAction digits={supportWhatsApp} context="delivery" />
       </section>
     );
   const phases: Partial<Record<CatalogueState["phase"], [string, string]>> = {
@@ -818,10 +821,8 @@ export function CatalogueApp({
             onCart={() => navigate("cart")}
           />
         )}
-        <div className="px-4">
-          <SupportAction digits={supportWhatsApp} />
-        </div>
         <DeliveryLocationSetup
+          supportWhatsApp={supportWhatsApp}
           onDone={() => {
             navigate("home");
             void controller.retry();
@@ -940,7 +941,9 @@ export function CatalogueApp({
       <div
         className={`catalogue-root catalogue-root--shopping ${route === "home" ? "catalogue-root--home" : ""}`}
       >
-        {route === "home" && <SupportAction digits={supportWhatsApp} />}
+        {route === "home" && state.phase !== "no-service" && (
+          <SupportAction digits={supportWhatsApp} />
+        )}
         {route === "profile" ? (
           <>
             <CustomerProfileScreen shellOwnsTransientNotice />
@@ -1141,6 +1144,7 @@ export function CatalogueApp({
                 )}
                 {state.phase !== "ready" ? (
                   <CatalogueStatus
+                    supportWhatsApp={supportWhatsApp}
                     refreshEnabled={refreshEnabled}
                     phase={state.phase}
                     error={state.error}

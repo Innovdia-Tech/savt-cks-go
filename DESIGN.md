@@ -72,6 +72,8 @@ CUST-UX04R3 refines only Basket item rows. A single white Your items surface use
 
 ## Colors
 
+CUST-HELP01R uses compact support rows with 14px/600 CKS-red text, a small outline help icon, a transparent tertiary action and a minimum 44px target. The muted prompt is “Need help?” on Home/payment errors and “Need help with your delivery address?” after delivery controls. Order detail retains its light section with the heading “Need help with this order?”. Support stays in document flow; address/payment recovery retains visual priority. Missing/invalid config hides the action; launch failures use restrained status text. The four navigation items and accepted commerce styling remain unchanged.
+
 - CKS Red is the primary commerce/action role: Add to basket, checkout, payment, order actions, active customer navigation and Basket emphasis.
 - Savt Green and Savt Green Dark are reserved for Savt Cash, rewards, savings, earned benefits and positive Savt ecosystem messages. Green is not the universal CTA color.
 - CUST-UX04R uses Savt Home’s soft green page family (#EBF3E3), white fields/cards and neutral ink. Supporting text uses #666666 for normal-text contrast on green and white; #878787 is reserved for neutral icons. Info, warning and error are semantic and always paired with copy/icon/shape, never color alone.

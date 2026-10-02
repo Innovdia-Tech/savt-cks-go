@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { SupportAction } from "../support/SupportAction";
+import { useSupportWhatsApp } from "../support/context";
 import type { Address } from "../addresses/contracts";
 import { AddressForm } from "../addresses/AddressForm";
 import { AddressTransitionError } from "../checkout/components";
@@ -36,12 +38,16 @@ export function DeliveryLocationSetup({
   address,
   onCancel,
   initialMode = "choose",
+  supportWhatsApp: suppliedSupportWhatsApp,
 }: {
   onDone: () => void;
   address?: Address | null;
   onCancel?: () => void;
   initialMode?: "choose" | "search" | "current" | "confirm";
+  supportWhatsApp?: string;
 }) {
+  const configuredSupportWhatsApp = useSupportWhatsApp();
+  const supportWhatsApp = suppliedSupportWhatsApp ?? configuredSupportWhatsApp;
   const {
     state,
     controller,
@@ -754,6 +760,7 @@ export function DeliveryLocationSetup({
           )}
         </>
       )}
+      <SupportAction digits={supportWhatsApp} context="delivery" />
     </main>
   );
 }

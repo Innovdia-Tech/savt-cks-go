@@ -468,7 +468,7 @@ export function OrderDetailScreen({
         className="order-section order-help"
         aria-labelledby="order-help-title"
       >
-        <h3 id="order-help-title">Get help with this order</h3>
+        <h3 id="order-help-title">Need help with this order?</h3>
         <SupportAction
           digits={supportWhatsApp}
           orderNumber={order.orderNumber}

@@ -179,9 +179,9 @@ describe("customer orders presentation", () => {
         onBack: () => {},
       } as never),
     );
-    expect(html).toContain("Get help with this order");
+    expect(html).toContain("Need help with this order?");
     expect(html).not.toContain("wa.me");
-    expect(html).not.toMatch(/<button[^>]*>Get help with this order<\/button>/);
+    expect(html).not.toContain("Open WhatsApp support for order");
   });
 
   it("offers configured support for the displayed Order without exposing private details", () => {
@@ -193,7 +193,7 @@ describe("customer orders presentation", () => {
         supportWhatsApp: "60123456789",
       } as never),
     );
-    expect(html).toContain("WhatsApp support");
+    expect(html).toContain("Get help on WhatsApp");
     expect(html).not.toContain("wa.me");
     expect(html).not.toContain("paymentIntentId");
     expect(html).not.toContain("https://wa.me/60123456789");
@@ -390,7 +390,7 @@ describe("customer orders presentation", () => {
       "Apples",
       "Grand total",
       "Demo Customer",
-      "Get help with this order",
+      "Need help with this order?",
     ])
       expect(html).toContain(copy);
     expect(html).not.toContain("INTERNAL-SKU");

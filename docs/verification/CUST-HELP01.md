@@ -14,7 +14,7 @@ Hi CKS Go Support, I need help with my order <ORDER_NUMBER>.
 My enquiry:
 ```
 
-Home has a small secondary “Get help” utility action above its content. Order Detail retains “Get help with this order” with “WhatsApp support”. Both reuse the shared tertiary button, Inter, CKS red, outline help icon, visible focus, a 44px target and accessible descriptive labels. Bottom navigation remains Home, Browse, Basket, Orders.
+Home has a small secondary “Need help? Get help” utility row above its content. Order Detail uses “Need help with this order?” with “Get help on WhatsApp”. Delivery setup and unsupported-address help follow the existing recovery controls. Genuine payment errors offer general help after their recovery actions; normal payment states omit it. These placements reuse the shared tertiary button, Inter, CKS red, outline help icon, visible focus, a 44px target and accessible descriptive labels. Missing/invalid configuration hides the secondary action. Bottom navigation remains Home, Browse, Basket, Orders. See [CUST-HELP01R](CUST-HELP01R.md) for the bounded refinement proof.
 
 The authenticated `GET /api/v1/customer/support` returns only `{ data: { whatsapp: string | null } }`. The provider mounts inside the session boundary, loads independently with a five-second deadline and keeps only recipient digits in memory. Missing/invalid/offline/unavailable support leaves commerce usable. Legacy `VITE_CKS_GO_SUPPORT_WHATSAPP` is ignored.
 
@@ -24,7 +24,7 @@ Embedded actions send only `{ type: "support-handoff", payload: { whatsappUrl } 
 
 Local automated coverage verifies configuration, message encoding, unavailable rendering, native dispatch and native allowlist/host behavior. Actual installed-device WhatsApp launch and return require pilot acceptance after the separately authorized releases; local automated tests do not prove an installed app association.
 
-## Local verification
+## Original CUST-HELP01 checkpoint verification
 
 - Full customer-web suite: 60 files, 804 tests passed; TypeScript application/runtime checks and production Vite build passed.
 - Changed-file Prettier check and `git diff --check` passed. Strict premium UI audit: zero findings.

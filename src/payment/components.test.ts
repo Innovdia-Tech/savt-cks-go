@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { PaymentPanel } from "./components";
 import type { PaymentState } from "./state";
 
@@ -271,5 +271,101 @@ describe("customer payment presentation", () => {
     expect(html).not.toContain("SAVT_PAYMENT_INVALID_RESPONSE");
     expect(html).not.toContain("20000000-0000-4000-8000-000000000002");
     expect(html).not.toMatch(/https:\/\/|quoteToken/i);
+  });
+});
+
+describe("secondary payment error support", () => {
+  const renderSupport = (state: PaymentState, digits = "60123456789") =>
+    renderToStaticMarkup(
+      createElement(PaymentPanel, {
+        state,
+        controller,
+        supportWhatsApp: digits,
+      }),
+    );
+  it.each([
+    [{ ...base, phase: "failed" }, "Review basket"],
+    [{ ...base, phase: "handoff-error" }, "Continue secure payment"],
+    [{ ...base, phase: "error", canRetryInitiation: true }, "Try again"],
+    [
+      { ...base, phase: "error", paymentIntentId: "intent-private" },
+      "Check payment again",
+    ],
+    [{ ...base, phase: "error" }, "Review basket"],
+    [
+      { ...base, phase: "error", canRetryPayment: true },
+      "Check Payment Status",
+    ],
+    [
+      {
+        ...base,
+        phase: "error",
+        error: "CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED",
+      },
+      "Review basket",
+    ],
+  ] as const)("puts general help after recovery in %j", (state, recovery) => {
+    const html = renderSupport(state);
+    expect(html).toContain("Need help?");
+    expect(html).toContain(">Get help on WhatsApp</button>");
+    expect(html.indexOf(recovery)).toBeLessThan(html.indexOf("support-action"));
+    expect(html).toContain("Open CKS Go support in WhatsApp");
+    expect(html).not.toContain("intent-private");
+  });
+  it.each([
+    "idle",
+    "ready",
+    "initiating",
+    "opening",
+    "pending",
+    "retryable-pending",
+    "retrying",
+    "checking",
+    "paid-processing",
+    "paid",
+    "session-expired",
+  ] as const)("omits support in %s", (phase) => {
+    expect(renderSupport({ ...base, phase })).not.toContain("support-action");
+  });
+  it("omits support after confirmed payment", () => {
+    expect(
+      renderSupport({
+        ...base,
+        phase: "paid",
+        order: {
+          orderId: "private-id",
+          orderNumber: "CKSGO-0001",
+          status: "CONFIRMED",
+        },
+      }),
+    ).not.toContain("support-action");
+  });
+  it.each(["", "invalid"])(
+    "has no invalid support action for %s config",
+    (digits) => {
+      const html = renderSupport({ ...base, phase: "failed" }, digits);
+      expect(html).toContain("Review basket");
+      expect(html).not.toContain("Open CKS Go support");
+    },
+  );
+  it("renders without invoking payment actions or mutating the frozen state", () => {
+    const frozen = Object.freeze({ ...base, phase: "failed" as const });
+    const actions = {
+      initiate: vi.fn(),
+      retryPayment: vi.fn(),
+      reopen: vi.fn(),
+      checkStatus: vi.fn(),
+      restart: vi.fn(),
+    };
+    const before = JSON.stringify(frozen);
+    renderToStaticMarkup(
+      createElement(PaymentPanel, {
+        state: frozen,
+        controller: actions,
+        supportWhatsApp: "60123456789",
+      }),
+    );
+    expect(JSON.stringify(frozen)).toBe(before);
+    for (const fn of Object.values(actions)) expect(fn).not.toHaveBeenCalled();
   });
 });

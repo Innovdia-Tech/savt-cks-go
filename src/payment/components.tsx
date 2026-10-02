@@ -1,5 +1,8 @@
+import type { ReactNode } from "react";
 import type { PaymentController, PaymentState } from "./state";
 import { ClockIcon } from "../components/Icons";
+import { SupportAction } from "../support/SupportAction";
+import { useSupportWhatsApp } from "../support/context";
 
 type PaymentActions = Pick<
   PaymentController,
@@ -17,12 +20,21 @@ export function PaymentPanel({
   controller,
   onViewOrder,
   acceptedTotalMinor,
+  supportWhatsApp: suppliedSupportWhatsApp,
 }: {
   state: PaymentState;
   controller: PaymentActions;
   onViewOrder?: (orderId: string) => void;
   acceptedTotalMinor?: number;
+  supportWhatsApp?: string;
 }) {
+  const configuredSupportWhatsApp = useSupportWhatsApp();
+  const support = (
+    <SupportAction
+      digits={suppliedSupportWhatsApp ?? configuredSupportWhatsApp}
+      context="payment"
+    />
+  );
   if (state.phase === "idle") return null;
   if (state.phase === "paid" && state.order)
     return (
@@ -128,6 +140,7 @@ export function PaymentPanel({
         <button className={action} onClick={() => void controller.reopen()}>
           Continue secure payment
         </button>
+        {support}
       </section>
     );
   if (state.phase === "failed")
@@ -146,6 +159,7 @@ export function PaymentPanel({
         >
           Review basket
         </button>
+        {support}
       </section>
     );
   if (state.phase === "session-expired")
@@ -166,10 +180,13 @@ export function PaymentPanel({
         <button className={action} onClick={() => controller.restart()}>
           Review basket
         </button>
+        {support}
       </section>
     );
   if (state.canRetryPayment)
-    return <PaymentRecovery controller={controller} uncertain />;
+    return (
+      <PaymentRecovery controller={controller} uncertain support={support} />
+    );
   return (
     <section className="payment-card payment-warning" role="alert">
       <p className="quote-eyebrow">Check your payment</p>
@@ -195,6 +212,7 @@ export function PaymentPanel({
           Review basket
         </button>
       )}
+      {support}
     </section>
   );
 }
@@ -230,10 +248,12 @@ function PaymentRecovery({
   controller,
   busy = false,
   uncertain = false,
+  support,
 }: {
   controller: PaymentActions;
   busy?: boolean;
   uncertain?: boolean;
+  support?: ReactNode;
 }) {
   return (
     <section
@@ -251,6 +271,7 @@ function PaymentRecovery({
             : "We haven't received payment confirmation. If you closed the payment page before finishing, you can try again."}
       </p>
       <RecoveryActions controller={controller} busy={busy} />
+      {support}
     </section>
   );
 }
