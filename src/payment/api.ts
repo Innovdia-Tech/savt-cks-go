@@ -117,7 +117,13 @@ export class PaymentApi {
       throw new PaymentError("VALIDATION_FAILED");
     return this.request(
       `/api/v1/customer/checkout/payments/${paymentIntentId}/retry`,
-      { method: "POST", headers: { "Idempotency-Key": idempotencyKey } },
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+        },
+      },
       parsePaymentRetry,
       external,
     );

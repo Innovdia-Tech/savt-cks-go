@@ -33,7 +33,7 @@ describe("customer payment HTTP boundary", () => {
     vi.unstubAllGlobals();
   });
 
-  it("retries with the exact bodyless credentialed POST, CSRF and caller key", async () => {
+  it("keeps retry bodyless with JSON Content-Type for the browser CSRF guard", async () => {
     const withCredentials = vi.fn(session.withCredentials);
     const fetcher = vi.fn<typeof fetch>(async () =>
       Response.json(createEnvelope),
@@ -58,9 +58,14 @@ describe("customer payment HTTP boundary", () => {
       cache: "no-store",
     });
     expect(init?.body).toBeUndefined();
+    // The backend browser guard requires JSON Content-Type even for a bodyless POST.
+    expect(new Headers(init?.headers).get("Content-Type")).toBe(
+      "application/json",
+    );
     expect(new Headers(init?.headers)).toEqual(
       new Headers({
         Accept: "application/json",
+        "Content-Type": "application/json",
         "Idempotency-Key": key,
         "x-cks-csrf": csrf,
       }),
@@ -308,6 +313,9 @@ describe("customer payment HTTP boundary", () => {
       cache: "no-store",
     });
     const headers = new Headers(init?.headers);
+    expect(init?.body).toBeUndefined();
+    expect(headers.get("Accept")).toBe("application/json");
+    expect(headers.get("Content-Type")).toBeNull();
     expect(headers.get("x-cks-csrf")).toBeNull();
     expect(headers.get("Idempotency-Key")).toBeNull();
     expect(String(url)).not.toMatch(/orders|savt|gkash|gateway/i);
