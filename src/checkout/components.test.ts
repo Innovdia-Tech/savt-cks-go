@@ -198,9 +198,11 @@ describe("real cart and trusted quote presentation", () => {
         order: null,
         error: null,
         canRetryInitiation: false,
+        canRetryPayment: false,
       },
       controller: {
         initiate: async () => {},
+        retryPayment: async () => {},
         reopen: async () => {},
         checkStatus: async () => {},
         restart: () => {},
@@ -232,7 +234,7 @@ describe("real cart and trusted quote presentation", () => {
         onBrowse: () => {},
       } as never),
     );
-    expect(frozen).toContain("Payment pending");
+    expect(frozen).toContain("Waiting for payment confirmation");
     expect(frozen.match(/disabled=""/g)?.length).toBeGreaterThanOrEqual(3);
   });
 

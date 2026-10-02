@@ -33,6 +33,223 @@ describe("customer payment HTTP boundary", () => {
     vi.unstubAllGlobals();
   });
 
+  it("retries with the exact bodyless credentialed POST, CSRF and caller key", async () => {
+    const withCredentials = vi.fn(session.withCredentials);
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      Response.json(createEnvelope),
+    );
+    const api = new PaymentApi(
+      "https://cks.example",
+      { withCredentials: withCredentials as typeof session.withCredentials },
+      fetcher,
+    );
+    await expect(api.retry(paymentIntentId, key)).resolves.toEqual(
+      createEnvelope.data,
+    );
+    expect(withCredentials).toHaveBeenCalledOnce();
+    expect(fetcher).toHaveBeenCalledOnce();
+    const [url, init] = fetcher.mock.calls[0];
+    expect(url).toBe(
+      `https://cks.example/api/v1/customer/checkout/payments/${paymentIntentId}/retry`,
+    );
+    expect(init).toMatchObject({
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+    });
+    expect(init?.body).toBeUndefined();
+    expect(new Headers(init?.headers)).toEqual(
+      new Headers({
+        Accept: "application/json",
+        "Idempotency-Key": key,
+        "x-cks-csrf": csrf,
+      }),
+    );
+  });
+
+  it.each([
+    {
+      checkoutReference: quoteId,
+      payment: { paymentIntentId, status: "PENDING" },
+    },
+    {
+      checkoutReference: quoteId,
+      payment: { paymentIntentId, status: "FAILED" },
+    },
+    {
+      ...createEnvelope.data,
+      payment: {
+        ...createEnvelope.data.payment,
+        expiresAt: "2026-10-02T03:00:00.000Z",
+      },
+    },
+    { checkoutReference: quoteId, status: "PENDING", order: null },
+    { checkoutReference: quoteId, status: "FAILED", order: null },
+    { checkoutReference: quoteId, status: "PAID_PROCESSING", order: null },
+    {
+      checkoutReference: quoteId,
+      status: "PAID",
+      order: { orderId: key, orderNumber: "ORD-2026-0001", status: "NEW" },
+    },
+  ])("parses the frozen retry union %#", async (data) => {
+    const api = new PaymentApi(
+      "",
+      session,
+      vi.fn(async () => Response.json({ data })),
+    );
+    await expect(api.retry(paymentIntentId, key)).resolves.toEqual(data);
+  });
+
+  it.each([
+    { ...createEnvelope.data, status: "PAID", order: null },
+    { ...createEnvelope.data, payment: { paymentIntentId, status: "PAID" } },
+    {
+      ...createEnvelope.data,
+      payment: { paymentIntentId: "bad", status: "PENDING" },
+    },
+    {
+      ...createEnvelope.data,
+      payment: {
+        paymentIntentId,
+        status: "PENDING",
+        checkoutUrl: "javascript:charge()",
+      },
+    },
+    {
+      ...createEnvelope.data,
+      payment: { paymentIntentId, status: "PENDING", checkoutUrl: null },
+    },
+    {
+      ...createEnvelope.data,
+      payment: { paymentIntentId, status: "PENDING", expiresAt: "yesterday" },
+    },
+    {
+      ...createEnvelope.data,
+      payment: {
+        paymentIntentId,
+        status: "PENDING",
+        providerReference: "secret",
+      },
+    },
+    { checkoutReference: quoteId, status: "PAID", order: null },
+    {
+      checkoutReference: quoteId,
+      status: "PAID_PROCESSING",
+      order: { orderId: key, orderNumber: "ORDER", status: "NEW" },
+    },
+    { checkoutReference: "bad", status: "PENDING", order: null },
+    { checkoutReference: quoteId, status: "PENDING" },
+    { checkoutReference: quoteId, status: ["PENDING"], order: null },
+    {
+      checkoutReference: quoteId,
+      payment: { paymentIntentId, status: ["PENDING"] },
+    },
+  ])("rejects malformed or inconsistent retry union %#", async (data) => {
+    const api = new PaymentApi(
+      "",
+      session,
+      vi.fn(async () => Response.json({ data })),
+    );
+    await expect(api.retry(paymentIntentId, key)).rejects.toMatchObject({
+      code: "INVALID_RESPONSE",
+    });
+  });
+
+  it.each([
+    ["bad", key],
+    [paymentIntentId, "bad"],
+  ])(
+    "validates retry UUIDs before credentials or fetch",
+    async (intent, retryKey) => {
+      const withCredentials = vi.fn(session.withCredentials);
+      const fetcher = vi.fn();
+      const api = new PaymentApi(
+        "",
+        { withCredentials: withCredentials as typeof session.withCredentials },
+        fetcher,
+      );
+      await expect(api.retry(intent, retryKey)).rejects.toMatchObject({
+        code: "VALIDATION_FAILED",
+      });
+      expect(withCredentials).not.toHaveBeenCalled();
+      expect(fetcher).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    "CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED",
+    "PAYMENT_ATTEMPT_STATE_CHANGED",
+    "CHECKOUT_PAYMENT_CREATE_DISABLED",
+    "SAVT_PAYMENT_RECOVERY_FAILED",
+    "PAYMENT_ATTEMPT_IDENTITY_MISMATCH",
+    "SAVT_PAYMENT_NOT_FOUND",
+    "PAYMENT_ATTEMPT_NOT_PENDING",
+    "CUSTOMER_ORGANISATION_FORBIDDEN",
+    "SAVT_INTEGRATION_UNAVAILABLE",
+  ])(
+    "recognises merged retry error %s without backend messages",
+    async (code) => {
+      const api = new PaymentApi(
+        "",
+        session,
+        vi.fn(async () =>
+          Response.json(
+            { error: { code, message: "private backend details" } },
+            { status: 409 },
+          ),
+        ),
+      );
+      await expect(api.retry(paymentIntentId, key)).rejects.toEqual(
+        new PaymentError(code),
+      );
+    },
+  );
+
+  it("keeps retry session-expiry and external abort handling", async () => {
+    const expired = new PaymentApi(
+      "",
+      session,
+      vi.fn(async () => new Response(null, { status: 401 })),
+    );
+    await expect(expired.retry(paymentIntentId, key)).rejects.toMatchObject({
+      code: "CUSTOMER_SESSION_INVALID",
+    });
+    const abort = new AbortController();
+    const fetcher = vi.fn<typeof fetch>(async (_url, init) => {
+      expect(init?.signal?.aborted).toBe(true);
+      throw new Error("aborted");
+    });
+    abort.abort();
+    await expect(
+      new PaymentApi("", session, fetcher).retry(
+        paymentIntentId,
+        key,
+        abort.signal,
+      ),
+    ).rejects.toMatchObject({ code: "CANCELLED" });
+  });
+
+  it("bounds and aborts an uncertain retry request", async () => {
+    vi.useFakeTimers();
+    let signal: AbortSignal | undefined;
+    const api = new PaymentApi(
+      "",
+      session,
+      vi.fn((_url, init) => {
+        signal = init?.signal ?? undefined;
+        return new Promise<Response>(() => {});
+      }),
+      25,
+    );
+    const request = api.retry(paymentIntentId, key);
+    const rejection = expect(request).rejects.toMatchObject({
+      code: "REQUEST_TIMEOUT",
+    });
+    await vi.advanceTimersByTimeAsync(25);
+    await rejection;
+    expect(signal?.aborted).toBe(true);
+  });
+
   it("sends the exact create request only to the CKS Go backend", async () => {
     const fetcher = vi.fn<typeof fetch>(async () =>
       Response.json(createEnvelope, { status: 201 }),

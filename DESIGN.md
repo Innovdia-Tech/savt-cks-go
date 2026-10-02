@@ -154,11 +154,19 @@ Runtime owners: `src/payment/contracts.ts` (closed payment projections and HTTPS
 
 The customer web calls only `POST /api/v1/customer/checkout/payments` and `GET /api/v1/customer/checkout/payments/:paymentIntentId` on the configured CKS Go backend. Provider communication remains server-to-server. The web never calls Savt Payment, GKash, or another gateway and never creates an Order. The quote token is used only in the credentialed POST body and remains absent from URLs, storage, logs, bridge messages, and visible UI.
 
-Payment starts only from “Proceed to payment” on an accepted, unexpired quote. The cart and address become immutable before POST. An uncertain create retry reuses the same UUIDv4 idempotency key. A successful create stores one PaymentIntent and the strictly validated HTTPS checkout URL in memory; reopening uses that existing intent and never issues another POST.
+Payment starts only from “Proceed to payment” on an accepted, unexpired quote. The cart and address become immutable before POST. An uncertain create retry reuses the same UUIDv4 idempotency key. A successful create stores one PaymentIntent and the strictly validated HTTPS checkout URL in memory. A checkout may be reopened only when the native bridge failed to open that same checkout; ordinary unpaid return uses PAY06B recovery.
 
 Production WebView navigation is not changed directly. The native bridge receives exactly `{ type: "payment-handoff", payload: { checkoutUrl } }` and production fails closed when the channel is absent or throws. The development bridge records this navigation request only; it cannot provide payment finality.
 
-External return, focus, visibility, redirect contents, and successful handoff are navigation signals only. They may trigger one coalesced payment-result GET. `PENDING`, `FAILED`, and `PAID_PROCESSING` never render “Order Confirmed.” That reserved state appears only for `PAID` with a strict backend-projected Order identity matching the payment’s checkout reference. Logout/session loss clears all payment memory and invalidates late asynchronous completions.
+### PAY06B payment recovery
+
+The PAY06B brief and merged PAY06A contract at `7a4811263c2c532f958c9813d9002c0bf1f2237f` supersede the earlier pending-reopen behavior. Immediately after handoff, show “Waiting for payment confirmation”. Visible return performs the existing bounded observations before unpaid pending becomes “Payment not completed”, with CKS-red “Try Payment Again” and secondary “Check Payment Status”. The primary action calls the bodyless credentialed retry endpoint; it never reuses an old URL. Both actions are disabled while “Preparing a new payment” is shown.
+
+Only a returned initiation-style PENDING with a validated checkout URL opens that returned checkout through the existing bridge. “Continue secure payment” is confined to a failure opening that same newly-created/returned checkout. A retry result may instead be pending, failed, paid-processing or paid with a strict Order; a 200 does not imply a new charge. Receiving payment permanently removes retry eligibility. Uncertain retries retain their exact source intent/key in memory, including when the source subsequently reads FAILED. Voucher rejection keeps customer-friendly basket guidance through unpaid observations.
+
+Tokens, cards, typography, focus styles and the 430px shell retain their established owners. See [PAY06B verification and restart limitation](docs/verification/PAY06B.md). No payment/session recovery is persisted across a full WebView or app process destruction.
+
+External return, focus, visibility, redirect contents, and successful handoff are navigation signals only. Visible return may trigger at most three coalesced payment-result GET observations with bounded delays. `PENDING`, `FAILED`, and `PAID_PROCESSING` never render “Order Confirmed.” That reserved state appears only for `PAID` with a strict backend-projected Order identity matching the payment’s checkout reference. Logout/session loss clears all payment memory and invalidates late asynchronous completions.
 
 ## CUST03B order history, tracking and after-order actions
 

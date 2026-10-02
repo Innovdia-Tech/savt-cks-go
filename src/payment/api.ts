@@ -5,8 +5,10 @@ import type { CustomerSessionController } from "../session/controller";
 import {
   parsePaymentCreate,
   parsePaymentResult,
+  parsePaymentRetry,
   type PaymentCreate,
   type PaymentResult,
+  type PaymentRetry,
 } from "./contracts";
 
 const safeCodes = new Set([
@@ -31,6 +33,18 @@ const safeCodes = new Set([
   "IDEMPOTENCY_REQUEST_IN_PROGRESS",
   "SAVT_PAYMENT_CREATE_FAILED",
   "SAVT_PAYMENT_INVALID_RESPONSE",
+  "CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED",
+  "PAYMENT_ATTEMPT_STATE_CHANGED",
+  "CHECKOUT_PAYMENT_CREATE_DISABLED",
+  "SAVT_PAYMENT_RECOVERY_FAILED",
+  "SAVT_PAYMENT_NOT_FOUND",
+  "PAYMENT_ATTEMPT_IDENTITY_MISMATCH",
+  "LOCAL_PAYMENT_INTENT_MISSING",
+  "CHECKOUT_MONEY_UNSAFE",
+  "CUSTOMER_COMMERCE_BLOCKED",
+  "PAYMENT_ATTEMPT_NOT_PENDING",
+  "CUSTOMER_ORGANISATION_FORBIDDEN",
+  "SAVT_INTEGRATION_UNAVAILABLE",
 ]);
 
 export class PaymentError extends Error {
@@ -90,6 +104,21 @@ export class PaymentApi {
       `/api/v1/customer/checkout/payments/${paymentIntentId}`,
       { method: "GET" },
       parsePaymentResult,
+      external,
+    );
+  }
+
+  async retry(
+    paymentIntentId: string,
+    idempotencyKey: string,
+    external?: AbortSignal,
+  ): Promise<PaymentRetry> {
+    if (!uuid(paymentIntentId) || !uuid(idempotencyKey))
+      throw new PaymentError("VALIDATION_FAILED");
+    return this.request(
+      `/api/v1/customer/checkout/payments/${paymentIntentId}/retry`,
+      { method: "POST", headers: { "Idempotency-Key": idempotencyKey } },
+      parsePaymentRetry,
       external,
     );
   }
