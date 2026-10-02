@@ -11,7 +11,14 @@ import { ReceiptIcon, RefreshIcon } from "../components/Icons";
 
 type Actions = Pick<
   OrdersController,
-  "load" | "refresh" | "nextPage" | "previousPage" | "downloadReceipt"
+  | "load"
+  | "refresh"
+  | "nextPage"
+  | "previousPage"
+  | "downloadReceipt"
+  | "downloadPaymentReceipt"
+  | "refreshDocuments"
+  | "reportReceiptSaveFailure"
 >;
 
 const money = (minor: number) =>
@@ -303,16 +310,129 @@ const progressTimes = (detail: OrderDetail) => [
   detail.milestones.deliveredAt ?? detail.delivery.deliveredAt,
 ];
 
-async function saveReceipt(controller: Actions) {
-  const result = await controller.downloadReceipt();
+export async function saveReceipt(controller: Actions, paymentReceipt = false) {
+  const result = await (paymentReceipt
+    ? controller.downloadPaymentReceipt()
+    : controller.downloadReceipt());
   if (!result) return;
-  const url = URL.createObjectURL(result.blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = result.filename;
-  link.rel = "noopener";
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
+  let url: string | undefined;
+  let link: HTMLAnchorElement | undefined;
+  try {
+    url = URL.createObjectURL(result.blob);
+    link = document.createElement("a");
+    link.href = url;
+    link.download = result.filename;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+  } catch {
+    controller.reportReceiptSaveFailure(paymentReceipt);
+  } finally {
+    link?.remove();
+    // Give the browser/WebView time to consume the attachment before releasing it.
+    if (url) setTimeout(() => URL.revokeObjectURL(url!), 60_000);
+  }
+}
+
+function OrderDocumentsSection({
+  state,
+  controller,
+}: {
+  state: OrdersState;
+  controller: Actions;
+}) {
+  const paymentAvailable =
+    state.documentsPhase === "ready" &&
+    state.documents?.paymentReceiptAvailable;
+  const finalAvailable = state.detail?.receipt.receiptAvailable;
+  return (
+    <section
+      className="order-section order-documents"
+      aria-labelledby="order-documents-title"
+    >
+      <h3 id="order-documents-title">Documents</h3>
+      {(state.documentsPhase === "idle" ||
+        state.documentsPhase === "loading") && (
+        <p role="status">Checking your documents…</p>
+      )}
+      {state.documentsPhase === "error" && (
+        <div>
+          <p role="alert">
+            We couldn’t check your documents. Please try again.
+          </p>
+          <button
+            className="customer-button"
+            onClick={() => void controller.refreshDocuments()}
+          >
+            Try again
+          </button>
+        </div>
+      )}
+      {state.documentsPhase === "ready" && (
+        <div className="order-document">
+          <h4>Payment Receipt</h4>
+          <p>
+            {paymentAvailable
+              ? "Payment received"
+              : "Your Payment Receipt is not available yet."}
+          </p>
+          {paymentAvailable ? (
+            <button
+              className="customer-button"
+              disabled={state.paymentReceiptPhase === "downloading"}
+              aria-busy={state.paymentReceiptPhase === "downloading"}
+              onClick={() => void saveReceipt(controller, true)}
+            >
+              {state.paymentReceiptPhase === "downloading"
+                ? "Preparing Payment Receipt…"
+                : state.paymentReceiptPhase === "error"
+                  ? "Try downloading again"
+                  : "Download Payment Receipt"}
+            </button>
+          ) : (
+            <button
+              className="customer-button"
+              onClick={() => void controller.refreshDocuments()}
+            >
+              Check again
+            </button>
+          )}
+          {state.paymentReceiptPhase === "error" && (
+            <p className="order-action-error" role="alert">
+              We couldn’t download your Payment Receipt. Please try again.
+            </p>
+          )}
+        </div>
+      )}
+      <div className="order-document">
+        <h4>Final Receipt</h4>
+        <p>
+          {finalAvailable
+            ? "Your final order receipt is ready."
+            : state.detail?.milestones.completedAt
+              ? "Your final receipt is being prepared."
+              : "Available after your order is completed"}
+        </p>
+        {finalAvailable && (
+          <button
+            className="customer-button"
+            disabled={state.receiptPhase === "downloading"}
+            aria-busy={state.receiptPhase === "downloading"}
+            onClick={() => void saveReceipt(controller)}
+          >
+            {state.receiptPhase === "downloading"
+              ? "Preparing receipt…"
+              : "Download receipt"}
+          </button>
+        )}
+        {state.receiptPhase === "error" && (
+          <p className="order-action-error" role="alert">
+            We couldn’t download your receipt. Try again later.
+          </p>
+        )}
+      </div>
+    </section>
+  );
 }
 
 export function OrderDetailScreen({
@@ -469,26 +589,7 @@ export function OrderDetailScreen({
           </p>
         </section>
       )}
-      {(order.receipt.receiptAvailable || state.receiptPhase === "error") && (
-        <section className="order-actions" aria-label="Order actions">
-          {order.receipt.receiptAvailable && (
-            <button
-              className="customer-button customer-primary"
-              disabled={state.receiptPhase === "downloading"}
-              onClick={() => void saveReceipt(controller)}
-            >
-              {state.receiptPhase === "downloading"
-                ? "Preparing receipt…"
-                : "Download receipt"}
-            </button>
-          )}
-          {state.receiptPhase === "error" && (
-            <p className="order-action-error" role="alert">
-              We couldn’t download your receipt. Try again later.
-            </p>
-          )}
-        </section>
-      )}
+      <OrderDocumentsSection state={state} controller={controller} />
       <section
         className="order-section order-help"
         aria-labelledby="order-help-title"

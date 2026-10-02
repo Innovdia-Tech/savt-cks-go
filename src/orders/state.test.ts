@@ -149,6 +149,15 @@ const api = (
   overrides: Partial<{
     list(page?: number, pageSize?: number): Promise<OrderPage>;
     detail(orderId: string, signal?: AbortSignal): Promise<OrderDetail>;
+    documents(
+      orderId: string,
+      signal?: AbortSignal,
+    ): Promise<import("./contracts").OrderDocuments>;
+    downloadPaymentReceipt(
+      orderId: string,
+      path: string,
+      signal?: AbortSignal,
+    ): Promise<Blob>;
     downloadReceipt(
       orderId: string,
       path: string,
@@ -158,6 +167,15 @@ const api = (
 ) => ({
   list: async () => page(),
   detail: async () => detail(),
+  documents: async (id: string) => ({
+    orderId: id,
+    paymentReceiptAvailable: false,
+    finalSalesReceiptAvailable: false,
+    paymentReceipt: null,
+    finalSalesReceipt: null,
+  }),
+  downloadPaymentReceipt: async () =>
+    new Blob(["pdf"], { type: "application/pdf" }),
   downloadReceipt: async () => new Blob(["pdf"], { type: "application/pdf" }),
   ...overrides,
 });
@@ -427,5 +445,175 @@ describe("OrdersController", () => {
     controller.dispose();
     expect(session.listeners.size).toBe(0);
     expect(controller.getSnapshot().page).toBeNull();
+  });
+});
+
+const documents = (id = orderId) => ({
+  orderId: id,
+  paymentReceiptAvailable: true,
+  finalSalesReceiptAvailable: false,
+  paymentReceipt: {
+    kind: "PAYMENT_RECEIPT" as const,
+    receiptReference: "CKS-20260921-0001",
+    issuedAt: "2026-09-21T04:00:00.000Z",
+    metadataPath: `/api/v1/orders/${id}/payment-receipt`,
+    downloadPath: `/api/v1/orders/${id}/payment-receipt/download`,
+  },
+  finalSalesReceipt: null,
+});
+
+describe("paid order documents", () => {
+  const port = (overrides = {}) => ({
+    ...api(),
+    documents: async (id: string) => documents(id),
+    downloadPaymentReceipt: async () =>
+      new Blob(["%PDF-1.7"], { type: "application/pdf" }),
+    ...overrides,
+  });
+
+  it("loads payment availability on ORDER_RECEIVED without enabling the final receipt", async () => {
+    const controller = new OrdersController(port(), new SessionStub());
+    await controller.open(orderId);
+    expect(controller.getSnapshot()).toMatchObject({
+      documentsPhase: "ready",
+      documents: {
+        paymentReceiptAvailable: true,
+        finalSalesReceiptAvailable: false,
+      },
+      detail: {
+        customerStage: "ORDER_RECEIVED",
+        receipt: { receiptAvailable: false },
+      },
+    });
+    expect(await controller.downloadReceipt()).toBeNull();
+    const download = await controller.downloadPaymentReceipt();
+    expect(download?.filename).toBe(
+      "CKS-Go-Payment-Receipt-CKS-20260921-0001.pdf",
+    );
+    expect(download?.blob.type).toBe("application/pdf");
+  });
+
+  it("prevents duplicate payment downloads and permits an explicit retry after failure", async () => {
+    const pending = deferredReceipt();
+    let calls = 0;
+    const controller = new OrdersController(
+      port({
+        downloadPaymentReceipt: async () => {
+          ++calls;
+          return calls === 1 ? pending.promise : new Blob(["pdf"]);
+        },
+      }),
+      new SessionStub(),
+    );
+    await controller.open(orderId);
+    const first = controller.downloadPaymentReceipt();
+    expect(controller.getSnapshot().paymentReceiptPhase).toBe("downloading");
+    expect(await controller.downloadPaymentReceipt()).toBeNull();
+    expect(calls).toBe(1);
+    pending.reject(new OrdersError("NETWORK_ERROR"));
+    expect(await first).toBeNull();
+    expect(controller.getSnapshot().paymentReceiptPhase).toBe("error");
+    expect(await controller.downloadPaymentReceipt()).not.toBeNull();
+    expect(controller.getSnapshot().paymentReceiptPhase).toBe("ready");
+  });
+
+  it("keeps tracking readable when documents fail and reloads only documents on retry", async () => {
+    let documentCalls = 0;
+    let detailCalls = 0;
+    const controller = new OrdersController(
+      port({
+        detail: async () => {
+          ++detailCalls;
+          return detail();
+        },
+        documents: async () => {
+          if (++documentCalls === 1) throw new OrdersError("NETWORK_ERROR");
+          return documents();
+        },
+      }),
+      new SessionStub(),
+    );
+    await controller.open(orderId);
+    expect(controller.getSnapshot()).toMatchObject({
+      detailPhase: "ready",
+      documentsPhase: "error",
+      detail: { orderId },
+    });
+    await controller.refreshDocuments();
+    expect(controller.getSnapshot().documentsPhase).toBe("ready");
+    expect(detailCalls).toBe(1);
+  });
+
+  it("rejects documents belonging to a different Order", async () => {
+    const controller = new OrdersController(
+      port({
+        documents: async () =>
+          documents("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+      }),
+      new SessionStub(),
+    );
+    await controller.open(orderId);
+    expect(controller.getSnapshot()).toMatchObject({
+      documentsPhase: "error",
+      documents: null,
+    });
+    expect(await controller.downloadPaymentReceipt()).toBeNull();
+  });
+
+  it.each(["close", "new-order", "session-loss", "dispose"] as const)(
+    "discards a late payment PDF after %s",
+    async (action) => {
+      const pending = deferredReceipt();
+      let signal: AbortSignal | undefined;
+      const session = new SessionStub();
+      const controller = new OrdersController(
+        port({
+          detail: async (id: string) => ({ ...detail(), orderId: id }),
+          downloadPaymentReceipt: async (
+            _id: string,
+            _path: string,
+            s?: AbortSignal,
+          ) => {
+            signal = s;
+            return pending.promise;
+          },
+        }),
+        session,
+      );
+      await controller.open(orderId);
+      const download = controller.downloadPaymentReceipt();
+      if (action === "close") controller.closeDetail();
+      if (action === "new-order")
+        await controller.open("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+      if (action === "session-loss") session.set("expired");
+      if (action === "dispose") controller.dispose();
+      expect(signal?.aborted).toBe(true);
+      const state = controller.getSnapshot();
+      pending.resolve(new Blob(["private old PDF"]));
+      expect(await download).toBeNull();
+      expect(controller.getSnapshot()).toBe(state);
+    },
+  );
+
+  it("fences document availability after closing the detail", async () => {
+    let resolve!: (value: ReturnType<typeof documents>) => void;
+    const pending = new Promise<ReturnType<typeof documents>>((r) => {
+      resolve = r;
+    });
+    const controller = new OrdersController(
+      port({ documents: () => pending }),
+      new SessionStub(),
+    );
+    const opening = controller.open(orderId);
+    await Promise.resolve();
+    expect(controller.getSnapshot().documentsPhase).toBe("loading");
+    controller.closeDetail();
+    resolve(documents());
+    await opening;
+    expect(controller.getSnapshot()).toMatchObject({
+      detail: null,
+      documents: null,
+      documentsPhase: "idle",
+    });
   });
 });

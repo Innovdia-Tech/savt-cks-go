@@ -1,5 +1,5 @@
 import { OrdersError } from "./api";
-import type { OrderDetail, OrderPage } from "./contracts";
+import type { OrderDetail, OrderPage, OrderDocuments } from "./contracts";
 
 type OrdersPort = {
   list(
@@ -8,6 +8,12 @@ type OrdersPort = {
     signal?: AbortSignal,
   ): Promise<OrderPage>;
   detail(orderId: string, signal?: AbortSignal): Promise<OrderDetail>;
+  documents(orderId: string, signal?: AbortSignal): Promise<OrderDocuments>;
+  downloadPaymentReceipt(
+    orderId: string,
+    path: string,
+    signal?: AbortSignal,
+  ): Promise<Blob>;
   downloadReceipt(
     orderId: string,
     path: string,
@@ -28,6 +34,11 @@ export type OrdersState = {
   detailError: string | null;
   receiptPhase: "idle" | "downloading" | "ready" | "error";
   receiptError: string | null;
+  documentsPhase: Phase;
+  documents: OrderDocuments | null;
+  documentsError: string | null;
+  paymentReceiptPhase: "idle" | "downloading" | "ready" | "error";
+  paymentReceiptError: string | null;
 };
 export type ReceiptDownload = { blob: Blob; filename: string };
 
@@ -40,6 +51,11 @@ const empty = (sessionExpired = false): OrdersState => ({
   detailError: sessionExpired ? "CUSTOMER_SESSION_INVALID" : null,
   receiptPhase: "idle",
   receiptError: null,
+  documentsPhase: "idle",
+  documents: null,
+  documentsError: null,
+  paymentReceiptPhase: "idle",
+  paymentReceiptError: null,
 });
 const codeOf = (error: unknown) =>
   error instanceof OrdersError ? error.code : "INVALID_RESPONSE";
@@ -50,6 +66,10 @@ export class OrdersController {
   private listGeneration = 0;
   private detailGeneration = 0;
   private receiptGeneration = 0;
+  private documentsGeneration = 0;
+  private paymentReceiptGeneration = 0;
+  private documentsAbort?: AbortController;
+  private paymentReceiptAbort?: AbortController;
   private listAbort?: AbortController;
   private detailAbort?: AbortController;
   private receiptAbort?: AbortController;
@@ -118,6 +138,7 @@ export class OrdersController {
 
   async open(orderId: string): Promise<void> {
     this.detailAbort?.abort();
+    this.abortDocuments();
     this.receiptAbort?.abort();
     ++this.receiptGeneration;
     const abort = new AbortController();
@@ -129,12 +150,18 @@ export class OrdersController {
       detailError: null,
       receiptPhase: "idle",
       receiptError: null,
+      documentsPhase: "idle",
+      documents: null,
+      documentsError: null,
+      paymentReceiptPhase: "idle",
+      paymentReceiptError: null,
     });
     try {
       const result = await this.api.detail(orderId, abort.signal);
       if (generation !== this.detailGeneration) return;
       if (result.orderId !== orderId) throw new OrdersError("INVALID_RESPONSE");
       this.update({ detailPhase: "ready", detail: result, detailError: null });
+      await this.refreshDocuments();
     } catch (error) {
       if (generation !== this.detailGeneration) return;
       const code = codeOf(error);
@@ -149,6 +176,7 @@ export class OrdersController {
 
   closeDetail(): void {
     this.detailAbort?.abort();
+    this.abortDocuments();
     this.receiptAbort?.abort();
     ++this.detailGeneration;
     ++this.receiptGeneration;
@@ -158,7 +186,119 @@ export class OrdersController {
       detailError: null,
       receiptPhase: "idle",
       receiptError: null,
+      documentsPhase: "idle",
+      documents: null,
+      documentsError: null,
+      paymentReceiptPhase: "idle",
+      paymentReceiptError: null,
     });
+  }
+
+  async refreshDocuments(): Promise<void> {
+    const orderId = this.state.detail?.orderId;
+    if (!orderId) return;
+    this.abortDocuments();
+    const abort = new AbortController();
+    this.documentsAbort = abort;
+    const generation = ++this.documentsGeneration;
+    this.update({
+      documentsPhase: "loading",
+      documents: null,
+      documentsError: null,
+      paymentReceiptPhase: "idle",
+      paymentReceiptError: null,
+    });
+    try {
+      const documents = await this.api.documents(orderId, abort.signal);
+      if (
+        generation !== this.documentsGeneration ||
+        this.state.detail?.orderId !== orderId
+      )
+        return;
+      if (documents.orderId !== orderId)
+        throw new OrdersError("INVALID_RESPONSE");
+      this.update({ documentsPhase: "ready", documents, documentsError: null });
+    } catch (error) {
+      if (generation !== this.documentsGeneration) return;
+      const code = codeOf(error);
+      if (code === "CUSTOMER_SESSION_INVALID") {
+        this.clearForSessionLoss();
+        return;
+      }
+      this.update({
+        documentsPhase: "error",
+        documents: null,
+        documentsError: code,
+      });
+    }
+  }
+
+  async downloadPaymentReceipt(): Promise<ReceiptDownload | null> {
+    const detail = this.state.detail;
+    const documents = this.state.documents;
+    const receipt = documents?.paymentReceipt;
+    if (
+      !detail ||
+      this.state.documentsPhase !== "ready" ||
+      documents?.orderId !== detail.orderId ||
+      !documents.paymentReceiptAvailable ||
+      !receipt ||
+      this.state.paymentReceiptPhase === "downloading"
+    )
+      return null;
+    this.paymentReceiptAbort?.abort();
+    const abort = new AbortController();
+    this.paymentReceiptAbort = abort;
+    const generation = ++this.paymentReceiptGeneration;
+    this.update({
+      paymentReceiptPhase: "downloading",
+      paymentReceiptError: null,
+    });
+    try {
+      const blob = await this.api.downloadPaymentReceipt(
+        detail.orderId,
+        receipt.downloadPath,
+        abort.signal,
+      );
+      if (
+        generation !== this.paymentReceiptGeneration ||
+        this.state.detail?.orderId !== detail.orderId
+      )
+        return null;
+      this.update({ paymentReceiptPhase: "ready", paymentReceiptError: null });
+      return {
+        blob,
+        filename: `CKS-Go-Payment-Receipt-${receipt.receiptReference.replace(/[^A-Za-z0-9_-]/g, "-")}.pdf`,
+      };
+    } catch (error) {
+      if (generation !== this.paymentReceiptGeneration) return null;
+      const code = codeOf(error);
+      if (code === "CUSTOMER_SESSION_INVALID") {
+        this.clearForSessionLoss();
+        return null;
+      }
+      this.update({ paymentReceiptPhase: "error", paymentReceiptError: code });
+      return null;
+    }
+  }
+
+  reportReceiptSaveFailure(paymentReceipt: boolean): void {
+    if (!this.state.detail) return;
+    this.update(
+      paymentReceipt
+        ? {
+            paymentReceiptPhase: "error",
+            paymentReceiptError: "DOWNLOAD_FAILED",
+          }
+        : { receiptPhase: "error", receiptError: "DOWNLOAD_FAILED" },
+    );
+  }
+
+  private abortDocuments(): void {
+    ++this.documentsGeneration;
+    ++this.paymentReceiptGeneration;
+    this.documentsAbort?.abort();
+    this.paymentReceiptAbort?.abort();
   }
 
   async downloadReceipt(): Promise<ReceiptDownload | null> {
@@ -220,6 +360,7 @@ export class OrdersController {
     ++this.receiptGeneration;
     this.listAbort?.abort();
     this.detailAbort?.abort();
+    this.abortDocuments();
     this.receiptAbort?.abort();
   }
   private update(patch: Partial<OrdersState>): void {

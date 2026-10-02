@@ -467,77 +467,94 @@ describe("local simulator pending status action", () => {
       vi.stubEnv("PROD", production);
       vi.stubEnv("VITE_CKS_GO_LOCAL_PAYMENT_SIMULATOR_ORIGIN", setting);
       vi.stubGlobal("window", { location: { href } });
-      expect(render(pending)).not.toContain("Check Payment Status");
+      for (const phase of ["pending", "paid-processing"] as const) {
+        expect(render({ ...pending, phase })).not.toContain(
+          "Check Payment Status",
+        );
+      }
     },
   );
 
-  it("shows one explicit status action while local payment remains unconfirmed", () => {
-    const html = render(pending);
-    expect(html).toContain("Check Payment Status");
-    expect(html.match(/<button/g)).toHaveLength(1);
-    expect(html).not.toContain("Try Payment Again");
-    expect(html).not.toContain("Order confirmed");
-  });
+  it.each(["pending", "paid-processing"] as const)(
+    "shows one explicit status action while local payment is %s",
+    (phase) => {
+      const html = render({ ...pending, phase });
+      expect(html).toContain("Check Payment Status");
+      expect(html.match(/<button/g)).toHaveLength(1);
+      expect(html).not.toContain("Try Payment Again");
+      expect(html).not.toContain("Order confirmed");
+    },
+  );
 
-  it("reads status only on an explicit click without another create, retry or invented finality", async () => {
-    const quoteId = "10000000-0000-4000-8000-000000000001";
-    const paymentIntentId = pending.paymentIntentId!;
-    const api = {
-      create: vi.fn().mockResolvedValue({
-        checkoutReference: quoteId,
-        payment: {
-          paymentIntentId,
-          status: "PENDING",
-          checkoutUrl:
-            localOrigin +
-            "/api/integrations/cks-go/v1/payment-simulator/ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq",
+  it.each(["PENDING", "PAID_PROCESSING"] as const)(
+    "reads %s status only on an explicit click without another create, retry or invented finality",
+    async (status) => {
+      const quoteId = "10000000-0000-4000-8000-000000000001";
+      const paymentIntentId = pending.paymentIntentId!;
+      const api = {
+        create: vi.fn().mockResolvedValue({
+          checkoutReference: quoteId,
+          payment: {
+            paymentIntentId,
+            status: "PENDING",
+            checkoutUrl:
+              localOrigin +
+              "/api/integrations/cks-go/v1/payment-simulator/ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq",
+          },
+        }),
+        result: vi.fn().mockResolvedValue({
+          checkoutReference: quoteId,
+          status,
+          order: null,
+        }),
+        retry: vi.fn(),
+      };
+      const actual = new PaymentController(
+        api,
+        new BrowserBridgeAdapter(),
+        {
+          getSnapshot: () => ({ phase: "authenticated" }),
+          subscribe: () => () => {},
         },
-      }),
-      result: vi.fn().mockResolvedValue({
-        checkoutReference: quoteId,
-        status: "PENDING",
-        order: null,
-      }),
-      retry: vi.fn(),
-    };
-    const actual = new PaymentController(
-      api,
-      new BrowserBridgeAdapter(),
-      {
-        getSnapshot: () => ({ phase: "authenticated" }),
-        subscribe: () => () => {},
-      },
-      () => true,
-      () => {},
-      () => Date.parse("2026-09-21T02:00:00.000Z"),
-      () => "30000000-0000-4000-8000-000000000003",
-    );
-    actual.syncQuote(
-      {
-        quoteId,
-        quoteToken: "Q".repeat(43),
-        quoteExpiresAt: "2026-09-21T02:10:00.000Z",
-      } as CheckoutQuote,
-      "ready",
-    );
-    await actual.initiate();
-    expect(actual.getSnapshot().phase).toBe("pending");
-    expect(api.result).not.toHaveBeenCalled();
-    const button = findStatusButton(
-      PaymentPanel({ state: actual.getSnapshot(), controller: actual }),
-    );
-    expect(button).toBeDefined();
-    button!.props.onClick();
-    await vi.waitFor(() => {
-      expect(api.result).toHaveBeenCalledExactlyOnceWith(paymentIntentId);
-      expect(actual.getSnapshot()).toMatchObject({
-        phase: "pending",
-        order: null,
-        canRetryPayment: false,
+        () => true,
+        () => {},
+        () => Date.parse("2026-09-21T02:00:00.000Z"),
+        () => "30000000-0000-4000-8000-000000000003",
+      );
+      actual.syncQuote(
+        {
+          quoteId,
+          quoteToken: "Q".repeat(43),
+          quoteExpiresAt: "2026-09-21T02:10:00.000Z",
+        } as CheckoutQuote,
+        "ready",
+      );
+      await actual.initiate();
+      expect(actual.getSnapshot().phase).toBe("pending");
+      expect(api.result).not.toHaveBeenCalled();
+      const button = findStatusButton(
+        PaymentPanel({ state: actual.getSnapshot(), controller: actual }),
+      );
+      expect(button).toBeDefined();
+      button!.props.onClick();
+      await vi.waitFor(() => {
+        expect(api.result).toHaveBeenCalledExactlyOnceWith(paymentIntentId);
+        expect(actual.getSnapshot()).toMatchObject({
+          phase: status === "PAID_PROCESSING" ? "paid-processing" : "pending",
+          order: null,
+          canRetryPayment: false,
+        });
       });
-    });
-    expect(api.create).toHaveBeenCalledOnce();
-    expect(api.retry).not.toHaveBeenCalled();
-    actual.dispose();
-  });
+      const nextButton = findStatusButton(
+        PaymentPanel({ state: actual.getSnapshot(), controller: actual }),
+      );
+      expect(nextButton).toBeDefined();
+      expect(api.result).toHaveBeenCalledOnce();
+      nextButton!.props.onClick();
+      await vi.waitFor(() => expect(api.result).toHaveBeenCalledTimes(2));
+      expect(api.create).toHaveBeenCalledOnce();
+      expect(api.retry).not.toHaveBeenCalled();
+      actual.dispose();
+    },
+  );
 });

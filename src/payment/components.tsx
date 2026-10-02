@@ -135,6 +135,14 @@ export function PaymentPanel({
           Payment is still processing and the order is not confirmed yet.
           Returning to CKS Go later will check the result again.
         </p>
+        {isLocalPaymentSimulatorBrowserEnabled() && (
+          <button
+            className={action}
+            onClick={() => void controller.checkStatus()}
+          >
+            Check Payment Status
+          </button>
+        )}
       </section>
     );
   if (state.phase === "handoff-error")

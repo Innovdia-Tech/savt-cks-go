@@ -5,6 +5,8 @@ import type { CustomerSessionController } from "../session/controller";
 import {
   parseOrderDetail,
   parseOrderList,
+  parseOrderDocuments,
+  type OrderDocuments,
   type OrderDetail,
   type OrderPage,
 } from "./contracts";
@@ -25,6 +27,8 @@ const safeCodes = new Set([
   "FINAL_RECEIPT_FORBIDDEN",
   "FINAL_RECEIPT_NOT_READY",
   "FINAL_RECEIPT_INTEGRITY_FAILED",
+  "PAYMENT_RECEIPT_NOT_READY",
+  "PAYMENT_RECEIPT_INTEGRITY_FAILED",
 ]);
 
 export class OrdersError extends Error {
@@ -74,13 +78,40 @@ export class OrdersApi {
     );
   }
 
-  async downloadReceipt(
+  documents(orderId: string, external?: AbortSignal): Promise<OrderDocuments> {
+    if (!uuid(orderId))
+      return Promise.reject(new OrdersError("VALIDATION_FAILED"));
+    return this.json(
+      `/api/v1/customer/orders/${orderId}/documents`,
+      { method: "GET" },
+      parseOrderDocuments,
+      external,
+    );
+  }
+
+  downloadReceipt(
     orderId: string,
     path: string,
     external?: AbortSignal,
   ): Promise<Blob> {
-    const expected = `/api/v1/orders/${orderId}/receipt/download`;
-    if (!uuid(orderId) || path !== expected)
+    return this.downloadPdf(orderId, path, "receipt", external);
+  }
+
+  downloadPaymentReceipt(
+    orderId: string,
+    path: string,
+    external?: AbortSignal,
+  ): Promise<Blob> {
+    return this.downloadPdf(orderId, path, "payment-receipt", external);
+  }
+
+  private async downloadPdf(
+    orderId: string,
+    path: string,
+    kind: "receipt" | "payment-receipt",
+    external?: AbortSignal,
+  ): Promise<Blob> {
+    if (!uuid(orderId) || path !== `/api/v1/orders/${orderId}/${kind}/download`)
       throw new OrdersError("VALIDATION_FAILED");
     return this.request(
       path,
