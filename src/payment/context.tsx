@@ -14,27 +14,21 @@ type VisibilityTarget = {
   removeEventListener(type: string, listener: EventListener): void;
 };
 
-type FocusTarget = {
-  addEventListener(type: string, listener: EventListener): void;
-  removeEventListener(type: string, listener: EventListener): void;
-};
-
 export function installPaymentReturnObservers(
   documentTarget: VisibilityTarget,
-  windowTarget: FocusTarget,
   controller: Pick<PaymentController, "handleReturn">,
 ): () => void {
-  const observeVisible = () => {
-    if (documentTarget.visibilityState === "visible")
-      void controller.handleReturn();
+  let previousVisibility = documentTarget.visibilityState;
+  const visibilityListener: EventListener = () => {
+    const visibility = documentTarget.visibilityState;
+    const returned =
+      previousVisibility === "hidden" && visibility === "visible";
+    previousVisibility = visibility;
+    if (returned) void controller.handleReturn();
   };
-  const visibilityListener: EventListener = observeVisible;
-  const focusListener: EventListener = observeVisible;
   documentTarget.addEventListener("visibilitychange", visibilityListener);
-  windowTarget.addEventListener("focus", focusListener);
   return () => {
     documentTarget.removeEventListener("visibilitychange", visibilityListener);
-    windowTarget.removeEventListener("focus", focusListener);
   };
 }
 
@@ -52,7 +46,7 @@ export function PaymentProvider({
     controller.syncQuote(checkout.state.quote, checkout.state.quotePhase);
   }, [controller, checkout.state.quote, checkout.state.quotePhase]);
   useEffect(
-    () => installPaymentReturnObservers(document, window, controller),
+    () => installPaymentReturnObservers(document, controller),
     [controller],
   );
   useEffect(() => () => controller.dispose(), [controller]);
