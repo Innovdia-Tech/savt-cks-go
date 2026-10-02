@@ -6,6 +6,8 @@ import {
 } from "./reference-match/useArtwork";
 import { HeaderActions, AppShell } from "../components/Layout";
 import { CustomerProfileScreen } from "../customer/components";
+import { CustomerNotice } from "../customer/CustomerNotice";
+import { canPullRefresh } from "../components/pull-refresh";
 import { DeliveryAddressPicker } from "../customer/DeliveryAddressPicker";
 import { DeliveryLocationSetup } from "../customer/DeliveryLocationSetup";
 import { hasDeliveryCoordinates } from "../customer/delivery-readiness";
@@ -43,6 +45,7 @@ import {
   NoodleIcon,
   PantryIcon,
   SnackIcon,
+  LocationUnavailableIcon,
 } from "../components/Icons";
 import {
   AdvertisingCarousel,
@@ -345,6 +348,7 @@ export function CatalogueStatus({
   onRetry,
   onManage,
   onAdd,
+  refreshEnabled = false,
 }: {
   phase: CatalogueState["phase"];
   error: string | null;
@@ -353,6 +357,7 @@ export function CatalogueStatus({
   onRetry: () => void;
   onManage: () => void;
   onAdd?: () => void;
+  refreshEnabled?: boolean;
 }) {
   if (phase === "no-service")
     return (
@@ -377,11 +382,17 @@ export function CatalogueStatus({
         )}
         <SystemState
           tone="empty"
-          title="We're not delivering here yet"
-          description="Your address has been saved. Choose another delivery address to continue shopping."
+          title="Delivery isn't available for this address"
+          description="Your address is saved. Choose another delivery address to continue shopping."
+          icon={<LocationUnavailableIcon />}
           actionLabel="Choose another address"
           onAction={onManage}
         />
+        {refreshEnabled && (
+          <p className="catalogue-no-service__refresh-hint">
+            Pull down to check again
+          </p>
+        )}
         {onAdd && (
           <button
             type="button"
@@ -523,7 +534,7 @@ export function CatalogueApp({
   supportWhatsApp?: string;
   embeddedHost?: boolean;
 }) {
-  const { state, controller, controls } = useCatalogue();
+  const { state, controller, controls, refresh, refreshing } = useCatalogue();
   const checkout = useCheckout();
   const payment = usePayment();
   const orders = useOrders();
@@ -828,6 +839,17 @@ export function CatalogueApp({
     );
   }
 
+  const refreshEnabled = canPullRefresh({
+    route,
+    phase: state.phase,
+    paymentFrozen: checkout.state.paymentFrozen,
+    paymentPhase: payment.state.phase,
+    blocked:
+      refreshing ||
+      customer.state.busy ||
+      customer.state.canRetryOperation ||
+      checkout.state.transitionPhase !== "idle",
+  });
   return (
     <AppShell
       active={
@@ -889,6 +911,16 @@ export function CatalogueApp({
       outlet={state.assignment?.outlet}
       restoreScrollTop={scrollPositions.current.get(route) ?? 0}
       embeddedHost={embeddedHost}
+      onRefresh={refresh}
+      refreshDisabled={!refreshEnabled}
+      feedback={
+        customer.state.noticeKind !== "persistent" ? (
+          <CustomerNotice
+            notice={customer.state.notice}
+            noticeKind={customer.state.noticeKind}
+          />
+        ) : undefined
+      }
       onScrollPositionChange={(top) => {
         if (
           (route === "home" || route === "categories") &&
@@ -903,14 +935,15 @@ export function CatalogueApp({
       >
         {route === "profile" ? (
           <>
-            <CustomerProfileScreen />
+            <CustomerProfileScreen shellOwnsTransientNotice />
           </>
         ) : (
           <>
-            {customer.state.notice && (
-              <p className="catalogue-notice" role="status">
-                {customer.state.notice}
-              </p>
+            {customer.state.noticeKind === "persistent" && (
+              <CustomerNotice
+                notice={customer.state.notice}
+                noticeKind={customer.state.noticeKind}
+              />
             )}
             <div
               className={`catalogue-heading ${route === "home" ? "catalogue-heading--hidden" : ""}`}
@@ -1100,6 +1133,7 @@ export function CatalogueApp({
                 )}
                 {state.phase !== "ready" ? (
                   <CatalogueStatus
+                    refreshEnabled={refreshEnabled}
                     phase={state.phase}
                     error={state.error}
                     hasAssignment={Boolean(state.assignment)}

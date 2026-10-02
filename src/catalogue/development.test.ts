@@ -118,19 +118,19 @@ it("exposes five active directory entries while empty preferred categories stay 
   const assignment = await api.assign(address);
   const directory = (await api.categories(assignment)).data;
   expect(directory.map(({ code, name }) => [code, name])).toEqual([
-    ["BEVERAGES", "Beverages"],
+    ["004", "Beverages"],
     ["OTHER_CATEGORY", "Snacks"],
-    ["FROZEN", "Frozen Food"],
-    ["HOUSEHOLD", "Household Essentials"],
-    ["FRESH_PRODUCE", "Fresh Fruits & Vegetables"],
+    ["003", "Frozen Food"],
+    ["002", "Household Essentials"],
+    ["001", "Fresh Fruits & Vegetables"],
   ]);
   expect(homeCategories(directory).map(({ code }) => code)).toEqual([
-    "FRESH_PRODUCE",
-    "HOUSEHOLD",
-    "FROZEN",
-    "BEVERAGES",
+    "001",
+    "002",
+    "003",
+    "004",
   ]);
-  for (const code of ["FRESH_PRODUCE", "FROZEN"]) {
+  for (const code of ["001", "003"]) {
     const category = directory.find((item) => item.code === code);
     expect(category).toBeDefined();
     expect(
@@ -147,11 +147,11 @@ it("removes inactive Frozen from the synthetic directory and Home without a dead
   const { api } = await setup("cust-shop01r-no-frozen");
   const assignment = await api.assign(address);
   const directory = (await api.categories(assignment)).data;
-  expect(directory.map(({ code }) => code)).not.toContain("FROZEN");
+  expect(directory.map(({ code }) => code)).not.toContain("003");
   expect(homeCategories(directory).map(({ code }) => code)).toEqual([
-    "FRESH_PRODUCE",
-    "HOUSEHOLD",
-    "BEVERAGES",
+    "001",
+    "002",
+    "004",
   ]);
 });
 it("provides local portrait, wide, transparent, missing and failed image cases", async () => {

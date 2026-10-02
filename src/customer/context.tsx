@@ -41,6 +41,7 @@ export function CustomerDataProvider({
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     void controller.load();
+    return () => controller.dispose();
   }, [controller]);
   useEffect(() => {
     if (pending) dialog.current?.showModal();

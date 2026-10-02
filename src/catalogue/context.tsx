@@ -2,15 +2,19 @@ import {
   createContext,
   useContext,
   useEffect,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
 import type { CatalogueController } from "./state";
 import type { CustomerDataController } from "../customer/state";
 import type { CustomerSessionController } from "../session/controller";
+import { CatalogueRefreshCoordinator } from "./refresh";
 const Context = createContext<{
   controller: CatalogueController;
   controls?: ReactNode;
+  refresh: () => Promise<boolean>;
+  refreshing: boolean;
 } | null>(null);
 export function CatalogueProvider({
   controller,
@@ -25,35 +29,34 @@ export function CatalogueProvider({
   controls?: ReactNode;
   children: ReactNode;
 }) {
+  const [coordinator, setCoordinator] =
+    useState<CatalogueRefreshCoordinator | null>(null);
+  const refreshing = useSyncExternalStore(
+    coordinator?.subscribe ?? (() => () => {}),
+    coordinator?.getSnapshot ?? (() => false),
+    () => false,
+  );
   useEffect(() => {
-    const sync = () => {
-      const s = session.getSnapshot(),
-        c = customer.getSnapshot();
-      controller.bind({
-        session: s.phase === "authenticated" ? s : null,
-        address: customer.selectedAddress(),
-        phase:
-          c.profilePhase === "error" || c.listPhase === "error"
-            ? "error"
-            : c.profilePhase === "loading" ||
-                c.listPhase === "loading" ||
-                c.busy
-              ? "loading"
-              : "ready",
-        readOnly: c.readOnly,
-      });
-    };
-    const offCustomer = customer.subscribe(sync),
-      offSession = session.subscribe(sync);
-    sync();
+    const binding = new CatalogueRefreshCoordinator(
+      controller,
+      customer,
+      session,
+    );
+    setCoordinator(binding);
     return () => {
-      offCustomer();
-      offSession();
+      binding.dispose();
       controller.dispose();
     };
   }, [controller, customer, session]);
   return (
-    <Context.Provider value={{ controller, controls }}>
+    <Context.Provider
+      value={{
+        controller,
+        controls,
+        refreshing,
+        refresh: coordinator?.refresh ?? (() => Promise.resolve(false)),
+      }}
+    >
       {children}
     </Context.Provider>
   );

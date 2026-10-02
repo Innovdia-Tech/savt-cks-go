@@ -30,26 +30,26 @@ const categories: CustomerCategory[] = [
   { id: id(11), code: "FRESH_FOOD", name: "Fresh food" },
   { id: id(12), code: "EMPTY_CATEGORY", name: "Empty category" },
 ];
-// Local API-shaped data for the CUST-SHOP01 browser acceptance scenario only.
+// Local API-shaped acceptance data using the HQ-standardized Phase-1 codes.
 const shoppingAcceptanceCategories: CustomerCategory[] = [
-  { id: id(20), code: "FRESH_PRODUCE", name: "Fresh Produce" },
-  { id: id(21), code: "HOUSEHOLD", name: "Household" },
-  { id: id(22), code: "FROZEN", name: "Frozen" },
-  { id: id(23), code: "BEVERAGES", name: "Beverages" },
+  { id: id(20), code: "001", name: "Fresh Produce" },
+  { id: id(21), code: "002", name: "Household" },
+  { id: id(22), code: "003", name: "Frozen" },
+  { id: id(23), code: "004", name: "Beverages" },
   { id: id(24), code: "PANTRY", name: "Pantry" },
 ];
 const shoppingWithoutFrozenCategories = shoppingAcceptanceCategories.filter(
-  ({ code }) => code !== "FROZEN",
+  ({ code }) => code !== "003",
 );
 const shoppingRepairCategories: CustomerCategory[] = [
-  { id: id(30), code: "BEVERAGES", name: "Beverages" },
+  { id: id(30), code: "004", name: "Beverages" },
   { id: id(31), code: "OTHER_CATEGORY", name: "Snacks" },
-  { id: id(32), code: "FROZEN", name: "Frozen Food" },
-  { id: id(33), code: "HOUSEHOLD", name: "Household Essentials" },
-  { id: id(34), code: "FRESH_PRODUCE", name: "Fresh Fruits & Vegetables" },
+  { id: id(32), code: "003", name: "Frozen Food" },
+  { id: id(33), code: "002", name: "Household Essentials" },
+  { id: id(34), code: "001", name: "Fresh Fruits & Vegetables" },
 ];
 const shoppingRepairWithoutFrozenCategories = shoppingRepairCategories.filter(
-  ({ code }) => code !== "FROZEN",
+  ({ code }) => code !== "003",
 );
 const productCategory = ({ id, name }: CustomerCategory): Category => ({
   id,

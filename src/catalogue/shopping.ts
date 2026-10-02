@@ -4,12 +4,12 @@ import household from "../assets/categories/household.webp";
 import frozen from "../assets/categories/frozen.webp";
 import beverages from "../assets/categories/beverages.webp";
 
-const preferred = ["FRESH_PRODUCE", "HOUSEHOLD", "FROZEN", "BEVERAGES"];
+const preferred = ["001", "002", "003", "004"];
 const artwork: Record<string, string> = {
-  FRESH_PRODUCE: freshProduce,
-  HOUSEHOLD: household,
-  FROZEN: frozen,
-  BEVERAGES: beverages,
+  "001": freshProduce,
+  "002": household,
+  "003": frozen,
+  "004": beverages,
 };
 
 export function homeCategoryArtwork(code: string): string | null {

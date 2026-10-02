@@ -11,6 +11,28 @@ import type { CustomerDataController } from "../customer/state";
 import { useCustomer } from "../customer/context";
 import { AddressChangeDialog } from "./components";
 import type { CartController } from "./state";
+import type { Address } from "../addresses/contracts";
+import type { Assignment } from "../catalogue/contracts";
+
+// During refresh retain checkout authority until the new binding is complete.
+export function syncCheckoutBinding(
+  controller: CartController,
+  address: Address | undefined,
+  assignment: Assignment | null,
+  refreshing: boolean,
+) {
+  if (refreshing) return;
+  if (
+    address &&
+    assignment &&
+    assignment.customerAddressId === address.id &&
+    assignment.addressRowVersion === address.rowVersion
+  ) {
+    controller.syncAssignment(address, assignment);
+    return;
+  }
+  controller.bindSelectedAddress(address);
+}
 
 export async function requestAddressSelection(
   controller: CartController,
@@ -58,20 +80,17 @@ export function CheckoutProvider({
     [controller, customer],
   );
   useEffect(() => {
-    const address = customer.selectedAddress();
-    controller.bindSelectedAddress(address);
-    const assignment = catalogue.state.assignment;
-    if (
-      address &&
-      assignment &&
-      assignment.customerAddressId === address.id &&
-      assignment.addressRowVersion === address.rowVersion
-    )
-      controller.syncAssignment(address, assignment);
+    syncCheckoutBinding(
+      controller,
+      customer.selectedAddress(),
+      catalogue.state.assignment,
+      catalogue.refreshing,
+    );
   }, [
     controller,
     customer,
     catalogue.state.assignment,
+    catalogue.refreshing,
     customerContext.state.selectedId,
     customerContext.state.revision,
   ]);

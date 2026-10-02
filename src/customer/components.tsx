@@ -8,6 +8,7 @@ import { AddressForm } from "../addresses/AddressForm";
 import { editAddressName } from "../addresses/presentation";
 import { useOptionalCheckout } from "../checkout/context";
 import type { Address } from "../addresses/contracts";
+import { CustomerNotice } from "./CustomerNotice";
 export { CustomerDataProvider } from "./context";
 export function ProfileSummary() {
   const { state } = useCustomer();
@@ -84,16 +85,18 @@ function AddressText({ address }: { address: Address }) {
 export function DataFeedback({
   onReload,
   onRetried,
+  shellOwnsTransientNotice = false,
 }: {
   onReload?: () => void;
   onRetried?: (saved: Address) => void;
+  shellOwnsTransientNotice?: boolean;
 }) {
   const { state, controller } = useCustomer();
   return (
     <>
-      <div role="status" className="text-sm text-green-900">
-        {state.notice}
-      </div>
+      {(!shellOwnsTransientNotice || state.noticeKind === "persistent") && (
+        <CustomerNotice notice={state.notice} noticeKind={state.noticeKind} />
+      )}
       {state.error && (
         <div
           role="alert"
@@ -126,7 +129,11 @@ export function DataFeedback({
     </>
   );
 }
-export function CustomerProfileScreen() {
+export function CustomerProfileScreen({
+  shellOwnsTransientNotice = false,
+}: {
+  shellOwnsTransientNotice?: boolean;
+}) {
   const { state, controller, guardNavigation, setDirty, development } =
     useCustomer();
   const checkout = useOptionalCheckout();
@@ -166,6 +173,7 @@ export function CustomerProfileScreen() {
         </p>
       )}
       <DataFeedback
+        shellOwnsTransientNotice={shellOwnsTransientNotice}
         onReload={() => (editing ? setDiscardReload(true) : reload())}
         onRetried={done}
       />

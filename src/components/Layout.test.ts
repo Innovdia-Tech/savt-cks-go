@@ -1,7 +1,28 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { BottomNavigation, HeaderActions, BasketSummaryBar } from "./Layout";
+import {
+  BottomNavigation,
+  HeaderActions,
+  BasketSummaryBar,
+  RefreshButton,
+} from "./Layout";
+
+it("offers a named keyboard/click refresh alternative and disables it while refreshing", () => {
+  const render = (refreshing: boolean) =>
+    renderToStaticMarkup(
+      createElement(RefreshButton, {
+        onRefresh: () => {},
+        refreshing,
+      }),
+    );
+  expect(render(false)).toContain('aria-label="Refresh Home"');
+  expect(render(false)).toContain('type="button"');
+  expect(render(false)).not.toContain("disabled");
+  expect(render(true)).toContain('aria-label="Refreshing Home"');
+  expect(render(true)).toContain('aria-busy="true"');
+  expect(render(true)).toContain("disabled");
+});
 
 it("shows an accessible Basket merchandise summary only for a nonempty basket", () => {
   const render = (count: number) =>

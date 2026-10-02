@@ -115,6 +115,10 @@ Buttons/fields use 14px radii, cards 16px, chips/badges full pills, and sheets 2
 
 CUST01B through CUST03B extend the existing English-language, Malaysia-focused mobile grocery prototype. CUST-FIGMA01 supersedes the former universal green action palette with the approved CKS-first semantic split while preserving Inter/system typography, rounded white cards and the 430px shell. CUST03B added backend-authoritative customer order history, detail, tracking and receipt download after CUST03A payment finality. CUST-CANCEL01 removes customer cancellation actions after Order creation while keeping historical cancelled/refund presentation. It does not add frontend Order creation, infer fulfilment state, or change the backend.
 
+## CUST-UX05 feedback and refresh
+
+Home success feedback uses the shared `CustomerNotice`: a small white status toast with a subtle positive check, polite live announcement and no reserved document-flow space. Its explicit success timer runs for 2.8 seconds after a successful address save and address-list read; actionable recovery remains inline. The shell owns transient announcements on its screens. Pull feedback uses a compact white top indicator with CKS-red arrow/spinner and “Pull to refresh”, “Release to refresh”, or “Refreshing…”. A neutral 44px Refresh icon provides keyboard/click access through the same guarded path. No content translation or decorative motion is added; the spinner is static under reduced motion. Existing CSS variables own surface, border, radius, positive color and toast stacking. The delivery-unavailable state keeps its approved card/CTA/navigation structure with a decorative rounded-stroke 24px unavailable-location icon and neutral pull education only where refreshing is enabled. Category artwork, columns, geometry and authoritative labels remain unchanged.
+
 ## Runtime owners
 
 - Existing visual tokens: CSS variables in `src/styles.css` are canonical; `tailwind.config.js` is the semantic adapter.

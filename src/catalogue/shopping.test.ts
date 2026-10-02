@@ -4,10 +4,10 @@ import { cartMerchandiseSummary } from "../checkout/state";
 
 const categories = [
   { id: "other", code: "OTHER_CATEGORY", name: "Snacks" },
-  { id: "drinks", code: "BEVERAGES", name: "Drinks" },
-  { id: "frozen", code: "FROZEN", name: "Frozen Food" },
-  { id: "fresh", code: "FRESH_PRODUCE", name: "Fresh Fruits & Vegetables" },
-  { id: "house", code: "HOUSEHOLD", name: "Household Essentials" },
+  { id: "drinks", code: "004", name: "Beverages" },
+  { id: "frozen", code: "003", name: "Frozen" },
+  { id: "fresh", code: "001", name: "Fresh Produce" },
+  { id: "house", code: "002", name: "Household" },
 ];
 
 it("selects authoritative Phase 1 Home categories by code in preferred order", () => {
@@ -30,12 +30,37 @@ it("selects authoritative Phase 1 Home categories by code in preferred order", (
 });
 
 it("maps stable codes to approved WebP artwork even after HQ renames categories", () => {
-  expect(homeCategoryArtwork("FRESH_PRODUCE")).toContain("fresh-produce.webp");
-  expect(homeCategoryArtwork("HOUSEHOLD")).toContain("household.webp");
-  expect(homeCategoryArtwork("FROZEN")).toContain("frozen.webp");
-  expect(homeCategoryArtwork("BEVERAGES")).toContain("beverages.webp");
+  const renamed = categories.map((category) =>
+    category.code === "001"
+      ? { ...category, name: "Seasonal picks" }
+      : category,
+  );
+  expect(homeCategories(renamed)[0].name).toBe("Seasonal picks");
+  expect(homeCategoryArtwork(homeCategories(renamed)[0].code)).toContain(
+    "fresh-produce.webp",
+  );
+  expect(homeCategoryArtwork("002")).toContain("household.webp");
+  expect(homeCategoryArtwork("003")).toContain("frozen.webp");
+  expect(homeCategoryArtwork("004")).toContain("beverages.webp");
   expect(homeCategoryArtwork("OTHER_CATEGORY")).toBeNull();
   expect(homeCategoryArtwork("Frozen Food")).toBeNull();
+});
+
+it("does not use display names, old preferred codes or near-matching codes as Home fallbacks", () => {
+  const unrelated = [
+    { id: "old-fresh", code: "FRESH_PRODUCE", name: "Fresh Produce" },
+    { id: "old-house", code: "HOUSEHOLD", name: "Household" },
+    { id: "old-frozen", code: "FROZEN", name: "Frozen" },
+    { id: "old-drinks", code: "BEVERAGES", name: "Beverages" },
+    { id: "impostor", code: "PILOT-SNK", name: "Fresh Produce" },
+    { id: "near", code: "1", name: "Fresh Produce" },
+  ];
+  expect(homeCategories(unrelated)).toEqual([]);
+  for (const category of unrelated)
+    expect(homeCategoryArtwork(category.code)).toBeNull();
+  expect(homeCategories([...unrelated, ...categories])).toEqual(
+    homeCategories(categories),
+  );
 });
 
 it("totals basket units and merchandise minor units from the current cart lines", () => {

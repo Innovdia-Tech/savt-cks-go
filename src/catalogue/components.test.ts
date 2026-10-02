@@ -204,8 +204,14 @@ it("renders a saved selected address with a warm no-coverage Home action", () =>
     }),
   );
 
-  expect(unavailable).toContain("We&#x27;re not delivering here yet");
-  expect(unavailable).toContain("Your address has been saved");
+  expect(unavailable).toContain(
+    "Delivery isn&#x27;t available for this address",
+  );
+  expect(unavailable).toContain(
+    "Your address is saved. Choose another delivery address to continue shopping.",
+  );
+  expect(unavailable).toMatch(/aria-hidden="true"[^>]*><svg/);
+  expect(unavailable).toContain('data-icon="location-unavailable"');
   expect(unavailable).toContain("Lot 12, Jalan Pintas");
   expect(unavailable).toContain("Choose another address");
   expect(unavailable).toContain("Add new address");
@@ -255,8 +261,10 @@ it("renders approved Home WebP artwork by code while keeping renamed backend lab
       }) => React.ReactNode;
     };
   for (const [code, name, file] of [
-    ["HOUSEHOLD", "Household Essentials", "household.webp"],
-    ["FROZEN", "Frozen Food", "frozen.webp"],
+    ["001", "Seasonal picks", "fresh-produce.webp"],
+    ["002", "Household Essentials", "household.webp"],
+    ["003", "Frozen Food", "frozen.webp"],
+    ["004", "Drinks", "beverages.webp"],
   ]) {
     const html = renderToStaticMarkup(
       createElement(catalogue.CategoryArtwork!, { code, name }),
@@ -298,6 +306,20 @@ it.each([
 });
 it("formats integer minor units in MYR", () =>
   expect(money(1234)).toMatch(/(?:RM|MYR).*12\.34/));
+it("shows pull guidance only when refresh is available on the current screen", () => {
+  const render = (refreshEnabled: boolean) =>
+    renderToStaticMarkup(
+      createElement(CatalogueStatus, {
+        phase: "no-service",
+        error: null,
+        onRetry: () => {},
+        onManage: () => {},
+        refreshEnabled,
+      }),
+    );
+  expect(render(false)).not.toContain("Pull down to check again");
+  expect(render(true)).toContain("Pull down to check again");
+});
 
 it.each([
   ["home", "Home | CKS Go"],

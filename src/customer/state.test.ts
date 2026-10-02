@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { CustomerDataController } from "./state";
 import { CustomerDataApi } from "./api";
 import { DevelopmentDataAdapter } from "./development";
@@ -26,6 +26,65 @@ async function setup(scenario = "mixed") {
   await state.load();
   return { session, adapter, state };
 }
+afterEach(() => vi.useRealTimers());
+describe("explicit transient address feedback", () => {
+  it("announces a successful save then clears after 2.8 seconds", async () => {
+    vi.useFakeTimers();
+    const { state } = await setup("empty");
+    await state.mutate("create", undefined, input);
+    expect(state.getSnapshot()).toMatchObject({
+      notice: "Address saved",
+      noticeKind: "success",
+    });
+    vi.advanceTimersByTime(2799);
+    expect(state.getSnapshot().notice).toBe("Address saved");
+    vi.advanceTimersByTime(1);
+    expect(state.getSnapshot().notice).toBe("");
+  });
+  it("never clears a newer persistent announcement", async () => {
+    vi.useFakeTimers();
+    const { state } = await setup("empty");
+    await state.mutate("create", undefined, input);
+    vi.advanceTimersByTime(1000);
+    state.announce("Delivery address changed. Your basket was cleared.");
+    vi.advanceTimersByTime(5000);
+    expect(state.getSnapshot().notice).toBe(
+      "Delivery address changed. Your basket was cleared.",
+    );
+  });
+  it("replaces a transient timer without shortening the newer confirmation", async () => {
+    vi.useFakeTimers();
+    const { state } = await setup("empty");
+    await state.mutate("create", undefined, input);
+    vi.advanceTimersByTime(1000);
+    await state.mutate("create", undefined, { ...input, label: "Second" });
+    vi.advanceTimersByTime(1800);
+    expect(state.getSnapshot().notice).toBe("Address saved");
+    vi.advanceTimersByTime(1000);
+    expect(state.getSnapshot().notice).toBe("");
+  });
+  it("clears obsolete transient feedback during full reload and logout", async () => {
+    vi.useFakeTimers();
+    const { state, session } = await setup("empty");
+    await state.mutate("create", undefined, input);
+    await state.load();
+    expect(state.getSnapshot().notice).toBe("");
+    await state.mutate("create", undefined, input);
+    await session.logout();
+    vi.advanceTimersByTime(5000);
+    expect(state.getSnapshot().notice).toBe("");
+  });
+  it("does not emit timer updates after provider disposal", async () => {
+    vi.useFakeTimers();
+    const { state } = await setup("empty");
+    await state.mutate("create", undefined, input);
+    const listener = vi.fn();
+    state.subscribe(listener);
+    state.dispose();
+    vi.advanceTimersByTime(5000);
+    expect(listener).not.toHaveBeenCalled();
+  });
+});
 describe("customer data state and synthetic transport", () => {
   it("returns the authoritative saved address after refreshing the address book", async () => {
     const { state } = await setup("empty");
@@ -233,8 +292,13 @@ it("does not repeat a committed mutation if refreshing the list fails", async ()
   expect(state.getSnapshot()).toMatchObject({
     listPhase: "error",
     canRetryOperation: false,
-    notice: expect.stringContaining("Address saved"),
+    notice: "Address saved. Reload the list to see the current addresses.",
   });
+  vi.useFakeTimers();
+  vi.advanceTimersByTime(10000);
+  expect(state.getSnapshot().notice).toBe(
+    "Address saved. Reload the list to see the current addresses.",
+  );
   await state.load();
   expect(state.getSnapshot().addresses).toHaveLength(1);
 });

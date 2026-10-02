@@ -1,6 +1,39 @@
 type IconProps = {
   className?: string;
 };
+export function RefreshIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20 7v5h-5M4 17v-5h5M6.1 6.1A8 8 0 0 1 19.6 11M4.4 13a8 8 0 0 0 13.5 4.9" />
+    </svg>
+  );
+}
+export function LocationUnavailableIcon({ className = "h-6 w-6" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      data-icon="location-unavailable"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M5.7 5.7A7 7 0 0 1 19 9c0 5-7 12-7 12S5 14 5 9c0-.3 0-.6.1-.9M9.9 7A3 3 0 0 1 15 9c0 .8-.3 1.5-.8 2M3 3l18 18" />
+    </svg>
+  );
+}
 
 export function PlaybackIcon({
   paused,
