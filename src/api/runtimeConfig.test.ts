@@ -62,13 +62,13 @@ describe("loadRuntimeConfig", () => {
     });
   });
 
-  it("accepts only an international support number without blocking startup", () => {
+  it("ignores legacy build-time support numbers without blocking startup", () => {
     expect(
       loadRuntimeConfig(
         { VITE_CKS_GO_SUPPORT_WHATSAPP: " +60123456789 " },
         true,
       ).supportWhatsApp,
-    ).toBe("60123456789");
+    ).toBe("");
     for (const invalid of [
       "60123456789",
       "https://wa.me/60123456789",

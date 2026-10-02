@@ -33,6 +33,7 @@ import { OrdersProvider } from "./orders/context";
 import "./orders/orders.css";
 import { LocationSearchApi } from "./location/api";
 import { googlePinMapAdapter } from "./location/DeliveryPinMap";
+import { SupportProvider } from "./support/context";
 
 const root = createRoot(document.getElementById("root")!);
 
@@ -170,11 +171,15 @@ async function start() {
               <CheckoutProvider controller={checkout} customer={customer}>
                 <PaymentProvider controller={payment}>
                   <OrdersProvider controller={orders}>
-                    <App
-                      onLogout={() => void session.logout()}
-                      supportWhatsApp={config.supportWhatsApp}
-                      embeddedHost={embeddedHost}
-                    />
+                    <SupportProvider
+                      origin={config.apiOrigin}
+                      session={session}
+                    >
+                      <App
+                        onLogout={() => void session.logout()}
+                        embeddedHost={embeddedHost}
+                      />
+                    </SupportProvider>
                   </OrdersProvider>
                 </PaymentProvider>
               </CheckoutProvider>

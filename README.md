@@ -45,7 +45,7 @@ VITE_CKS_GO_DEVELOPMENT_BRIDGE=true
 
 The synthetic API session is held in memory, contains no Savt member identity or credential, and both development adapters are rejected by production builds. The switches are independent so the native bridge fail-closed state can be tested locally. With no `SavtCksGoBridge` WebView channel, the customer web uses the standalone mobile and OTP entry. The development API accepts the synthetic OTP `123456` only when its development switch is enabled. Without the API switch, the app uses same-origin `/api/v1/customer/session` endpoints unless `VITE_CUSTOMER_API_ORIGIN` names a validated HTTPS origin.
 
-Optional public support setting: `VITE_CKS_GO_SUPPORT_WHATSAPP=`. It defaults to empty. Configure an approved E.164-style international number with a leading `+`; missing or invalid values leave WhatsApp help inactive without blocking startup. The app constructs an HTTPS `wa.me` link with only the displayed Order number in the prefilled enquiry. Support activation remains pending until an approved number is configured and native external-opening behavior is accepted in Flutter.
+WhatsApp support uses backend `CKS_GO_SUPPORT_WHATSAPP` through the authenticated customer support endpoint. It loads independently and fails closed without blocking shopping. See [CUST-HELP01](docs/verification/CUST-HELP01.md) for pilot/production configuration and the required native external handoff.
 
 If npm is blocked by a local certificate error such as `UNABLE_TO_VERIFY_LEAF_SIGNATURE`, fix the machine's npm certificate configuration or explicitly approve a temporary project-scoped install workaround before running the commands above.
 

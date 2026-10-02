@@ -1,4 +1,6 @@
 import { guardHistoryNavigation } from "./navigation";
+import { useSupportWhatsApp } from "../support/context";
+import { SupportAction } from "../support/SupportAction";
 import { useEffect, useRef, useState } from "react";
 import {
   useCategoryArtworkUrl,
@@ -527,13 +529,15 @@ export function CatalogueProductPages({
 
 export function CatalogueApp({
   onLogout,
-  supportWhatsApp = "",
+  supportWhatsApp: suppliedSupportWhatsApp,
   embeddedHost = false,
 }: {
   onLogout?: () => void;
   supportWhatsApp?: string;
   embeddedHost?: boolean;
 }) {
+  const configuredSupportWhatsApp = useSupportWhatsApp();
+  const supportWhatsApp = suppliedSupportWhatsApp ?? configuredSupportWhatsApp;
   const { state, controller, controls, refresh, refreshing } = useCatalogue();
   const checkout = useCheckout();
   const payment = usePayment();
@@ -814,6 +818,9 @@ export function CatalogueApp({
             onCart={() => navigate("cart")}
           />
         )}
+        <div className="px-4">
+          <SupportAction digits={supportWhatsApp} />
+        </div>
         <DeliveryLocationSetup
           onDone={() => {
             navigate("home");
@@ -933,6 +940,7 @@ export function CatalogueApp({
       <div
         className={`catalogue-root catalogue-root--shopping ${route === "home" ? "catalogue-root--home" : ""}`}
       >
+        {route === "home" && <SupportAction digits={supportWhatsApp} />}
         {route === "profile" ? (
           <>
             <CustomerProfileScreen shellOwnsTransientNotice />

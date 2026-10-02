@@ -1,4 +1,4 @@
-import { Children, createElement, isValidElement, type ReactNode } from "react";
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { OrderDetail, OrderPage } from "./contracts";
@@ -193,49 +193,10 @@ describe("customer orders presentation", () => {
         supportWhatsApp: "60123456789",
       } as never),
     );
-    expect(html).toContain("Open WhatsApp support");
+    expect(html).toContain("WhatsApp support");
     expect(html).not.toContain("wa.me");
     expect(html).not.toContain("paymentIntentId");
     expect(html).not.toContain("https://wa.me/60123456789");
-  });
-
-  it("opens support separately without invoking an Order action", () => {
-    const open = vi.fn();
-    const downloadReceipt = vi.fn();
-    vi.stubGlobal("window", { open });
-    try {
-      const tree = OrderDetailScreen({
-        state: state(),
-        controller: { ...controller, downloadReceipt } as never,
-        onBack: () => {},
-        supportWhatsApp: "60123456789",
-      });
-      const findButton = (node: ReactNode): (() => void) | undefined => {
-        if (
-          !isValidElement<{ children?: ReactNode; onClick?: () => void }>(node)
-        )
-          return undefined;
-        if (
-          node.type === "button" &&
-          node.props.children === "Open WhatsApp support"
-        )
-          return node.props.onClick;
-        return Children.toArray(node.props.children)
-          .map(findButton)
-          .find(Boolean);
-      };
-      const click = findButton(tree);
-      expect(click).toBeTypeOf("function");
-      click?.();
-      expect(open).toHaveBeenCalledExactlyOnceWith(
-        "https://wa.me/60123456789?text=Hi%20CKS%20Go%20Support%2C%20I%20need%20help%20with%20my%20order%20CKS-20260921-0001.%0AMy%20enquiry%3A",
-        "_blank",
-        "noopener,noreferrer",
-      );
-      expect(downloadReceipt).not.toHaveBeenCalled();
-    } finally {
-      vi.unstubAllGlobals();
-    }
   });
 
   it("keeps historical cancellation and refund information readable", () => {
