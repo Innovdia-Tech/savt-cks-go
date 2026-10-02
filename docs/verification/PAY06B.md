@@ -243,3 +243,44 @@ this slice does not invent persistent recovery or automatically create a charge.
 Existing bridge/session implementation, initial checkout contracts, runtime
 configuration, styles/tokens, dependencies/lockfile, Flutter and backend sources
 were not changed. Keep the local branch/worktree and stop after the one commit.
+
+## Stale return-observation repair
+
+The final local review of `5648e7dc91ddc95b2ab72e43ec468ac14edf32fe` found one
+completion write outside the captured generation/intent fence. An old checkout's
+third GET could resolve after session loss and a new checkout's first return GET,
+marking the new sequence complete during its delay. Its next PENDING read then
+made the new checkout retryable after only two of its own reads.
+
+The supplied repair request requires stale completion to be a no-op. The repair
+adds an immediate generation and active paymentIntentId mismatch return before
+`returnChecksComplete = true`. Existing guards on the phase/URL/state update and
+the observation promise's identity cleanup remain. No API, public state type,
+component, charging, storage or persistence behavior changes.
+
+Two deferred-promise regressions reproduce the exact old-third-GET/session-loss/
+new-checkout race, with the new checkout's third result PENDING or PAID. Before
+the fix both failed because the new intent appeared in only two GET calls instead
+of three. After the fix both pass: stale completion publishes no snapshot change
+and preserves the active intent, phase, error and Order. The new sequence performs
+its own 750/1500ms delays and three reads; PENDING becomes retryable only then,
+and PAID on the third read confirms the Order. No retry POST or extra handoff is
+introduced. The same tests also assert that session loss first clears payment
+state to session-expired.
+
+Focused verification, exit 0:
+
+```powershell
+node node_modules/vitest/vitest.mjs run src/payment/state.test.ts --reporter=default --reporter=json --outputFile=qa-pay06b-repair-green.json
+```
+
+**58 passed, zero failed or skipped, one file**: the existing 56 controller tests
+plus the two race cases. This includes normal bounded PENDING, PAID/processing/
+FAILED, repeated retry taps and session-loss behavior. Changed-file Prettier and
+`git diff --check` passed. Component/API tests, typecheck and build were not rerun:
+their implementation, public state shape and production types did not change.
+The 213-test set and browser matrix were not repeated.
+
+Red and green JSON evidence is retained beside the original local PAY06B evidence
+as `repair-red.json` and `repair-green.json`. Preserve the reviewed commit and
+create exactly one follow-up repair commit; no amend, squash or publication.

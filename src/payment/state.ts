@@ -238,6 +238,11 @@ export class PaymentController {
         await this.checkCurrentStatus();
         if (!["pending", "paid-processing"].includes(this.state.phase)) return;
       }
+      if (
+        generation !== this.generation ||
+        this.state.paymentIntentId !== paymentIntentId
+      )
+        return;
       this.returnChecksComplete = true;
       if (
         generation === this.generation &&

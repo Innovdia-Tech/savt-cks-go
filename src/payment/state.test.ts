@@ -54,7 +54,15 @@ class SessionFixture {
   }
 }
 
-const fixture = () => {
+const deferred = <T>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => (resolve = done));
+  return { promise, resolve };
+};
+
+const fixture = (
+  waitForReturnCheck: (ms: number) => Promise<void> = async () => {},
+) => {
   const api = {
     create: vi
       .fn<
@@ -94,13 +102,113 @@ const fixture = () => {
     restart,
     () => now,
     newId,
-    async () => {},
+    waitForReturnCheck,
   );
   controller.syncQuote(quote(), "ready");
   return { api, bridge, session, freeze, restart, controller, newId };
 };
 
 describe("PaymentController", () => {
+  it.each(["PENDING", "PAID"] as const)(
+    "ignores an old third return GET while a new checkout observes %s",
+    async (newResult) => {
+      const wait = vi
+        .fn<(ms: number) => Promise<void>>()
+        .mockResolvedValue(undefined);
+      const { api, bridge, session, controller } = fixture(wait);
+      const oldThirdRead = deferred<PaymentResult>();
+      api.result
+        .mockResolvedValueOnce(result("PENDING"))
+        .mockResolvedValueOnce(result("PENDING"))
+        .mockReturnValueOnce(oldThirdRead.promise);
+      await controller.initiate();
+      const oldObservation = controller.handleReturn();
+      await vi.waitFor(() => expect(api.result).toHaveBeenCalledTimes(3));
+
+      session.set("expired");
+      expect(controller.getSnapshot()).toMatchObject({
+        phase: "session-expired",
+        paymentIntentId: null,
+        order: null,
+        canRetryPayment: false,
+      });
+      session.set("authenticated");
+      const nextQuote = {
+        ...quote(),
+        quoteId: "10000000-0000-4000-8000-000000000002",
+      };
+      api.create.mockResolvedValueOnce({
+        checkoutReference: nextQuote.quoteId,
+        payment: {
+          paymentIntentId: successor,
+          status: "PENDING",
+          checkoutUrl: newCheckoutUrl,
+        },
+      });
+      controller.syncQuote(nextQuote, "ready");
+      await controller.initiate();
+      api.result
+        .mockResolvedValueOnce(
+          result("PENDING", { checkoutReference: nextQuote.quoteId }),
+        )
+        .mockResolvedValueOnce(
+          result("PENDING", { checkoutReference: nextQuote.quoteId }),
+        )
+        .mockResolvedValueOnce(
+          result(newResult, { checkoutReference: nextQuote.quoteId }),
+        );
+      const newSequenceDelay = deferred<void>();
+      wait.mockReturnValueOnce(newSequenceDelay.promise);
+      const newObservation = controller.handleReturn();
+      await vi.waitFor(() => {
+        expect(wait).toHaveBeenCalledTimes(3);
+        expect(controller.getSnapshot().phase).toBe("pending");
+      });
+      const beforeStaleCompletion = controller.getSnapshot();
+      const changes = vi.fn();
+      const unsubscribe = controller.subscribe(changes);
+      oldThirdRead.resolve(result("PENDING"));
+      await oldObservation;
+      expect(controller.getSnapshot()).toBe(beforeStaleCompletion);
+      expect(controller.getSnapshot()).toMatchObject({
+        phase: "pending",
+        paymentIntentId: successor,
+        error: null,
+        order: null,
+        canRetryPayment: false,
+      });
+      expect(changes).not.toHaveBeenCalled();
+      expect(controller.handleReturn()).toBe(newObservation);
+      expect(api.result).toHaveBeenCalledTimes(4);
+      newSequenceDelay.resolve();
+      await newObservation;
+
+      expect(api.result.mock.calls.map(([intent]) => intent)).toEqual([
+        paymentIntentId,
+        paymentIntentId,
+        paymentIntentId,
+        successor,
+        successor,
+        successor,
+      ]);
+      expect(wait.mock.calls.map(([ms]) => ms)).toEqual([750, 1500, 750, 1500]);
+      expect(controller.getSnapshot()).toMatchObject({
+        phase: newResult === "PAID" ? "paid" : "retryable-pending",
+        paymentIntentId: successor,
+        error: null,
+        order: result(newResult).order,
+        canRetryPayment: newResult === "PENDING",
+      });
+      expect(api.create).toHaveBeenCalledTimes(2);
+      expect(api.retry).not.toHaveBeenCalled();
+      expect(bridge.requestPaymentHandoff.mock.calls).toEqual([
+        [checkoutUrl],
+        [newCheckoutUrl],
+      ]);
+      unsubscribe();
+    },
+  );
+
   it("never restores voucher basket restart after known payment receipt and a failed read", async () => {
     const { api, controller, restart } = fixture();
     await controller.initiate();
