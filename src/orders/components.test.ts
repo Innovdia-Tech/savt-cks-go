@@ -299,6 +299,7 @@ describe("customer orders presentation", () => {
       } as never),
     );
     expect(html).toContain("No orders yet");
+    expect(html).toContain("ui-system-state--empty");
     expect(html).toContain("Browse products");
     expect(html).toContain("Refresh orders");
   });
@@ -422,7 +423,7 @@ describe("customer orders presentation", () => {
     );
     for (const copy of [
       "Order received",
-      "Pick &amp; Pack",
+      "Preparing your order",
       "Out for delivery",
       "Delivered",
       "Apples",
@@ -497,11 +498,11 @@ describe("customer orders presentation", () => {
       } as never),
     );
 
-    expect(html).toContain("Stage confirmed; update time unavailable.");
+    expect(html).toContain("Update time unavailable.");
     expect(html).not.toContain("Not reached yet");
     for (const label of [
       "Order received",
-      "Pick &amp; Pack",
+      "Preparing your order",
       "Out for delivery",
       "Delivered",
     ])
@@ -601,4 +602,39 @@ describe("customer orders presentation", () => {
       expect(html).not.toContain(pandaConfirmedAt);
     },
   );
+});
+
+it("describes preparing an order consistently in the badge and timeline", () => {
+  const html = renderToStaticMarkup(
+    createElement(OrderDetailScreen, {
+      state: state({ detail: { ...detail, customerStage: "PICK_AND_PACK" } }),
+      controller,
+      onBack: () => {},
+    } as never),
+  );
+  expect(html.match(/Preparing your order/g)).toHaveLength(2);
+  expect(html).not.toContain("Pick &amp; Pack");
+});
+it("uses plain loading and empty order copy", () => {
+  const loading = renderToStaticMarkup(
+    createElement(OrderDetailScreen, {
+      state: state({ detailPhase: "loading", detail: null }),
+      controller,
+      onBack: () => {},
+    } as never),
+  );
+  expect(loading).toContain("Loading order details…");
+  expect(loading).not.toMatch(/projection|customer-safe/);
+  const empty = renderToStaticMarkup(
+    createElement(OrdersScreen, {
+      state: state({ page: null }),
+      controller,
+      onOpen: () => {},
+      onBrowse: () => {},
+    } as never),
+  );
+  expect(empty).toContain(
+    "Your CKS Go orders will appear here after checkout.",
+  );
+  expect(empty).not.toContain("Order identity");
 });

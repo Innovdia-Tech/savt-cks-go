@@ -38,7 +38,7 @@ describe("shared customer UI primitives", () => {
     ["AVAILABLE", "Available"],
     ["UNAVAILABLE", "Unavailable"],
     ["ORDER_RECEIVED", "Order received"],
-    ["PICK_AND_PACK", "Picking and packing"],
+    ["PICK_AND_PACK", "Preparing your order"],
     ["OUT_FOR_DELIVERY", "Out for delivery"],
     ["DELIVERED", "Delivered"],
     ["CANCELLED", "Cancelled"],
@@ -64,6 +64,26 @@ describe("shared customer UI primitives", () => {
     expect(html).toContain('for="products"');
     expect(html).toContain('type="search"');
     expect(html).toContain('aria-label="Clear search"');
+  });
+
+  it("keeps native keyboard search submission and clear without a visible submit button", () => {
+    const html = renderToStaticMarkup(
+      createElement(SearchField, {
+        id: "products",
+        label: "Search products",
+        value: "rice",
+        onChange: () => {},
+        onClear: () => {},
+        onSubmit: () => {},
+        submitControl: "keyboard",
+        enterKeyHint: "search",
+      }),
+    );
+    expect(html).toContain("<form");
+    expect(html).toContain('enterKeyHint="search"');
+    expect(html).toContain('aria-label="Clear search"');
+    expect(html).not.toContain('type="submit"');
+    expect(html).not.toContain(">Search</button>");
   });
 
   it("announces system state without exposing raw error codes", () => {

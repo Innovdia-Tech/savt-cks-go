@@ -218,11 +218,37 @@ async function run(width, scenario) {
     }
     await page
       .getByRole("heading", {
-        name: "Waiting for payment confirmation",
+        name: "Payment pending",
         exact: true,
       })
       .waitFor();
     assert.equal(await retry().count(), 0);
+    assert.match(
+      await panel.innerText(),
+      /We're checking your payment status\./,
+    );
+    assert.match(
+      await panel.innerText(),
+      /Your order will appear once payment is confirmed\./,
+    );
+    assert(
+      await page
+        .getByRole("button", { name: "Change delivery address" })
+        .isDisabled(),
+    );
+    assert.equal(await page.locator(".cart-stack button:disabled").count(), 4);
+    assert.match(
+      await page
+        .locator("body")
+        .evaluate((element) => getComputedStyle(element).fontFamily),
+      /Inter/,
+    );
+    assert.equal(
+      await page
+        .locator("body")
+        .evaluate((element) => getComputedStyle(element).backgroundColor),
+      "rgb(235, 243, 227)",
+    );
     await inspect("waiting");
     if (scenario === "return-paid") status = "PAID";
     if (scenario === "return-processing") status = "PAID_PROCESSING";
@@ -232,7 +258,10 @@ async function run(width, scenario) {
     });
     if (scenario === "expired") {
       await page
-        .getByRole("heading", { name: "Your session has expired", exact: true })
+        .getByRole("heading", {
+          name: "Your Savt session has expired",
+          exact: true,
+        })
         .waitFor();
       assert.equal(await retry().count(), 0);
       await page.screenshot({
@@ -284,9 +313,7 @@ async function run(width, scenario) {
         .getByRole("heading", { name: "Preparing a new payment", exact: true })
         .waitFor({ state: "hidden" });
       if (scenario === "successor") {
-        await page
-          .getByRole("heading", { name: "Waiting for payment confirmation" })
-          .waitFor();
+        await page.getByRole("heading", { name: "Payment pending" }).waitFor();
         assert.deepEqual(requests.handoffs, [oldUrl, newUrl]);
         await page.evaluate(() => window.dispatchEvent(new Event("focus")));
         await retry().waitFor();

@@ -284,3 +284,62 @@ The 213-test set and browser matrix were not repeated.
 Red and green JSON evidence is retained beside the original local PAY06B evidence
 as `repair-red.json` and `repair-green.json`. Preserve the reviewed commit and
 create exactly one follow-up repair commit; no amend, squash or publication.
+
+## CUST-UX04 sync and publication gate
+
+The subsequent approved sync request permits one branch push and one PR to main
+after focused verification. It does not permit merging the PR or deployment.
+The worktree started clean at the accepted repair
+`7f8f6465199b9a276299977260677d4969824b06`. One origin fetch confirmed the pinned
+main `507c33503e5c9dc76d13be6a63eb784c04292f83`, containing CUST-UX04 / PR #23.
+No remote PAY06B branch or PR existed. Main is integrated by a normal merge;
+accepted implementation and repair history are preserved without rewriting.
+
+Conflicts were limited to `src/payment/components.tsx` and
+`src/checkout/components.test.ts`. The resolution retains CUST-UX04's exact
+initial “Payment pending” card, clock icon, status role, explanatory copy and
+failed-payment basket guidance. PAY06B's recovery branches and explicit actions
+remain. The checkout assertions retain four disabled controls and payment status
+before the delivery and items cards. The merged payment phase table and browser
+harness use the accepted initial heading and Savt session-expiry heading.
+
+Initial pending says “We're checking your payment status.” and “Your order will
+appear once payment is confirmed.”, without retry. Only returned PENDING after
+three observations exposes “Payment not completed” and its two recovery actions.
+The API, parser, controller and stale-return repair are unchanged from the
+accepted repair. CUST-UX04's styles, checkout layout, session presentation and
+app wiring match incoming main. No new browser persistence is introduced; the
+full app/WebView restart limitation above still applies.
+
+Focused sync verification, exit 0:
+
+```powershell
+node node_modules/vitest/vitest.mjs run src/payment/api.test.ts src/payment/state.test.ts src/payment/components.test.ts src/checkout/components.test.ts src/checkout/state.test.ts
+node node_modules/typescript/bin/tsc -b
+node node_modules/typescript/bin/tsc -p tsconfig.runtime.json
+node node_modules/vite/bin/vite.js build --config vite.config.js --configLoader runner
+```
+
+**172 tests passed in five files, zero failed or skipped**: payment API 40,
+payment state/controller 58, payment presentation 23, checkout presentation 30,
+checkout state 21. These include both stale-old-third-GET regressions, normal
+three-read pending recovery, paid result, session loss, double taps and frozen
+basket controls. No repository-wide suite was run.
+
+The browser harness passed **14 synthetic scenarios**, with **47 screenshots**.
+Initial pending, returned recovery and disabled retry were visually inspected at
+320, 390 and 430px. No horizontal overflow or clipped actions appeared; controls
+meet the 44px minimum. Inter, the soft green background, red primary action and
+compact responsive basket layout remain. The harness additionally asserts the
+initial copy, four disabled basket controls and absence of technical payment
+copy. It verifies one retry POST per operation, successor handoff, no stale URL
+handoff, uncertain-operation key reuse, terminal results and session expiry.
+Physical Savt WebView lifecycle and real provider acceptance remain unverified.
+
+Changed-file Prettier (12 files, explicit `--no-config` to avoid inheriting the
+enclosing backend checkout's configuration), `git diff --check`, and the strict
+design audit passed with no findings. A redacted local credential scan of added
+lines in the unpublished diff against pinned main used 22 detectors and found
+no credentials. Local test JSON, browser results/screenshots and scan evidence
+are retained in the `pay06b/sync` evidence directory. Final read-only merge
+review was CLEAN.

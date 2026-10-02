@@ -14,7 +14,7 @@ it("shows an accessible Basket merchandise summary only for a nonempty basket", 
     );
   expect(render(0)).toBe("");
   expect(render(3)).toContain(
-    'aria-label="View basket, 3 items, merchandise subtotal RM 11.99"',
+    'aria-label="View basket, 3 items, items subtotal RM 11.99"',
   );
   expect(render(3)).toContain("Basket · 3 items");
   expect(render(3)).toContain("RM 11.99");
@@ -81,7 +81,7 @@ describe("HeaderActions", () => {
       }),
     );
     expect(html).toContain("CKS Go");
-    expect(html).toContain('aria-label="Open basket"');
+    expect(html).toContain('aria-label="Open basket, 2 items"');
     expect(html).toContain('aria-label="Close CKS Go"');
     expect(html).toContain("app-header__shopping-actions--shopping");
   });
@@ -196,7 +196,7 @@ describe("HeaderActions", () => {
     expect(orders).toContain('aria-label="Close CKS Go"');
   });
 
-  it("removes duplicate web chrome in the trusted embedded host while retaining delivery and cart controls", async () => {
+  it("retains embedded delivery context without duplicate title or Basket shortcut", async () => {
     const layout = (await import("./Layout")) as typeof import("./Layout") & {
       DeliveryHeader?: React.ComponentType<{
         context: "home" | "browse" | "transaction" | "orders";
@@ -221,7 +221,7 @@ describe("HeaderActions", () => {
       }),
     );
     expect(home).toContain("Home · Lot 57");
-    expect(home).toContain('aria-label="Open basket"');
+    expect(home).not.toContain('aria-label="Open basket');
     expect(home).not.toContain(">CKS Go<");
     expect(home).not.toContain('aria-label="Close CKS Go"');
     expect(home).not.toContain('aria-label="Back"');
@@ -238,4 +238,25 @@ describe("HeaderActions", () => {
     expect(browse).not.toContain('aria-label="Close CKS Go"');
     expect(browse).not.toContain('aria-label="Back"');
   });
+});
+
+it("uses a receipt for Orders and a decorative Basket summary chevron", () => {
+  const nav = renderToStaticMarkup(
+    createElement(BottomNavigation, {
+      active: "Orders",
+      cartCount: 0,
+      onNavigate: () => {},
+    }),
+  );
+  expect(nav).toContain('d="M7 3h10');
+  const basket = renderToStaticMarkup(
+    createElement(BasketSummaryBar, {
+      count: 3,
+      subtotal: "RM 29.40",
+      onOpen: () => {},
+    }),
+  );
+  expect(basket).toContain("<svg");
+  expect(basket).toContain('aria-hidden="true"');
+  expect(basket).not.toContain("Delivery fee");
 });

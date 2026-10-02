@@ -17,19 +17,21 @@
 }
 .delivery-address-link__copy {
   display: grid;
+
   min-width: 0;
   gap: 0.125rem;
 }
 .delivery-address-link__label {
   color: var(--color-text-muted);
-  font-size: 10px;
+  font-size: var(--text-meta);
   font-weight: 500;
 }
 .delivery-address-link__copy > strong {
   max-width: 100%;
-  font-size: 13px;
+  font-size: var(--text-body);
   line-height: 1.2;
   overflow-wrap: anywhere;
+  font-weight: 600;
 }
 .delivery-address-link__chevron {
   width: 1rem;
@@ -56,7 +58,7 @@
   background: var(--color-success-soft);
   padding: 0.25rem 0.625rem;
   font-size: var(--text-meta);
-  font-weight: 800;
+  font-weight: 500;
 }
 .customer-button {
   min-height: 48px;
@@ -172,9 +174,9 @@
 }
 .delivery-setup__heading h1 {
   margin: 0;
-  font-size: 26px;
+  font-size: var(--text-heading);
   line-height: 1.18;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.035em;
 }
 .delivery-setup__heading p {
@@ -190,7 +192,7 @@
   color: var(--color-cks-primary);
   background: transparent;
   padding: 0;
-  font-weight: 800;
+  font-weight: 600;
 }
 .delivery-setup__existing,
 .delivery-setup__message,
@@ -224,7 +226,7 @@
   gap: 8px;
   border-radius: var(--radius-button);
   padding: 0 16px;
-  font-weight: 900;
+  font-weight: 600;
 }
 .delivery-setup__primary {
   border: 1px solid var(--color-cks-primary);
@@ -255,8 +257,8 @@
 .delivery-setup__search {
   display: grid;
   gap: 7px;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: var(--text-input);
+  font-weight: 400;
 }
 .delivery-setup__search > div {
   display: grid;
@@ -340,7 +342,7 @@
   color: var(--color-text);
   background: var(--color-surface);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 500;
 }
 .address-save-as button[aria-pressed="true"] {
   border-color: var(--color-cks-primary);
@@ -354,6 +356,7 @@
 .delivery-setup__primary,
 .delivery-setup__secondary {
   padding-block: 12px;
+  font-weight: 600;
 }
 .delivery-setup__search > div:focus-within {
   outline: 2px solid var(--color-cks-primary);
@@ -385,9 +388,9 @@
   visibility: hidden;
 }
 .delivery-flow__title {
-  font-size: 24px;
+  font-size: var(--text-heading);
   line-height: 1.25;
-  font-weight: 900;
+  font-weight: 700;
   margin: 0 0 20px;
 }
 .delivery-flow__search-entry,
@@ -413,7 +416,7 @@
   margin-top: 12px;
   border: 0;
   color: var(--color-cks-primary);
-  background: var(--color-cks-primary-soft);
+  background: var(--color-surface);
 }
 .delivery-flow__query {
   display: flex;
@@ -529,7 +532,7 @@
   display: grid;
   place-items: center;
   background: #f3f6f3;
-  font-weight: 800;
+  font-weight: 500;
 }
 .delivery-pin-map__pin {
   position: absolute;
@@ -571,7 +574,7 @@
   border-radius: var(--radius-button);
   background: white;
   padding: 8px 16px;
-  font-weight: 800;
+  font-weight: 600;
 }
 .delivery-pin-map__error {
   margin: 0;
@@ -580,7 +583,7 @@
   background: #fff6f4;
   color: #8b211a;
   padding: 20px;
-  font-weight: 800;
+  font-weight: 500;
 }
 .delivery-flow__map-fallback {
   display: flex;
@@ -662,9 +665,9 @@
 .delivery-flow__confirm h1,
 .delivery-flow__denied h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--text-heading);
   line-height: 1.25;
-  font-weight: 900;
+  font-weight: 700;
 }
 .delivery-flow__confirm > p,
 .delivery-flow__denied p {
@@ -707,9 +710,9 @@
 
 .delivery-picker h1 {
   margin: 0;
-  font-size: 26px;
+  font-size: var(--text-heading);
   line-height: 1.2;
-  font-weight: 900;
+  font-weight: 700;
 }
 .delivery-picker__intro {
   margin: 8px 0 24px;
@@ -727,16 +730,16 @@
 }
 .delivery-picker__section-heading h2 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 900;
+  font-size: var(--text-section);
+  font-weight: 600;
 }
 .delivery-picker__section-heading span {
   border-radius: 999px;
   background: var(--color-cks-primary-soft);
-  color: var(--color-cks-primary);
+  color: var(--color-text);
   padding: 2px 8px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 500;
 }
 .delivery-picker__card {
   display: grid;
@@ -815,7 +818,7 @@
 }
 .delivery-picker__card--selected .delivery-picker__metadata em:last-child {
   background: var(--color-cks-primary-soft);
-  color: var(--color-cks-primary);
+  color: var(--color-text);
 }
 .delivery-picker__edit {
   align-self: start;
@@ -825,7 +828,7 @@
   background: transparent;
   color: var(--color-cks-primary);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   padding: 12px 10px;
 }
 .delivery-picker__edit span {
@@ -839,11 +842,11 @@
   margin-top: 18px;
   border: 1px dashed var(--color-cks-primary);
   border-radius: var(--radius-button);
-  background: var(--color-cks-primary-soft);
+  background: var(--color-surface);
   color: var(--color-cks-primary);
   padding: 12px 16px;
-  font-size: 16px;
-  font-weight: 800;
+  font-size: var(--text-button);
+  font-weight: 600;
 }
 .delivery-picker__manage {
   display: block;
@@ -864,4 +867,11 @@
 .delivery-picker :is(button, input):focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
+}
+
+.delivery-address-link__change {
+  flex-shrink: 0;
+  color: var(--color-cks-primary);
+  font-size: var(--text-supporting);
+  font-weight: 600;
 }

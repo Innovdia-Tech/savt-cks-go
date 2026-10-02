@@ -131,7 +131,7 @@ describe("customer payment presentation", () => {
   it.each([
     ["initiating", "Opening secure payment"],
     ["opening", "Opening secure payment"],
-    ["pending", "Waiting for payment confirmation"],
+    ["pending", "Payment pending"],
     ["retryable-pending", "Payment not completed"],
     ["retrying", "Preparing a new payment"],
     ["checking", "Checking payment status"],
@@ -170,6 +170,21 @@ describe("customer payment presentation", () => {
     }
   });
 
+  it("explains pending payment without claiming confirmation", () => {
+    const html = render({
+      ...base,
+      phase: "pending",
+      paymentIntentId: "intent-redacted",
+    });
+    expect(html).toContain("We&#x27;re checking your payment status.");
+    expect(html).toContain("Your order will appear once payment is confirmed.");
+    expect(html).toContain('role="status"');
+    expect(html).not.toContain("Returning from the payment page");
+    expect(html).not.toContain("Payment successful");
+    expect(html).not.toContain("Order confirmed");
+    expect(html).not.toContain("View order");
+  });
+
   it("offers only same-attempt recovery for a failed handoff", () => {
     const html = render({
       ...base,
@@ -190,7 +205,7 @@ describe("customer payment presentation", () => {
       paymentIntentId: "intent-redacted",
       error: "NETWORK_ERROR",
     });
-    expect(html).toContain("Retry status check");
+    expect(html).toContain("Check payment again");
     expect(html).not.toContain("Reopen secure payment");
     expect(html.match(/<button/g) ?? []).toHaveLength(1);
   });

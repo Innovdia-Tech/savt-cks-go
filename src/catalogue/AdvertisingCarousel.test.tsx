@@ -21,6 +21,7 @@ const slides = [
 type CarouselProps = {
   slides: typeof slides;
   onNavigate: () => void;
+  embeddedHost?: boolean;
 };
 
 type AutoAdvanceState = {
@@ -77,6 +78,23 @@ describe("Home advertising carousel", () => {
     expect(html).toContain('aria-label="Show banner 2 of 2"');
     expect(html).toContain('aria-hidden="true"');
     expect(html).not.toContain("https://");
+  });
+
+  it("uses swipe, named dots and an icon rotation control in the embedded host", async () => {
+    const { AdvertisingCarousel } = await loadCarousel();
+    const html = renderToStaticMarkup(
+      createElement(AdvertisingCarousel!, {
+        slides,
+        onNavigate: () => {},
+        embeddedHost: true,
+      }),
+    );
+    expect(html).toContain('aria-label="Show banner 2 of 2"');
+    expect(html).toContain('aria-label="Pause banner rotation"');
+    expect(html).not.toContain('aria-label="Previous banner"');
+    expect(html).not.toContain('aria-label="Next banner"');
+    expect(html).not.toContain(">Pause</button>");
+    expect(html).not.toContain(">Play</button>");
   });
 
   it("hides zero slides and keeps a single slide static", async () => {
