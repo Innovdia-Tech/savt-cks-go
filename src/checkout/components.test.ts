@@ -272,9 +272,11 @@ describe("real cart and trusted quote presentation", () => {
         order: null,
         error: null,
         canRetryInitiation: false,
+        canRetryPayment: false,
       },
       controller: {
         initiate: async () => {},
+        retryPayment: async () => {},
         reopen: async () => {},
         checkStatus: async () => {},
         restart: () => {},

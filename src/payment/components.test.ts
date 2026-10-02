@@ -1,4 +1,5 @@
 import { createElement } from "react";
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { PaymentPanel } from "./components";
@@ -10,10 +11,12 @@ const base: PaymentState = {
   order: null,
   error: null,
   canRetryInitiation: false,
+  canRetryPayment: false,
 };
 
 const controller = {
   initiate: async () => {},
+  retryPayment: async () => {},
   reopen: async () => {},
   checkStatus: async () => {},
   restart: () => {},
@@ -29,6 +32,89 @@ const render = (state: PaymentState) =>
   );
 
 describe("customer payment presentation", () => {
+  it("keeps payment recovery memory-only with no storage or URL persistence", () => {
+    for (const file of [
+      "api.ts",
+      "contracts.ts",
+      "state.ts",
+      "components.tsx",
+      "context.tsx",
+    ]) {
+      const source = readFileSync(new URL(file, import.meta.url), "utf8");
+      expect(source).not.toMatch(
+        /localStorage|sessionStorage|history\.(pushState|replaceState)|location\.(href|hash)\s*=|globalThis\.[\w]+\s*=|window\.[\w]+\s*=/,
+      );
+    }
+  });
+  it("offers explicit retry and status after returned unpaid observations", () => {
+    const html = render({
+      ...base,
+      phase: "retryable-pending",
+      paymentIntentId: "intent-redacted",
+    });
+    expect(html).toContain("Payment not completed");
+    expect(html).toContain(
+      "We haven&#x27;t received payment confirmation. If you closed the payment page before finishing, you can try again.",
+    );
+    expect(html).toContain("Try Payment Again");
+    expect(html).toContain("Check Payment Status");
+    expect(html).not.toContain("Continue secure payment");
+    expect(html).not.toContain("Order confirmed");
+  });
+
+  it("disables both recovery actions during retry without showing paid", () => {
+    const html = render({
+      ...base,
+      phase: "retrying",
+      paymentIntentId: "intent-redacted",
+    });
+    expect(html).toContain("Preparing a new payment");
+    expect(html.match(/disabled=""/g)).toHaveLength(2);
+    expect(html).toContain('aria-busy="true"');
+    expect(html).not.toContain("Payment successful");
+  });
+
+  it("uses nontechnical voucher guidance with a basket action", () => {
+    const html = render({
+      ...base,
+      phase: "error",
+      paymentIntentId: "intent-redacted",
+      error: "CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED",
+    });
+    expect(html).toContain(
+      "This payment can&#x27;t be restarted from this checkout.",
+    );
+    expect(html).toContain("Please return to your basket and try again.");
+    expect(html).toContain("Review basket");
+    expect(html).not.toContain("CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED");
+    expect(html).not.toContain("Try Payment Again");
+  });
+
+  it("offers the same operation retry after an uncertain request", () => {
+    const html = render({
+      ...base,
+      phase: "error",
+      paymentIntentId: "intent-redacted",
+      error: "REQUEST_TIMEOUT",
+      canRetryPayment: true,
+    });
+    expect(html).toContain("Try Payment Again");
+    expect(html).toContain("Check Payment Status");
+    expect(html).not.toMatch(
+      /REQUEST_TIMEOUT|idempotency|409|PENDING|intent-redacted/,
+    );
+  });
+
+  it("does not offer retry before return observations or after receiving payment", () => {
+    for (const phase of ["pending", "checking", "paid-processing"] as const) {
+      const html = render({
+        ...base,
+        phase,
+        paymentIntentId: "intent-redacted",
+      });
+      expect(html).not.toContain("Try Payment Again");
+    }
+  });
   it("starts only from the explicit proceed action", () => {
     const html = render(base);
     expect(html).toMatch(/Pay (?:RM|MYR).*23\.00/);
@@ -46,6 +132,8 @@ describe("customer payment presentation", () => {
     ["initiating", "Opening secure payment"],
     ["opening", "Opening secure payment"],
     ["pending", "Payment pending"],
+    ["retryable-pending", "Payment not completed"],
+    ["retrying", "Preparing a new payment"],
     ["checking", "Checking payment status"],
     ["failed", "Payment failed"],
     ["paid-processing", "Payment received — finalising your order"],

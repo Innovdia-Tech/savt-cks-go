@@ -22,6 +22,18 @@ export type PaymentResult = {
   order: PaymentOrder | null;
 };
 
+export type PaymentRetryInitiation = {
+  checkoutReference: string;
+  payment: {
+    paymentIntentId: string;
+    status: "PENDING" | "FAILED";
+    checkoutUrl?: string;
+    expiresAt?: string;
+  };
+};
+
+export type PaymentRetry = PaymentRetryInitiation | PaymentResult;
+
 const fail = (): never => {
   throw new Error("Invalid customer payment response.");
 };
@@ -57,7 +69,8 @@ export const parsePaymentCreate = (value: unknown): PaymentCreate => {
         "expiresAt",
       ])) ||
     !uuid(data.payment.paymentIntentId) ||
-    !["PENDING", "FAILED"].includes(String(data.payment.status)) ||
+    typeof data.payment.status !== "string" ||
+    !["PENDING", "FAILED"].includes(data.payment.status) ||
     !isSafeCheckoutUrl(data.payment.checkoutUrl) ||
     (data.payment.expiresAt !== undefined && !date(data.payment.expiresAt))
   )
@@ -99,9 +112,8 @@ export const parsePaymentResult = (value: unknown): PaymentResult => {
   if (
     !exact(data, ["checkoutReference", "status", "order"]) ||
     !uuid(data.checkoutReference) ||
-    !["PENDING", "FAILED", "PAID_PROCESSING", "PAID"].includes(
-      String(data.status),
-    )
+    typeof data.status !== "string" ||
+    !["PENDING", "FAILED", "PAID_PROCESSING", "PAID"].includes(data.status)
   )
     return fail();
   const status = data.status as PaymentResult["status"];
@@ -113,5 +125,42 @@ export const parsePaymentResult = (value: unknown): PaymentResult => {
     checkoutReference: data.checkoutReference,
     status,
     order: paymentOrder(data.order),
+  };
+};
+
+export const parsePaymentRetry = (value: unknown): PaymentRetry => {
+  const data = envelope(value);
+  if (!("payment" in data)) return parsePaymentResult(value);
+  if (
+    !exact(data, ["checkoutReference", "payment"]) ||
+    !uuid(data.checkoutReference) ||
+    !record(data.payment)
+  )
+    return fail();
+  const payment = data.payment;
+  const keys = ["paymentIntentId", "status"];
+  if ("checkoutUrl" in payment) keys.push("checkoutUrl");
+  if ("expiresAt" in payment) keys.push("expiresAt");
+  if (
+    !exact(payment, keys) ||
+    !uuid(payment.paymentIntentId) ||
+    typeof payment.status !== "string" ||
+    !["PENDING", "FAILED"].includes(payment.status) ||
+    ("checkoutUrl" in payment && !isSafeCheckoutUrl(payment.checkoutUrl)) ||
+    ("expiresAt" in payment && !date(payment.expiresAt))
+  )
+    return fail();
+  return {
+    checkoutReference: data.checkoutReference,
+    payment: {
+      paymentIntentId: payment.paymentIntentId,
+      status: payment.status as "PENDING" | "FAILED",
+      ...(typeof payment.checkoutUrl === "string"
+        ? { checkoutUrl: payment.checkoutUrl }
+        : {}),
+      ...(typeof payment.expiresAt === "string"
+        ? { expiresAt: payment.expiresAt }
+        : {}),
+    },
   };
 };

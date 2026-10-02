@@ -2,7 +2,13 @@ import type { CheckoutQuote } from "../checkout/contracts";
 import { uuid } from "../customer/contracts";
 import { BridgeError } from "../webview/bridge";
 import { PaymentError } from "./api";
-import type { PaymentCreate, PaymentOrder, PaymentResult } from "./contracts";
+import {
+  parsePaymentRetry,
+  type PaymentCreate,
+  type PaymentOrder,
+  type PaymentResult,
+  type PaymentRetry,
+} from "./contracts";
 
 type PaymentApiPort = {
   create(
@@ -11,6 +17,7 @@ type PaymentApiPort = {
     idempotencyKey: string,
   ): Promise<PaymentCreate>;
   result(paymentIntentId: string): Promise<PaymentResult>;
+  retry(paymentIntentId: string, idempotencyKey: string): Promise<PaymentRetry>;
 };
 
 type PaymentBridgePort = {
@@ -39,6 +46,8 @@ export type PaymentState = {
     | "initiating"
     | "opening"
     | "pending"
+    | "retryable-pending"
+    | "retrying"
     | "handoff-error"
     | "checking"
     | "failed"
@@ -50,6 +59,7 @@ export type PaymentState = {
   order: PaymentOrder | null;
   error: string | null;
   canRetryInitiation: boolean;
+  canRetryPayment: boolean;
 };
 
 const empty = (phase: PaymentState["phase"] = "idle"): PaymentState => ({
@@ -58,6 +68,7 @@ const empty = (phase: PaymentState["phase"] = "idle"): PaymentState => ({
   order: null,
   error: null,
   canRetryInitiation: false,
+  canRetryPayment: false,
 });
 
 const uncertainCreateErrors = new Set([
@@ -92,6 +103,11 @@ export class PaymentController {
   private checkoutUrl: string | null = null;
   private statusCheck: Promise<void> | null = null;
   private returnObservation: Promise<void> | null = null;
+  private retryAttempt: { paymentIntentId: string; key: string } | null = null;
+  private returnedToCheckout = false;
+  private returnChecksComplete = false;
+  private paymentReceived = false;
+  private retryUnavailable = false;
   private generation = 0;
   private readonly unsubscribeSession: () => void;
   private sessionPhase: string;
@@ -166,14 +182,25 @@ export class PaymentController {
     if (
       !this.checkoutUrl ||
       !this.state.paymentIntentId ||
-      !["pending", "handoff-error"].includes(this.state.phase)
+      this.state.phase !== "handoff-error"
     )
       return;
     await this.openCheckout();
   }
 
   checkStatus(): Promise<void> {
-    if (this.state.phase === "paid" || this.state.phase === "failed")
+    if (
+      this.returnedToCheckout &&
+      !this.returnChecksComplete &&
+      !this.returnObservation &&
+      this.state.phase !== "failed"
+    )
+      return this.handleReturn();
+    return this.checkCurrentStatus();
+  }
+
+  private checkCurrentStatus(): Promise<void> {
+    if (this.state.phase === "paid" || this.state.phase === "retrying")
       return Promise.resolve();
     if (!this.state.paymentIntentId || !this.checkoutReference)
       return Promise.resolve();
@@ -187,9 +214,12 @@ export class PaymentController {
 
   handleReturn(): Promise<void> {
     if (this.returnObservation) return this.returnObservation;
+    if (this.state.phase === "retrying") return Promise.resolve();
     if (!this.state.paymentIntentId) return Promise.resolve();
     const generation = this.generation;
     const paymentIntentId = this.state.paymentIntentId;
+    this.returnedToCheckout = true;
+    this.returnChecksComplete = false;
     const observe = async () => {
       for (let index = 0; index < 3; index += 1) {
         if (
@@ -205,8 +235,27 @@ export class PaymentController {
           ["paid", "failed", "session-expired"].includes(this.state.phase)
         )
           return;
-        await this.checkStatus();
+        await this.checkCurrentStatus();
         if (!["pending", "paid-processing"].includes(this.state.phase)) return;
+      }
+      if (
+        generation !== this.generation ||
+        this.state.paymentIntentId !== paymentIntentId
+      )
+        return;
+      this.returnChecksComplete = true;
+      if (
+        generation === this.generation &&
+        this.state.paymentIntentId === paymentIntentId &&
+        this.state.phase === "pending"
+      ) {
+        this.returnedToCheckout = true;
+        this.checkoutUrl = null;
+        this.update({
+          ...empty("retryable-pending"),
+          paymentIntentId,
+          canRetryPayment: !this.paymentReceived,
+        });
       }
     };
     const observation = observe().finally(() => {
@@ -216,14 +265,95 @@ export class PaymentController {
     return this.returnObservation;
   }
 
+  async retryPayment(): Promise<void> {
+    if (
+      !this.state.paymentIntentId ||
+      !this.checkoutReference ||
+      this.statusCheck ||
+      this.returnObservation ||
+      this.paymentReceived ||
+      this.retryUnavailable ||
+      (!["retryable-pending", "failed"].includes(this.state.phase) &&
+        !this.state.canRetryPayment)
+    )
+      return;
+    const generation = this.generation;
+    const checkoutReference = this.checkoutReference;
+    const paymentIntentId = this.state.paymentIntentId;
+    const attempt = this.retryAttempt ?? { paymentIntentId, key: this.newId() };
+    this.retryAttempt = attempt;
+    this.checkoutUrl = null;
+    this.update({ ...empty("retrying"), paymentIntentId });
+    try {
+      // Validate again at the controller boundary, including injected API ports.
+      const response = parsePaymentRetry({
+        data: await this.api.retry(attempt.paymentIntentId, attempt.key),
+      });
+      if (generation !== this.generation) return;
+      if (response.checkoutReference !== checkoutReference)
+        throw new PaymentError("INVALID_RESPONSE");
+      this.retryAttempt = null;
+      if ("payment" in response) {
+        this.checkoutReference = response.checkoutReference;
+        this.checkoutUrl =
+          response.payment.status === "PENDING"
+            ? (response.payment.checkoutUrl ?? null)
+            : null;
+        const activeIntent = response.payment.paymentIntentId;
+        this.returnedToCheckout = !this.checkoutUrl;
+        this.returnChecksComplete = true;
+        this.update({
+          ...empty(
+            response.payment.status === "FAILED"
+              ? "failed"
+              : this.checkoutUrl
+                ? "opening"
+                : "retryable-pending",
+          ),
+          paymentIntentId: activeIntent,
+          canRetryPayment: !this.checkoutUrl,
+        });
+        if (this.checkoutUrl) await this.openCheckout();
+      } else {
+        this.returnedToCheckout = true;
+        this.returnChecksComplete = true;
+        this.applyResult(response, paymentIntentId);
+      }
+    } catch (error) {
+      if (generation !== this.generation) return;
+      const code = codeOf(error);
+      // Keep the exact source intent/key across transport uncertainty and invalid evidence.
+      // Invalid evidence offers status checking only; a later valid observation may recover.
+      const canRetryPayment =
+        uncertainCreateErrors.has(code) && code !== "INVALID_RESPONSE";
+      if (code === "CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED")
+        this.retryUnavailable = true;
+      this.update({
+        ...empty(
+          code === "CUSTOMER_SESSION_INVALID" ? "session-expired" : "error",
+        ),
+        paymentIntentId:
+          code === "CUSTOMER_SESSION_INVALID" ? null : paymentIntentId,
+        error: code,
+        canRetryPayment,
+      });
+      if (code === "CUSTOMER_SESSION_INVALID") this.clearPayment();
+    }
+  }
+
   restart(): void {
-    const confirmedFailed = this.state.phase === "failed";
+    if (this.paymentReceived) return;
+    const confirmedFailed = this.state.phase === "failed" && !this.retryAttempt;
+    const voucherUnsupported =
+      this.state.phase === "error" &&
+      this.state.error === "CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED";
     const rejectedBeforeIntent =
       this.state.phase === "error" &&
       !this.state.canRetryInitiation &&
       !this.state.paymentIntentId &&
       !this.attempt;
-    if (!confirmedFailed && !rejectedBeforeIntent) return;
+    if (!confirmedFailed && !rejectedBeforeIntent && !voucherUnsupported)
+      return;
     this.clearPayment();
     this.onRestart(true);
     this.update(empty());
@@ -289,6 +419,8 @@ export class PaymentController {
     if (!this.checkoutUrl || !this.state.paymentIntentId) return;
     const generation = this.generation;
     const paymentIntentId = this.state.paymentIntentId;
+    this.returnedToCheckout = false;
+    this.returnChecksComplete = false;
     this.update({
       ...empty("opening"),
       paymentIntentId,
@@ -332,19 +464,7 @@ export class PaymentController {
         throw new PaymentError("INVALID_RESPONSE");
       if (result.status !== "PAID" && result.order !== null)
         throw new PaymentError("INVALID_RESPONSE");
-      const phase =
-        result.status === "PENDING"
-          ? "pending"
-          : result.status === "FAILED"
-            ? "failed"
-            : result.status === "PAID_PROCESSING"
-              ? "paid-processing"
-              : "paid";
-      this.update({
-        ...empty(phase),
-        paymentIntentId,
-        order: phase === "paid" ? result.order : null,
-      });
+      this.applyResult(result, paymentIntentId);
     } catch (error) {
       if (generation !== this.generation) return;
       const code = codeOf(error);
@@ -354,10 +474,51 @@ export class PaymentController {
         ),
         paymentIntentId:
           code === "CUSTOMER_SESSION_INVALID" ? null : paymentIntentId,
-        error: code,
+        error:
+          code === "CUSTOMER_SESSION_INVALID"
+            ? code
+            : this.retryUnavailable
+              ? "CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED"
+              : code,
       });
       if (code === "CUSTOMER_SESSION_INVALID") this.clearPayment();
     }
+  }
+
+  private applyResult(result: PaymentResult, paymentIntentId: string): void {
+    // Receipt of payment is monotonic; stale observations cannot make it chargeable again.
+    if (["PAID", "PAID_PROCESSING"].includes(result.status))
+      this.paymentReceived = true;
+    const phase =
+      result.status === "PAID"
+        ? "paid"
+        : this.paymentReceived
+          ? "paid-processing"
+          : this.retryUnavailable
+            ? "error"
+            : result.status === "FAILED"
+              ? this.retryAttempt
+                ? "error"
+                : "failed"
+              : this.returnedToCheckout && this.returnChecksComplete
+                ? "retryable-pending"
+                : "pending";
+    if (this.paymentReceived) {
+      this.retryAttempt = null;
+      this.retryUnavailable = false;
+    }
+    this.update({
+      ...empty(phase),
+      paymentIntentId,
+      order: phase === "paid" ? result.order : null,
+      error:
+        phase === "error" && this.retryUnavailable
+          ? "CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED"
+          : null,
+      canRetryPayment:
+        ["retryable-pending", "failed"].includes(phase) ||
+        (phase === "error" && !!this.retryAttempt && !this.retryUnavailable),
+    });
   }
 
   private clearForSessionLoss(): void {
@@ -373,6 +534,11 @@ export class PaymentController {
     this.checkoutUrl = null;
     this.statusCheck = null;
     this.returnObservation = null;
+    this.retryAttempt = null;
+    this.returnedToCheckout = false;
+    this.returnChecksComplete = false;
+    this.paymentReceived = false;
+    this.retryUnavailable = false;
   }
 
   private update(state: PaymentState): void {

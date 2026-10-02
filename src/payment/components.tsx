@@ -3,7 +3,7 @@ import { ClockIcon } from "../components/Icons";
 
 type PaymentActions = Pick<
   PaymentController,
-  "initiate" | "reopen" | "checkStatus" | "restart"
+  "initiate" | "retryPayment" | "reopen" | "checkStatus" | "restart"
 >;
 
 const action = "customer-button customer-primary payment-action";
@@ -90,6 +90,13 @@ export function PaymentPanel({
         <p>Your order will appear once payment is confirmed.</p>
       </section>
     );
+  if (state.phase === "retryable-pending" || state.phase === "retrying")
+    return (
+      <PaymentRecovery
+        controller={controller}
+        busy={state.phase === "retrying"}
+      />
+    );
   if (state.phase === "checking")
     return (
       <PaymentNotice
@@ -132,7 +139,11 @@ export function PaymentPanel({
           This payment did not complete. Your basket is saved. Review it and
           refresh your total before paying again.
         </p>
-        <button className={action} onClick={() => controller.restart()}>
+        <RecoveryActions controller={controller} />
+        <button
+          className="customer-button payment-action"
+          onClick={() => controller.restart()}
+        >
           Review basket
         </button>
       </section>
@@ -144,6 +155,21 @@ export function PaymentPanel({
         message="Return to Savt and reopen CKS Go before checking payment again."
       />
     );
+  if (state.error === "CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED")
+    return (
+      <section className="payment-card payment-warning" role="alert">
+        <h2>Payment could not be restarted</h2>
+        <p>
+          This payment can't be restarted from this checkout. Please return to
+          your basket and try again.
+        </p>
+        <button className={action} onClick={() => controller.restart()}>
+          Review basket
+        </button>
+      </section>
+    );
+  if (state.canRetryPayment)
+    return <PaymentRecovery controller={controller} uncertain />;
   return (
     <section className="payment-card payment-warning" role="alert">
       <p className="quote-eyebrow">Check your payment</p>
@@ -169,6 +195,62 @@ export function PaymentPanel({
           Review basket
         </button>
       )}
+    </section>
+  );
+}
+
+function RecoveryActions({
+  controller,
+  busy = false,
+}: {
+  controller: PaymentActions;
+  busy?: boolean;
+}) {
+  return (
+    <div className="payment-actions">
+      <button
+        className={action}
+        disabled={busy}
+        onClick={() => void controller.retryPayment()}
+      >
+        Try Payment Again
+      </button>
+      <button
+        className="customer-button payment-action"
+        disabled={busy}
+        onClick={() => void controller.checkStatus()}
+      >
+        Check Payment Status
+      </button>
+    </div>
+  );
+}
+
+function PaymentRecovery({
+  controller,
+  busy = false,
+  uncertain = false,
+}: {
+  controller: PaymentActions;
+  busy?: boolean;
+  uncertain?: boolean;
+}) {
+  return (
+    <section
+      className="payment-card"
+      role="status"
+      aria-live="polite"
+      aria-busy={busy}
+    >
+      <h2>{busy ? "Preparing a new payment" : "Payment not completed"}</h2>
+      <p>
+        {busy
+          ? "Please wait while we check your payment and prepare the secure payment page."
+          : uncertain
+            ? "We couldn't confirm the payment request. You can try again safely or check the latest payment status."
+            : "We haven't received payment confirmation. If you closed the payment page before finishing, you can try again."}
+      </p>
+      <RecoveryActions controller={controller} busy={busy} />
     </section>
   );
 }

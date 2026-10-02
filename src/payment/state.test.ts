@@ -2,12 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 import type { CheckoutQuote } from "../checkout/contracts";
 import { BridgeError } from "../webview/bridge";
 import { PaymentError } from "./api";
-import type { PaymentCreate, PaymentResult } from "./contracts";
+import type { PaymentCreate, PaymentResult, PaymentRetry } from "./contracts";
 import { PaymentController } from "./state";
 
 const quoteId = "10000000-0000-4000-8000-000000000001";
 const paymentIntentId = "20000000-0000-4000-8000-000000000002";
 const key = "30000000-0000-4000-8000-000000000003";
+const retryKey = "30000000-0000-4000-8000-000000000004";
+const successor = "20000000-0000-4000-8000-000000000003";
+const newCheckoutUrl = "https://payments.example.test/checkout/successor";
 const orderId = "40000000-0000-4000-8000-000000000004";
 const checkoutUrl = "https://payments.example.test/checkout/approved";
 const now = Date.parse("2026-09-21T02:00:00.000Z");
@@ -51,7 +54,15 @@ class SessionFixture {
   }
 }
 
-const fixture = () => {
+const deferred = <T>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => (resolve = done));
+  return { promise, resolve };
+};
+
+const fixture = (
+  waitForReturnCheck: (ms: number) => Promise<void> = async () => {},
+) => {
   const api = {
     create: vi
       .fn<
@@ -65,6 +76,16 @@ const fixture = () => {
     result: vi
       .fn<(paymentIntentId: string) => Promise<PaymentResult>>()
       .mockResolvedValue(result("PENDING")),
+    retry: vi
+      .fn<(intent: string, key: string) => Promise<PaymentRetry>>()
+      .mockResolvedValue({
+        checkoutReference: quoteId,
+        payment: {
+          paymentIntentId: successor,
+          status: "PENDING",
+          checkoutUrl: newCheckoutUrl,
+        },
+      }),
   };
   const bridge = {
     requestPaymentHandoff: vi.fn<(url: string) => Promise<void>>(),
@@ -72,6 +93,7 @@ const fixture = () => {
   const session = new SessionFixture();
   const freeze = vi.fn(() => true);
   const restart = vi.fn();
+  const newId = vi.fn().mockReturnValueOnce(key).mockReturnValue(retryKey);
   const controller = new PaymentController(
     api,
     bridge,
@@ -79,14 +101,470 @@ const fixture = () => {
     freeze,
     restart,
     () => now,
-    () => key,
-    async () => {},
+    newId,
+    waitForReturnCheck,
   );
   controller.syncQuote(quote(), "ready");
-  return { api, bridge, session, freeze, restart, controller };
+  return { api, bridge, session, freeze, restart, controller, newId };
 };
 
 describe("PaymentController", () => {
+  it.each(["PENDING", "PAID"] as const)(
+    "ignores an old third return GET while a new checkout observes %s",
+    async (newResult) => {
+      const wait = vi
+        .fn<(ms: number) => Promise<void>>()
+        .mockResolvedValue(undefined);
+      const { api, bridge, session, controller } = fixture(wait);
+      const oldThirdRead = deferred<PaymentResult>();
+      api.result
+        .mockResolvedValueOnce(result("PENDING"))
+        .mockResolvedValueOnce(result("PENDING"))
+        .mockReturnValueOnce(oldThirdRead.promise);
+      await controller.initiate();
+      const oldObservation = controller.handleReturn();
+      await vi.waitFor(() => expect(api.result).toHaveBeenCalledTimes(3));
+
+      session.set("expired");
+      expect(controller.getSnapshot()).toMatchObject({
+        phase: "session-expired",
+        paymentIntentId: null,
+        order: null,
+        canRetryPayment: false,
+      });
+      session.set("authenticated");
+      const nextQuote = {
+        ...quote(),
+        quoteId: "10000000-0000-4000-8000-000000000002",
+      };
+      api.create.mockResolvedValueOnce({
+        checkoutReference: nextQuote.quoteId,
+        payment: {
+          paymentIntentId: successor,
+          status: "PENDING",
+          checkoutUrl: newCheckoutUrl,
+        },
+      });
+      controller.syncQuote(nextQuote, "ready");
+      await controller.initiate();
+      api.result
+        .mockResolvedValueOnce(
+          result("PENDING", { checkoutReference: nextQuote.quoteId }),
+        )
+        .mockResolvedValueOnce(
+          result("PENDING", { checkoutReference: nextQuote.quoteId }),
+        )
+        .mockResolvedValueOnce(
+          result(newResult, { checkoutReference: nextQuote.quoteId }),
+        );
+      const newSequenceDelay = deferred<void>();
+      wait.mockReturnValueOnce(newSequenceDelay.promise);
+      const newObservation = controller.handleReturn();
+      await vi.waitFor(() => {
+        expect(wait).toHaveBeenCalledTimes(3);
+        expect(controller.getSnapshot().phase).toBe("pending");
+      });
+      const beforeStaleCompletion = controller.getSnapshot();
+      const changes = vi.fn();
+      const unsubscribe = controller.subscribe(changes);
+      oldThirdRead.resolve(result("PENDING"));
+      await oldObservation;
+      expect(controller.getSnapshot()).toBe(beforeStaleCompletion);
+      expect(controller.getSnapshot()).toMatchObject({
+        phase: "pending",
+        paymentIntentId: successor,
+        error: null,
+        order: null,
+        canRetryPayment: false,
+      });
+      expect(changes).not.toHaveBeenCalled();
+      expect(controller.handleReturn()).toBe(newObservation);
+      expect(api.result).toHaveBeenCalledTimes(4);
+      newSequenceDelay.resolve();
+      await newObservation;
+
+      expect(api.result.mock.calls.map(([intent]) => intent)).toEqual([
+        paymentIntentId,
+        paymentIntentId,
+        paymentIntentId,
+        successor,
+        successor,
+        successor,
+      ]);
+      expect(wait.mock.calls.map(([ms]) => ms)).toEqual([750, 1500, 750, 1500]);
+      expect(controller.getSnapshot()).toMatchObject({
+        phase: newResult === "PAID" ? "paid" : "retryable-pending",
+        paymentIntentId: successor,
+        error: null,
+        order: result(newResult).order,
+        canRetryPayment: newResult === "PENDING",
+      });
+      expect(api.create).toHaveBeenCalledTimes(2);
+      expect(api.retry).not.toHaveBeenCalled();
+      expect(bridge.requestPaymentHandoff.mock.calls).toEqual([
+        [checkoutUrl],
+        [newCheckoutUrl],
+      ]);
+      unsubscribe();
+    },
+  );
+
+  it("never restores voucher basket restart after known payment receipt and a failed read", async () => {
+    const { api, controller, restart } = fixture();
+    await controller.initiate();
+    await controller.handleReturn();
+    api.retry.mockRejectedValueOnce(
+      new PaymentError("CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED"),
+    );
+    await controller.retryPayment();
+    api.result.mockResolvedValueOnce(result("PAID_PROCESSING"));
+    await controller.checkStatus();
+    api.result.mockRejectedValueOnce(new PaymentError("NETWORK_ERROR"));
+    await controller.checkStatus();
+    expect(controller.getSnapshot().error).not.toBe(
+      "CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED",
+    );
+    controller.restart();
+    await controller.retryPayment();
+    expect(restart).not.toHaveBeenCalled();
+    expect(api.retry).toHaveBeenCalledOnce();
+  });
+  it("checks a returned failed payment again and can discover paid finality", async () => {
+    const { api, controller } = fixture();
+    await controller.initiate();
+    api.result.mockResolvedValueOnce(result("FAILED"));
+    await controller.handleReturn();
+    api.result.mockResolvedValueOnce(result("PAID"));
+    await controller.checkStatus();
+    expect(api.result).toHaveBeenCalledTimes(2);
+    expect(controller.getSnapshot().phase).toBe("paid");
+  });
+
+  it("preserves voucher basket recovery on focus but still recognises paid finality", async () => {
+    const { api, controller } = fixture();
+    await controller.initiate();
+    await controller.handleReturn();
+    api.retry.mockRejectedValueOnce(
+      new PaymentError("CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED"),
+    );
+    await controller.retryPayment();
+    await controller.handleReturn();
+    expect(controller.getSnapshot()).toMatchObject({
+      phase: "error",
+      error: "CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED",
+      canRetryPayment: false,
+    });
+    await controller.retryPayment();
+    expect(api.retry).toHaveBeenCalledOnce();
+    api.result.mockResolvedValueOnce(result("PAID"));
+    await controller.checkStatus();
+    expect(controller.getSnapshot().phase).toBe("paid");
+  });
+
+  it("retains voucher basket guidance when a later status request fails", async () => {
+    const { api, controller, restart } = fixture();
+    await controller.initiate();
+    await controller.handleReturn();
+    api.retry.mockRejectedValueOnce(
+      new PaymentError("CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED"),
+    );
+    await controller.retryPayment();
+    api.result.mockRejectedValueOnce(new PaymentError("NETWORK_ERROR"));
+    await controller.handleReturn();
+    expect(controller.getSnapshot().error).toBe(
+      "CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED",
+    );
+    controller.restart();
+    expect(restart).toHaveBeenCalledWith(true);
+  });
+  it("recovers to actionable unpaid after a failed browser-return GET", async () => {
+    const { api, controller } = fixture();
+    await controller.initiate();
+    api.result.mockRejectedValueOnce(new PaymentError("NETWORK_ERROR"));
+    await controller.handleReturn();
+    await controller.checkStatus();
+    expect(controller.getSnapshot().phase).toBe("retryable-pending");
+    expect(api.result).toHaveBeenCalledTimes(4);
+    await controller.retryPayment();
+    expect(api.retry).toHaveBeenCalledOnce();
+  });
+
+  it("keeps an unresolved retry operation when its source intent reports FAILED", async () => {
+    const { api, controller, restart, newId } = fixture();
+    await controller.initiate();
+    await controller.handleReturn();
+    api.retry.mockRejectedValueOnce(new PaymentError("REQUEST_TIMEOUT"));
+    await controller.retryPayment();
+    api.result.mockResolvedValueOnce(result("FAILED"));
+    await controller.checkStatus();
+    expect(controller.getSnapshot()).toMatchObject({
+      phase: "error",
+      canRetryPayment: true,
+    });
+    controller.restart();
+    expect(restart).not.toHaveBeenCalled();
+    await controller.retryPayment();
+    expect(api.retry.mock.calls).toEqual([
+      [paymentIntentId, retryKey],
+      [paymentIntentId, retryKey],
+    ]);
+    expect(newId).toHaveBeenCalledTimes(2);
+  });
+  it("does not retry or reopen a handed-off pending payment before return checks", async () => {
+    const { api, bridge, controller } = fixture();
+    await controller.initiate();
+    await controller.retryPayment();
+    await controller.reopen();
+    expect(api.retry).not.toHaveBeenCalled();
+    expect(bridge.requestPaymentHandoff).toHaveBeenCalledOnce();
+  });
+
+  it("exposes retryable pending only after all bounded return observations", async () => {
+    const { api, controller } = fixture();
+    await controller.initiate();
+    const phases: string[] = [];
+    controller.subscribe(() => phases.push(controller.getSnapshot().phase));
+    await controller.handleReturn();
+    expect(api.result).toHaveBeenCalledTimes(3);
+    expect(
+      phases.filter((phase) => phase === "retryable-pending"),
+    ).toHaveLength(1);
+    expect(phases.at(-1)).toBe("retryable-pending");
+    expect(api.retry).not.toHaveBeenCalled();
+  });
+
+  it("sends one explicit retry, blocks double taps and adopts the returned intent", async () => {
+    const { api, bridge, controller, newId } = fixture();
+    await controller.initiate();
+    await controller.handleReturn();
+    let resolve!: (response: PaymentRetry) => void;
+    api.retry.mockImplementationOnce(
+      () => new Promise((done) => (resolve = done)),
+    );
+    const first = controller.retryPayment();
+    expect(controller.getSnapshot().phase).toBe("retrying");
+    await controller.retryPayment();
+    await controller.checkStatus();
+    await controller.handleReturn();
+    expect(api.retry).toHaveBeenCalledExactlyOnceWith(
+      paymentIntentId,
+      retryKey,
+    );
+    expect(newId).toHaveBeenCalledTimes(2);
+    expect(api.result).toHaveBeenCalledTimes(3);
+    resolve({
+      checkoutReference: quoteId,
+      payment: {
+        paymentIntentId: successor,
+        status: "PENDING",
+        checkoutUrl: newCheckoutUrl,
+      },
+    });
+    await first;
+    expect(controller.getSnapshot()).toMatchObject({
+      phase: "pending",
+      paymentIntentId: successor,
+    });
+    expect(bridge.requestPaymentHandoff.mock.calls).toEqual([
+      [checkoutUrl],
+      [newCheckoutUrl],
+    ]);
+    await controller.checkStatus();
+    expect(api.result).toHaveBeenLastCalledWith(successor);
+  });
+
+  it.each([
+    result("PENDING"),
+    {
+      checkoutReference: quoteId,
+      payment: { paymentIntentId: successor, status: "PENDING" },
+    } as PaymentRetry,
+  ])(
+    "never reopens a stale URL for retry pending without a returned URL %#",
+    async (response) => {
+      const { api, bridge, controller } = fixture();
+      await controller.initiate();
+      await controller.handleReturn();
+      api.retry.mockResolvedValueOnce(response);
+      await controller.retryPayment();
+      expect(controller.getSnapshot()).toMatchObject({
+        phase: "retryable-pending",
+        paymentIntentId: "payment" in response ? successor : paymentIntentId,
+      });
+      await controller.reopen();
+      expect(bridge.requestPaymentHandoff).toHaveBeenCalledOnce();
+    },
+  );
+
+  it.each(["PAID", "PAID_PROCESSING", "FAILED"] as const)(
+    "handles authoritative retry %s safely",
+    async (status) => {
+      const { api, bridge, controller } = fixture();
+      await controller.initiate();
+      await controller.handleReturn();
+      api.retry.mockResolvedValueOnce(result(status));
+      await controller.retryPayment();
+      expect(controller.getSnapshot()).toMatchObject({
+        phase:
+          status === "PAID"
+            ? "paid"
+            : status === "PAID_PROCESSING"
+              ? "paid-processing"
+              : "failed",
+        order: result(status).order,
+      });
+      expect(bridge.requestPaymentHandoff).toHaveBeenCalledOnce();
+      if (status !== "FAILED") {
+        await controller.retryPayment();
+        expect(api.retry).toHaveBeenCalledOnce();
+      }
+    },
+  );
+
+  it.each([
+    "NETWORK_ERROR",
+    "REQUEST_TIMEOUT",
+    "SAVT_PAYMENT_CREATE_FAILED",
+    "IDEMPOTENCY_REQUEST_IN_PROGRESS",
+  ])(
+    "retains the source intent and operation key after uncertain retry %s",
+    async (code) => {
+      const { api, controller, newId } = fixture();
+      await controller.initiate();
+      await controller.handleReturn();
+      api.retry.mockRejectedValueOnce(new PaymentError(code));
+      await controller.retryPayment();
+      expect(controller.getSnapshot()).toMatchObject({
+        phase: "error",
+        canRetryPayment: true,
+      });
+      await controller.checkStatus();
+      await controller.retryPayment();
+      expect(api.retry.mock.calls).toEqual([
+        [paymentIntentId, retryKey],
+        [paymentIntentId, retryKey],
+      ]);
+      expect(newId).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it.each([
+    result("PAID", { order: null }),
+    result("PAID", { checkoutReference: successor }),
+    result("UNKNOWN" as never),
+    {
+      checkoutReference: quoteId,
+      payment: {
+        paymentIntentId: "bad",
+        status: "PENDING",
+        checkoutUrl: newCheckoutUrl,
+      },
+    },
+  ])(
+    "fails closed on invalid retry evidence and prevents a blind retry %#",
+    async (response) => {
+      const { api, bridge, controller } = fixture();
+      await controller.initiate();
+      await controller.handleReturn();
+      api.retry.mockResolvedValueOnce(response as PaymentRetry);
+      await controller.retryPayment();
+      expect(controller.getSnapshot()).toMatchObject({
+        phase: "error",
+        error: "INVALID_RESPONSE",
+        canRetryPayment: false,
+        order: null,
+      });
+      await controller.retryPayment();
+      expect(api.retry).toHaveBeenCalledOnce();
+      expect(bridge.requestPaymentHandoff).toHaveBeenCalledOnce();
+    },
+  );
+
+  it("fails an initiation-style retry safely and permits explicit failed recovery", async () => {
+    const { api, bridge, controller } = fixture();
+    await controller.initiate();
+    api.result.mockResolvedValueOnce(result("FAILED"));
+    await controller.handleReturn();
+    api.retry.mockResolvedValueOnce({
+      checkoutReference: quoteId,
+      payment: {
+        paymentIntentId: successor,
+        status: "FAILED",
+        checkoutUrl: newCheckoutUrl,
+      },
+    });
+    await controller.retryPayment();
+    expect(controller.getSnapshot()).toMatchObject({
+      phase: "failed",
+      paymentIntentId: successor,
+    });
+    expect(bridge.requestPaymentHandoff).toHaveBeenCalledOnce();
+  });
+
+  it("keeps voucher rejection recoverable only through the basket", async () => {
+    const { api, restart, controller } = fixture();
+    await controller.initiate();
+    await controller.handleReturn();
+    api.retry.mockRejectedValueOnce(
+      new PaymentError("CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED"),
+    );
+    await controller.retryPayment();
+    await controller.retryPayment();
+    expect(api.retry).toHaveBeenCalledOnce();
+    controller.restart();
+    expect(restart).toHaveBeenCalledWith(true);
+    expect(controller.getSnapshot().phase).toBe("idle");
+  });
+
+  it("fences a late retry completion and forgets its key after session loss", async () => {
+    const { api, bridge, session, controller } = fixture();
+    await controller.initiate();
+    await controller.handleReturn();
+    let resolve!: (response: PaymentRetry) => void;
+    api.retry.mockImplementationOnce(
+      () => new Promise((done) => (resolve = done)),
+    );
+    const retry = controller.retryPayment();
+    session.set("expired");
+    resolve(result("PAID"));
+    await retry;
+    expect(controller.getSnapshot()).toMatchObject({
+      phase: "session-expired",
+      paymentIntentId: null,
+      order: null,
+      canRetryPayment: false,
+    });
+    expect(bridge.requestPaymentHandoff).toHaveBeenCalledOnce();
+  });
+
+  it("keeps received-payment finality non-chargeable after a stale unpaid observation", async () => {
+    const { api, controller } = fixture();
+    await controller.initiate();
+    api.result.mockResolvedValueOnce(result("PAID_PROCESSING"));
+    await controller.checkStatus();
+    await controller.handleReturn();
+    await controller.retryPayment();
+    expect(controller.getSnapshot().phase).toBe("paid-processing");
+    expect(api.retry).not.toHaveBeenCalled();
+  });
+
+  it("reopens only the new returned checkout after its own bridge failure", async () => {
+    const { api, bridge, controller } = fixture();
+    await controller.initiate();
+    await controller.handleReturn();
+    bridge.requestPaymentHandoff.mockRejectedValueOnce(
+      new BridgeError("unavailable"),
+    );
+    await controller.retryPayment();
+    expect(controller.getSnapshot().phase).toBe("handoff-error");
+    await controller.reopen();
+    expect(bridge.requestPaymentHandoff.mock.calls).toEqual([
+      [checkoutUrl],
+      [newCheckoutUrl],
+      [newCheckoutUrl],
+    ]);
+    expect(api.retry).toHaveBeenCalledOnce();
+  });
   it("does not start payment before explicit action and keeps secrets out of state", () => {
     const { api, bridge, controller } = fixture();
     expect(controller.getSnapshot()).toMatchObject({
@@ -115,6 +593,7 @@ describe("PaymentController", () => {
       order: null,
       error: null,
       canRetryInitiation: false,
+      canRetryPayment: false,
     });
     await controller.initiate();
     expect(api.create).toHaveBeenCalledOnce();
@@ -257,7 +736,7 @@ describe("PaymentController", () => {
     expect(controller.getSnapshot().phase).toBe("checking");
     resolve(result("PENDING"));
     await Promise.all([first, second]);
-    expect(controller.getSnapshot().phase).toBe("pending");
+    expect(controller.getSnapshot().phase).toBe("retryable-pending");
     expect(api.result).toHaveBeenCalledTimes(3);
     expect(bridge.requestPaymentHandoff).toHaveBeenCalledOnce();
   });
@@ -355,6 +834,7 @@ describe("PaymentController", () => {
       order: null,
       error: null,
       canRetryInitiation: false,
+      canRetryPayment: false,
     });
     expect(JSON.stringify(controller.getSnapshot())).not.toContain(checkoutUrl);
   });
@@ -378,6 +858,7 @@ describe("PaymentController", () => {
       order: null,
       error: null,
       canRetryInitiation: false,
+      canRetryPayment: false,
     });
 
     const observation = fixture();
@@ -396,6 +877,7 @@ describe("PaymentController", () => {
       order: null,
       error: null,
       canRetryInitiation: false,
+      canRetryPayment: false,
     });
   });
 
@@ -430,6 +912,7 @@ describe("PaymentController", () => {
     expect(controller.getSnapshot()).toMatchObject({
       phase: "error",
       canRetryInitiation: false,
+      canRetryPayment: false,
     });
     controller.restart();
     expect(restart).toHaveBeenCalledWith(true);
