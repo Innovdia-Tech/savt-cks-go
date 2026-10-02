@@ -40,13 +40,12 @@ export const failureFor = (status: number, code: string): DataFailure => {
 };
 export const errorMessage = (e: CustomerDataError): string =>
   ({
-    offline:
-      "You’re offline. Check your connection, then retry the same request.",
+    offline: "You’re offline. Check your connection and try again.",
     expired: "Your session has expired. Return to Savt to reopen CKS Go.",
     retryable:
       e.code === "REQUEST_TIMEOUT"
-        ? "The request timed out. It may have been saved. Retry the same request to check safely."
-        : "The service is temporarily unavailable or your request is still processing. Retry the same request.",
+        ? "We couldn’t confirm the save. Your changes may be saved. Try again to check."
+        : "We couldn’t confirm your changes yet. Try again.",
     conflict:
       "This address or request has changed. Reload the current addresses before trying again. Your changes have not overwritten the current address.",
     limit:

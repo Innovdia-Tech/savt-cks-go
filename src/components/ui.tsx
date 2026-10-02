@@ -74,7 +74,7 @@ const statusPresentations: Record<
   AVAILABLE: { label: "Available", tone: "positive" },
   UNAVAILABLE: { label: "Unavailable", tone: "neutral" },
   ORDER_RECEIVED: { label: "Order received", tone: "info" },
-  PICK_AND_PACK: { label: "Picking and packing", tone: "warning" },
+  PICK_AND_PACK: { label: "Preparing your order", tone: "warning" },
   OUT_FOR_DELIVERY: { label: "Out for delivery", tone: "info" },
   DELIVERED: { label: "Delivered", tone: "positive" },
   CANCELLED: { label: "Cancelled", tone: "negative" },
@@ -101,6 +101,7 @@ type SearchFieldProps = Omit<
   onClear: () => void;
   onSubmit?: FormEventHandler<HTMLFormElement>;
   submitLabel?: string;
+  submitControl?: "button" | "keyboard";
 };
 
 export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
@@ -113,6 +114,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
       onClear,
       onSubmit,
       submitLabel = "Search",
+      submitControl = "button",
       className = "",
       ...props
     },
@@ -138,7 +140,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
               ×
             </IconButton>
           )}
-          {onSubmit && (
+          {onSubmit && submitControl === "button" && (
             <Button type="submit" variant="secondary">
               {submitLabel}
             </Button>

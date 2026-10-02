@@ -2,6 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: Inter;
+  src: url("./assets/fonts/Inter-Regular.otf") format("opentype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: Inter;
+  src: url("./assets/fonts/Inter-Medium.otf") format("opentype");
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+}
+
+@font-face {
+  font-family: Inter;
+  src: url("./assets/fonts/Inter-SemiBold.otf") format("opentype");
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+}
+
+@font-face {
+  font-family: Inter;
+  src: url("./assets/fonts/Inter-Bold.otf") format("opentype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+
 :root {
   color-scheme: light;
 
@@ -15,13 +47,14 @@
   --color-savt-reward-dark: #3f8e1e;
   --color-savt-reward-soft: #eef8e8;
 
-  --color-background: #f8faf6;
+  --color-background: #ebf3e3;
   --color-surface: #ffffff;
-  --color-surface-muted: #f0f2f0;
-  --color-border: #e6ece2;
-  --color-border-strong: #cbd5d1;
-  --color-text: #111827;
-  --color-text-muted: #667083;
+  --color-surface-muted: #f5f5f5;
+  --color-border: #e9e9e9;
+  --color-border-strong: #d4d4d4;
+  --color-text: #231f20;
+  --color-text-muted: #666666;
+  --color-icon-muted: #878787;
   --color-info: #3b82f6;
   --color-info-soft: #e5f2ff;
   --color-warning: #f59e0b;
@@ -34,15 +67,20 @@
   --font-sans:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
-  --text-heading-large: 1.5rem;
-  --leading-heading-large: 2rem;
+  --text-heading-large: 1.25rem;
+  --leading-heading-large: 1.75rem;
   --text-heading: 1.25rem;
   --leading-heading: 1.75rem;
   --text-body: 0.875rem;
   --leading-body: 1.25rem;
   --text-meta: 0.75rem;
   --leading-meta: 1.125rem;
-  --text-button: 0.8125rem;
+  --text-section: 1rem;
+  --leading-section: 1.5rem;
+  --text-supporting: 0.8125rem;
+  --text-input: 1rem;
+  --text-price: 1rem;
+  --text-button: 0.875rem;
   --leading-button: 1.125rem;
 
   --space-1: 0.25rem;
@@ -59,8 +97,8 @@
   --shadow-soft: 0 5px 14px rgb(16 24 40 / 7%);
   --shadow-card: 0 5px 14px rgb(16 24 40 / 7%);
   --shadow-lift: 0 18px 44px rgb(16 24 40 / 12%);
-  --shadow-button: 0 8px 18px rgb(229 35 41 / 20%);
-  --shadow-navigation: 0 -8px 24px rgb(16 24 40 / 8%);
+  --shadow-button: none;
+  --shadow-navigation: 0 -2px 8px rgb(35 31 32 / 4%);
 
   --app-max-width: 430px;
   --app-reference-width: 390px;
@@ -77,10 +115,10 @@
   --z-sheet: 700;
   --z-toast: 900;
 
-  --scrollbar-thumb: #788a80;
-  --scrollbar-thumb-hover: #596e62;
-  --scrollbar-thumb-active: #3f5649;
-  --scrollbar-track: #e6ece2;
+  --scrollbar-thumb: #878787;
+  --scrollbar-thumb-hover: #707070;
+  --scrollbar-thumb-active: #565656;
+  --scrollbar-track: #f5f5f5;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   scrollbar-width: thin;
 }
@@ -247,11 +285,12 @@ a[href] {
 
   .app-header--embedded {
     padding-top: var(--space-2);
+    padding-bottom: var(--space-2);
   }
 
   .app-header__embedded-shopping {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 2.75rem;
+    grid-template-columns: minmax(0, 1fr);
     align-items: center;
     gap: var(--space-2);
   }
@@ -261,8 +300,8 @@ a[href] {
     min-height: 2.75rem;
     align-items: center;
     color: var(--color-text);
-    font-size: 17px;
-    font-weight: 900;
+    font-size: var(--text-heading);
+    font-weight: 700;
     line-height: 1.2;
   }
 
@@ -292,7 +331,7 @@ a[href] {
     background: var(--color-cks-primary);
     padding: 0 0.2rem;
     font-size: 0.6rem;
-    font-weight: 900;
+    font-weight: 600;
   }
 
   .app-header--browse .delivery-address-link,
@@ -304,9 +343,9 @@ a[href] {
     min-width: 0;
     overflow-wrap: anywhere;
     text-align: center;
-    font-size: 16px;
-    font-weight: 900;
-    letter-spacing: 0.03em;
+    font-size: var(--text-heading);
+    font-weight: 700;
+    letter-spacing: 0;
     line-height: 1.2;
   }
 
@@ -317,7 +356,7 @@ a[href] {
     color: var(--color-text-muted);
     background: transparent;
     font-size: var(--text-meta);
-    font-weight: 800;
+    font-weight: 500;
   }
 
   .app-header__outlet-line {
@@ -374,9 +413,9 @@ a[href] {
     border-radius: var(--radius-button);
     color: var(--color-on-primary);
     background: var(--color-cks-primary);
-    box-shadow: var(--shadow-button);
+    box-shadow: none;
     font-size: var(--text-button);
-    font-weight: 800;
+    font-weight: 600;
     text-align: left;
     cursor: pointer;
     animation: basket-confirm 240ms ease-out;
@@ -427,8 +466,8 @@ a[href] {
     border-radius: var(--radius-button);
     color: var(--color-text-muted);
     background: transparent;
-    font-size: 0.625rem;
-    font-weight: 800;
+    font-size: var(--text-meta);
+    font-weight: 500;
   }
 
   .bottom-navigation__label {
@@ -443,18 +482,8 @@ a[href] {
     color: var(--color-cks-primary);
   }
 
-  .bottom-navigation__item.is-active::after {
-    position: absolute;
-    right: 1rem;
-    bottom: -0.25rem;
-    left: 1rem;
-    height: 0.1875rem;
-    border-radius: var(--radius-chip);
-    background: var(--color-cks-primary);
-    content: "";
-  }
-
   .bottom-navigation__icon {
+    color: var(--color-icon-muted);
     display: grid;
     width: 2.75rem;
     height: 1.75rem;
@@ -463,7 +492,7 @@ a[href] {
   }
 
   .bottom-navigation__item.is-active .bottom-navigation__icon {
-    background: var(--color-cks-primary-soft);
+    color: var(--color-cks-primary);
   }
 
   .bottom-navigation__badge {
@@ -480,7 +509,7 @@ a[href] {
     background: var(--color-cks-primary);
     padding: 0 0.25rem;
     font-size: 0.625rem;
-    font-weight: 900;
+    font-weight: 600;
   }
 
   .ui-button {
@@ -493,7 +522,7 @@ a[href] {
     border-radius: var(--radius-button);
     padding: 0.75rem 1rem;
     font-size: var(--text-button);
-    font-weight: 800;
+    font-weight: 600;
     line-height: var(--leading-button);
     transition:
       transform 160ms ease,
@@ -568,7 +597,7 @@ a[href] {
     border-radius: var(--radius-chip);
     padding: 0.25rem 0.625rem;
     font-size: var(--text-meta);
-    font-weight: 800;
+    font-weight: 500;
     line-height: var(--leading-meta);
   }
 
@@ -605,7 +634,7 @@ a[href] {
   .ui-search-field > label {
     color: var(--color-text);
     font-size: var(--text-meta);
-    font-weight: 800;
+    font-weight: 500;
   }
 
   .ui-search-field__control {
@@ -620,11 +649,12 @@ a[href] {
     min-width: 0;
     min-height: 3rem;
     flex: 1;
-    border: 1px solid var(--color-border-strong);
+    border: 0;
     border-radius: var(--radius-button);
     color: var(--color-text);
-    background: var(--color-surface);
+    background: var(--color-surface-muted);
     padding: 0.75rem 1rem 0.75rem 2.75rem;
+    font-size: var(--text-input);
   }
 
   .ui-search-field__icon {
@@ -670,8 +700,9 @@ a[href] {
   }
 
   .ui-system-state h2 {
-    font-size: var(--text-heading);
-    line-height: var(--leading-heading);
+    font-size: var(--text-section);
+    line-height: var(--leading-section);
+    font-weight: 600;
   }
 
   .ui-system-state p {
@@ -761,7 +792,7 @@ a[href] {
     min-width: 2rem;
     text-align: center;
     font-size: var(--text-body);
-    font-weight: 900;
+    font-weight: 600;
   }
 }
 
@@ -799,4 +830,10 @@ a[href] {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+.basket-summary__total {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
 }

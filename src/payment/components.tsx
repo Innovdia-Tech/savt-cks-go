@@ -1,4 +1,5 @@
 import type { PaymentController, PaymentState } from "./state";
+import { ClockIcon } from "../components/Icons";
 
 type PaymentActions = Pick<
   PaymentController,
@@ -47,7 +48,7 @@ export function PaymentPanel({
     return (
       <PaymentNotice
         title="Payment unavailable"
-        message="We could not verify the Order created for this payment. Check again before taking another action."
+        message="We couldn’t confirm your order. Check payment again before paying again."
       />
     );
   if (state.phase === "ready")
@@ -76,13 +77,17 @@ export function PaymentPanel({
     );
   if (state.phase === "pending")
     return (
-      <section className="payment-card" aria-live="polite">
-        <p className="quote-eyebrow">Waiting for confirmation</p>
-        <h2>Payment pending</h2>
-        <p>
-          Returning from the payment page does not confirm payment. Your order
-          will appear only after payment is confirmed.
-        </p>
+      <section
+        className="payment-card payment-pending"
+        role="status"
+        aria-live="polite"
+      >
+        <h2>
+          <ClockIcon className="h-6 w-6" />
+          Payment pending
+        </h2>
+        <p>We're checking your payment status.</p>
+        <p>Your order will appear once payment is confirmed.</p>
       </section>
     );
   if (state.phase === "checking")
@@ -125,7 +130,7 @@ export function PaymentPanel({
         <h2>Payment failed</h2>
         <p>
           This payment did not complete. Your basket is saved. Review it and
-          request a fresh quote before paying again.
+          refresh your total before paying again.
         </p>
         <button className={action} onClick={() => controller.restart()}>
           Review basket
@@ -141,7 +146,7 @@ export function PaymentPanel({
     );
   return (
     <section className="payment-card payment-warning" role="alert">
-      <p className="quote-eyebrow">Safe recovery</p>
+      <p className="quote-eyebrow">Check your payment</p>
       <h2>Payment unavailable</h2>
       <p>
         {state.paymentIntentId
@@ -150,14 +155,14 @@ export function PaymentPanel({
       </p>
       {state.canRetryInitiation ? (
         <button className={action} onClick={() => void controller.initiate()}>
-          Retry payment initiation
+          Try again
         </button>
       ) : state.paymentIntentId ? (
         <button
           className={action}
           onClick={() => void controller.checkStatus()}
         >
-          Retry status check
+          Check payment again
         </button>
       ) : (
         <button className={action} onClick={() => controller.restart()}>

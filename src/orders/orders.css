@@ -59,9 +59,11 @@
 .order-refresh,
 .order-card-open {
   min-height: 44px;
+  background: var(--color-surface);
+  border-radius: var(--radius-button);
   color: var(--color-cks-primary);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
 }
 .orders-stack--shopping {
   gap: 12px;
@@ -74,6 +76,7 @@
 }
 .orders-status-tabs button {
   min-height: 48px;
+  background: var(--color-surface);
   border-bottom: 2px solid transparent;
   color: #475569;
   font-size: 12px;
@@ -168,14 +171,16 @@
 .order-card-top small,
 .order-eyebrow {
   color: #64748b;
-  font-size: 10px;
-  font-weight: 900;
+  font-size: var(--text-meta);
+  font-weight: 500;
   letter-spacing: 0.13em;
   text-transform: uppercase;
 }
 .order-card-top strong,
 .order-detail-hero h2 {
   overflow-wrap: anywhere;
+  font-size: var(--text-heading);
+  font-weight: 700;
 }
 .order-status {
   max-width: 50%;
@@ -185,7 +190,7 @@
   padding: 6px 9px;
   color: #166534;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 500;
   text-align: center;
 }
 .order-status-cancelled,
@@ -257,7 +262,7 @@
 .order-state h2,
 .order-section h3,
 .order-refund h3 {
-  font-weight: 900;
+  font-weight: 600;
 }
 .order-state p,
 .order-detail-hero p,
@@ -306,14 +311,15 @@
   color: var(--color-text-muted) !important;
 }
 .order-detail-hero h2 {
-  font-size: 20px;
-  font-weight: 900;
+  font-size: var(--text-heading);
+  font-weight: 700;
   line-height: 1.2;
 }
 .order-progress li strong,
 .order-section h3,
 .order-status {
   line-height: 1.2;
+  font-weight: 500;
 }
 .order-detail-hero .order-status {
   background: var(--color-info-soft);
@@ -501,7 +507,7 @@
   font-size: 13px;
 }
 .order-money dd {
-  font-weight: 800;
+  font-weight: 600;
   text-align: right;
 }
 .order-grand {
@@ -509,7 +515,7 @@
   padding-top: 11px;
   color: var(--color-cks-primary);
   font-size: 15px;
-  font-weight: 900;
+  font-weight: 700;
 }
 .order-section address {
   margin-top: 8px;

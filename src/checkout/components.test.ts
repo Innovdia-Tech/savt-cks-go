@@ -108,7 +108,7 @@ describe("real cart and trusted quote presentation", () => {
     expect(html).toContain("remains saved for later");
     expect(html).toContain("Keep current delivery address");
     expect(html).toContain("Use this address &amp; clear basket");
-    expect(html).not.toContain("No serviceable outlet");
+    expect(html).not.toContain("Delivery isn&#x27;t available here yet");
   });
   it("uses accepted checkout rows and server totals with ordinary data", () => {
     const quote = parseQuote(quoteEnvelope());
@@ -140,14 +140,22 @@ describe("real cart and trusted quote presentation", () => {
       } as never),
     );
     expect(html).toContain("Rice");
-    expect(html).toContain("Estimated subtotal");
+    expect(html).toContain("Your items");
+    expect(html).toContain("Order summary");
+    expect(html).toContain("Items subtotal");
     expect(html).toMatch(/(?:RM|MYR).*9\.00/);
     expect(html).toContain("Review order");
     expect(html).toContain("Deliver to");
     expect(html).toContain("1 Example Street, Demo City, Sabah");
     expect(html).toContain('aria-label="Change delivery address"');
     expect(html).toContain("Demo outlet");
-    expect(html).toContain("Line subtotal");
+    expect(html).toContain("Item subtotal");
+    expect(html.indexOf('aria-label="Quantity for Rice"')).toBeLessThan(
+      html.indexOf("Item subtotal"),
+    );
+    expect(html.indexOf('aria-label="Remove Rice"')).toBeLessThan(
+      html.indexOf("Item subtotal"),
+    );
     expect(html).toContain("Remove Rice");
     expect(html).toContain('role="group"');
     expect(html).toContain('aria-label="Quantity for Rice"');
@@ -156,6 +164,54 @@ describe("real cart and trusted quote presentation", () => {
     expect(html).not.toMatch(
       /<(?:button|a)[^>]*>[^<]*(?:pay|confirm order|tracking)/i,
     );
+  });
+
+  it.each([1, 6])(
+    "keeps quantity %i bound to its unit price and only repeats a subtotal for multiple units",
+    (quantity) => {
+      const html = renderToStaticMarkup(
+        createElement(CartScreen, {
+          state: { ...base, lines: [{ ...line, quantity }] },
+          controller,
+          onBrowse: () => {},
+        } as never),
+      );
+      expect(html).toContain('aria-label="Quantity for Rice"');
+      expect(html).toContain(`<span aria-live="polite">${quantity}</span>`);
+      expect(html).toContain('aria-label="Remove Rice"');
+      expect(html).toContain("1 kg");
+      expect(html).toMatch(/cart-line-copy[^]*RM[^<]*4\.50/);
+      if (quantity === 1) expect(html).not.toContain("Item subtotal</span>");
+      else expect(html).toMatch(/Item subtotal<\/span><strong>RM[^<]*27\.00/);
+    },
+  );
+
+  it("keeps many products within one Your items surface and freezes each product's controls", () => {
+    const lines = Array.from({ length: 10 }, (_, index) => ({
+      ...line,
+      outletProductId: `item-${index}`,
+      product: { ...line.product, name: `Rice ${index + 1}` },
+      quantity: index === 0 ? 6 : 1,
+    }));
+    const html = renderToStaticMarkup(
+      createElement(CartScreen, {
+        state: { ...base, lines, paymentFrozen: true },
+        controller,
+        onBrowse: () => {},
+      } as never),
+    );
+    expect(html.match(/class="cart-lines"/g)).toHaveLength(1);
+    expect(html.match(/class="cart-line"/g)).toHaveLength(10);
+    expect(html.match(/disabled=""/g)).toHaveLength(31);
+    expect(html.match(/Item subtotal<\/span>/g)).toHaveLength(1);
+    for (const item of lines) {
+      expect(html).toContain(`Quantity for ${item.product.name}`);
+      expect(html).toContain(`Remove ${item.product.name}`);
+      expect(html).toContain(`Image unavailable for ${item.product.name}`);
+    }
+    expect(html).toMatch(/cart-display-total[^]*RM[^<]*67\.50/);
+    expect(html).toContain('<h2 id="cart-lines-title">Your items</h2>');
+    expect(html).not.toContain("Your items (10)");
   });
 
   it("presents authoritative server lines, fees, total, timing and expiry", () => {
@@ -168,18 +224,36 @@ describe("real cart and trusted quote presentation", () => {
       } as never),
     );
     for (const text of [
-      "Review your order",
+      "Order summary",
       "Rice",
-      "Merchandise subtotal",
+      "Items subtotal",
       "Delivery fee",
       "Processing fee",
       "Total",
       "Estimated delivery",
-      "Expires",
+      "Prices valid until",
       "Home",
       "Demo outlet",
     ])
       expect(html).toContain(text);
+    expect(html).toContain('<h2 id="quote-title">Order summary</h2>');
+    expect(html).not.toContain("Merchandise subtotal");
+    expect(html).toContain("Prices and fees confirmed");
+    expect(html).toMatch(
+      /<details[^>]*><summary>Delivery details<svg[^>]*aria-hidden="true"/,
+    );
+    for (const [label, amount] of [
+      ["Items subtotal", "9.00"],
+      ["Delivery fee", "4.90"],
+      ["Processing fee", "0.42"],
+      ["Total", "14.32"],
+    ]) {
+      expect(html).toMatch(
+        new RegExp(
+          `<dt[^>]*>${label}</dt><dd[^>]*>RM[^<]*${amount.replace(".", "\\.")}</dd>`,
+        ),
+      );
+    }
     expect(html).not.toContain("Quote ID");
     expect(html).not.toContain(id("b"));
     expect(html).not.toContain(id("a"));
@@ -230,10 +304,18 @@ describe("real cart and trusted quote presentation", () => {
           },
         },
         onBrowse: () => {},
+        onChangeAddress: () => {},
       } as never),
     );
     expect(frozen).toContain("Payment pending");
-    expect(frozen.match(/disabled=""/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(frozen.match(/disabled=""/g)?.length).toBe(4);
+    expect(frozen).toMatch(/aria-label="Change delivery address" disabled=""/);
+    expect(frozen.indexOf("Payment pending")).toBeLessThan(
+      frozen.indexOf("Deliver to"),
+    );
+    expect(frozen.indexOf("Payment pending")).toBeLessThan(
+      frozen.indexOf("Your items"),
+    );
   });
 
   it("requires explicit acceptance of changed prices", () => {
@@ -255,21 +337,24 @@ describe("real cart and trusted quote presentation", () => {
         onBrowse: () => {},
       } as never),
     );
-    expect(html).toContain("Review updated total");
-    expect(html).toContain("Accept updated total");
+    expect(html).toContain("Your total has changed");
+    expect(html).toContain("Continue with");
     expect(html).not.toMatch(/pay|confirm order/i);
   });
 
   it.each([
     ["CHECKOUT_OUTLET_PRODUCT_UNAVAILABLE", "no longer available"],
     ["CHECKOUT_INSUFFICIENT_STOCK", "stock changed"],
-    ["CHECKOUT_OUTLET_ASSIGNMENT_MISMATCH", "assigned outlet changed"],
+    ["CHECKOUT_OUTLET_ASSIGNMENT_MISMATCH", "store changed"],
     ["CUSTOMER_ADDRESS_CHANGED", "address changed"],
-    ["CUSTOMER_ASSIGNMENT_INCOMPLETE", "assignment could not be completed"],
-    ["CUSTOMER_NO_SERVICEABLE_OUTLET", "No serviceable outlet"],
+    ["CUSTOMER_ASSIGNMENT_INCOMPLETE", "couldn&#x27;t use this address"],
+    [
+      "CUSTOMER_NO_SERVICEABLE_OUTLET",
+      "Delivery isn&#x27;t available here yet",
+    ],
     ["NETWORK_ERROR", "offline"],
     ["REQUEST_TIMEOUT", "timed out"],
-    ["INVALID_RESPONSE", "could not safely read"],
+    ["INVALID_RESPONSE", "couldn&#x27;t refresh your total"],
     ["CUSTOMER_SESSION_INVALID", "Session expired"],
   ])("renders safe recovery copy for %s", (error, text) => {
     const html = renderToStaticMarkup(
@@ -305,8 +390,8 @@ describe("real cart and trusted quote presentation", () => {
         onBrowse: () => {},
       } as never),
     );
-    expect(html).toContain("Quote expired");
-    expect(html).toContain("Get a new quote");
+    expect(html).toContain("Prices need refreshing");
+    expect(html).toContain("Refresh total");
     expect(html).not.toMatch(/pay|confirm order/i);
   });
 
@@ -339,11 +424,11 @@ describe("real cart and trusted quote presentation", () => {
   });
 
   it.each([
+    ["CUSTOMER_ASSIGNMENT_INCOMPLETE", "couldn&#x27;t use this address"],
     [
-      "CUSTOMER_ASSIGNMENT_INCOMPLETE",
-      "assignment provider could not complete",
+      "CUSTOMER_NO_SERVICEABLE_OUTLET",
+      "Delivery isn&#x27;t available here yet",
     ],
-    ["CUSTOMER_NO_SERVICEABLE_OUTLET", "No serviceable outlet"],
     ["CUSTOMER_ADDRESS_CHANGED", "saved address changed"],
   ])("names address assignment recovery for %s", (error, text) => {
     const html = renderToStaticMarkup(
@@ -353,3 +438,29 @@ describe("real cart and trusted quote presentation", () => {
     expect(html).not.toContain(error);
   });
 });
+
+it.each(["ready", "price-review", "expired", "error"])(
+  "keeps internal checkout concepts out of visible %s copy",
+  (quotePhase) => {
+    const html = renderToStaticMarkup(
+      createElement(CartScreen, {
+        state: {
+          ...base,
+          quote: quotePhase === "error" ? null : parseQuote(quoteEnvelope()),
+          quotePhase,
+          error: quotePhase === "error" ? "INVALID_RESPONSE" : null,
+          canRetry: quotePhase === "error",
+        },
+        controller,
+        onBrowse: () => {},
+      } as never),
+    );
+    const copy = html.replace(/<[^>]*>/g, " ");
+    expect(copy).not.toMatch(
+      /quote|assignment|serviceable|trusted|idempotency/i,
+    );
+    if (quotePhase === "price-review")
+      expect(copy).toMatch(/Continue with RM.*\d/);
+    if (quotePhase === "error") expect(copy).toContain("Try again");
+  },
+);

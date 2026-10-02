@@ -7,7 +7,12 @@ import {
   type CartState,
 } from "./state";
 import { QuantitySelector } from "../components/QuantitySelector";
-import { BagIcon } from "../components/Icons";
+import {
+  BagIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  TrashIcon,
+} from "../components/Icons";
 import { useProductArtworkUrl } from "../catalogue/reference-match/useArtwork";
 import { addressLocationText } from "../addresses/presentation";
 
@@ -25,90 +30,90 @@ const malaysiaTime = (value: string) =>
 const quoteErrors: Record<string, [string, string]> = {
   CHECKOUT_OUTLET_PRODUCT_NOT_FOUND: [
     "Product unavailable",
-    "A basket product was not found at this outlet. Remove it before requesting another quote.",
+    "One item is no longer available. Remove it to continue.",
   ],
   CHECKOUT_PRODUCT_INACTIVE: [
     "Product unavailable",
-    "A basket product is no longer available. Remove it before requesting another quote.",
+    "One item is no longer available. Remove it to continue.",
   ],
   CHECKOUT_OUTLET_PRODUCT_UNAVAILABLE: [
     "Product unavailable",
-    "A basket product is no longer available at this outlet. Remove it before requesting another quote.",
+    "One item is no longer available. Remove it to continue.",
   ],
   CHECKOUT_INSUFFICIENT_STOCK: [
     "Stock changed",
-    "The available stock changed. Reduce the quantity before requesting another quote.",
+    "The available stock changed. Reduce the quantity and refresh your total.",
   ],
   CHECKOUT_OUTLET_ASSIGNMENT_MISMATCH: [
-    "Assigned outlet changed",
-    "This basket no longer matches the outlet assigned to the address. Review the address before continuing.",
+    "Store changed",
+    "Your basket belongs to a different store. Check your delivery address to continue.",
   ],
   CUSTOMER_ADDRESS_CHANGED: [
     "Address changed",
-    "The saved address changed. Reload addresses and request a new quote.",
+    "Your saved address changed. Reload addresses, then refresh your total.",
   ],
   CUSTOMER_ASSIGNMENT_INCOMPLETE: [
-    "Assignment could not be completed",
-    "The assignment or route provider is unavailable. Try again later.",
+    "We couldn't use this address.",
+    "Check your delivery address and try again.",
   ],
   CUSTOMER_NO_SERVICEABLE_OUTLET: [
-    "No serviceable outlet",
-    "No outlet can serve this address right now. Choose another saved address.",
+    "Delivery isn't available here yet.",
+    "Choose another delivery address to continue.",
   ],
   CUSTOMER_ASSIGNED_OUTLET_UNAVAILABLE: [
-    "Assigned outlet unavailable",
-    "The assigned outlet cannot accept this basket right now.",
+    "This store can't accept orders right now.",
+    "Try again later or choose another delivery address.",
   ],
   CHECKOUT_ADDRESS_NOT_SERVICEABLE: [
-    "Address not serviceable",
-    "The assigned outlet cannot deliver to this address.",
+    "We're not delivering here yet.",
+    "Choose another delivery address to continue.",
   ],
   CHECKOUT_ROUTE_DURATION_UNAVAILABLE: [
     "Delivery timing unavailable",
-    "A trusted delivery time could not be calculated. Try again later.",
+    "We couldn’t check delivery timing. Try again later.",
   ],
   NETWORK_ERROR: [
     "You appear to be offline",
-    "Check your connection, then retry the same quote request.",
+    "Check your connection and try again.",
   ],
   REQUEST_TIMEOUT: [
-    "Quote request timed out",
-    "The outcome is uncertain. Retry the same request safely.",
+    "Checking your total timed out",
+    "We couldn’t confirm your total. Try again.",
   ],
   INVALID_RESPONSE: [
-    "Quote response unavailable",
-    "We could not safely read the trusted quote response. Retry the same request.",
+    "We couldn't refresh your total.",
+    "Check your connection and try again.",
   ],
   CUSTOMER_SESSION_INVALID: [
     "Session expired",
-    "Return to Savt and reopen CKS Go before requesting another quote.",
+    "Please return to Savt and sign in again.",
   ],
   CUSTOMER_CSRF_INVALID: [
     "Session expired",
-    "Return to Savt and reopen CKS Go before requesting another quote.",
+    "Please return to Savt and sign in again.",
   ],
 };
 
 const transitionErrors: Record<string, [string, string]> = {
   CUSTOMER_ASSIGNMENT_INCOMPLETE: [
-    "Assignment could not be completed",
-    "The assignment provider could not complete this address. Your current address and basket were kept.",
+    "We couldn't use this address.",
+    "Your current address and basket were kept. Check this address and try again.",
   ],
   CUSTOMER_NO_SERVICEABLE_OUTLET: [
-    "No serviceable outlet",
-    "No outlet can serve that address right now. Your current address and basket were kept.",
+    "Delivery isn't available here yet.",
+    "Your current address and basket were kept. Choose another delivery address.",
   ],
   CUSTOMER_ADDRESS_CHANGED: [
     "Address changed",
-    "The saved address changed before assignment. Reload addresses before trying again; your current address and basket were kept.",
+    "Your saved address changed. Reload addresses and try again. Your current address and basket were kept.",
   ],
 };
 
 export function AddressTransitionError({ error }: { error: string | null }) {
   if (!error) return null;
   const [title, message] = transitionErrors[error] ?? [
-    "Assigned outlet unavailable",
-    "We could not verify the assigned outlet for that address. Your current address and basket were kept.",
+    "This store can't accept orders right now.",
+    "Your current address and basket were kept. Try again later or choose another delivery address.",
   ];
   return (
     <section className="quote-error" role="alert">
@@ -139,15 +144,13 @@ function QuoteSummary({
     <section className="quote-card" aria-labelledby="quote-title">
       <div className="quote-card-heading">
         <div>
-          <h2 id="quote-title" className="sr-only">
-            Review your order
-          </h2>
+          <h2 id="quote-title">Order summary</h2>
         </div>
         <span className="quote-currency">{quote.currency}</span>
       </div>
       {state.quotePhase === "price-review" && (
         <div className="quote-warning" role="alert">
-          <h3>Review updated total</h3>
+          <h3>Your total has changed</h3>
           <p>
             {state.payableTotalChanged &&
             state.previousPayableTotalMinor !== null
@@ -158,10 +161,10 @@ function QuoteSummary({
       )}
       {state.quotePhase === "expired" && (
         <div className="quote-warning" role="alert">
-          <h3>Quote expired</h3>
+          <h3>Prices need refreshing</h3>
           <p>
-            This quote is no longer valid. Request a new quote to refresh
-            prices, stock and delivery timing.
+            Refresh your total to check the latest prices, stock and delivery
+            timing.
           </p>
         </div>
       )}
@@ -191,7 +194,7 @@ function QuoteSummary({
         </ul>
       )}
       <dl className="quote-totals">
-        <dt>Merchandise subtotal</dt>
+        <dt>Items subtotal</dt>
         <dd>{money(quote.itemsSubtotalMinor)}</dd>
         <dt>Delivery fee</dt>
         <dd>{money(quote.finalDeliveryChargeMinor)}</dd>
@@ -201,33 +204,39 @@ function QuoteSummary({
         <dd className="quote-grand">{money(quote.grandTotalMinor)}</dd>
       </dl>
       <details className="quote-evidence-details">
-        <summary>Quote details</summary>
+        <summary>
+          Delivery details
+          <ChevronDownIcon className="h-6 w-6" />
+        </summary>
         <dl className="quote-evidence">
           <dt>Estimated delivery</dt>
           <dd>{quote.estimatedTotalOrderMinutes} minutes</dd>
-          <dt>Expires</dt>
+          <dt>Prices valid until</dt>
           <dd>{malaysiaTime(quote.quoteExpiresAt)} (Malaysia time)</dd>
         </dl>
       </details>
       {state.quotePhase === "price-review" && (
         <button
           className="customer-button customer-primary quote-action"
+          disabled={state.paymentFrozen}
           onClick={() => controller.acceptPriceChanges()}
         >
-          Accept updated total
+          Continue with {money(quote.grandTotalMinor)}
         </button>
       )}
       {state.quotePhase === "expired" && (
         <button
           className="customer-button customer-primary quote-action"
+          disabled={state.paymentFrozen}
           onClick={() => void controller.requestQuote()}
         >
-          Get a new quote
+          Refresh total
         </button>
       )}
       {state.quotePhase === "ready" && (
         <p className="quote-safe-note">
-          Prices and fees are confirmed for this review.
+          <CheckIcon className="h-4 w-4" />
+          Prices and fees confirmed
         </p>
       )}
       {payment?.state.phase === "ready" && (
@@ -279,7 +288,7 @@ export function CartScreen({
     return (
       <section className="catalogue-state cart-empty" role="status">
         <h2>Your basket is empty</h2>
-        <p>Add available products from your assigned outlet.</p>
+        <p>Browse products and add groceries to your basket.</p>
         <button className="customer-button customer-primary" onClick={onBrowse}>
           Browse products
         </button>
@@ -288,12 +297,20 @@ export function CartScreen({
   const subtotal = cartMerchandiseSummary(state.lines).subtotalMinor;
   const error = state.error
     ? (quoteErrors[state.error] ?? [
-        "Quote unavailable",
-        "The trusted quote could not be created. Review the basket and try again.",
+        "We couldn’t refresh your total.",
+        "Check your basket and try again.",
       ])
     : null;
+  const paymentStatus =
+    payment && payment.state.phase !== "ready" ? (
+      <PaymentPanel
+        {...payment}
+        acceptedTotalMinor={state.quote?.grandTotalMinor}
+      />
+    ) : null;
   return (
     <div className="cart-stack cart-stack--shopping">
+      {state.paymentFrozen && paymentStatus}
       {state.assignment && (
         <section
           className="cart-delivery"
@@ -309,6 +326,7 @@ export function CartScreen({
             <button
               className="cart-change-address"
               aria-label="Change delivery address"
+              disabled={state.paymentFrozen}
               onClick={onChangeAddress}
             >
               Change
@@ -321,9 +339,7 @@ export function CartScreen({
       )}
       <section className="cart-lines" aria-labelledby="cart-lines-title">
         <div className="cart-section-heading">
-          <h2 id="cart-lines-title" className="sr-only">
-            Basket items
-          </h2>
+          <h2 id="cart-lines-title">Your items</h2>
         </div>
         {state.lines.map((line) => (
           <article className="cart-line" key={line.outletProductId}>
@@ -356,11 +372,12 @@ export function CartScreen({
               disabled={state.paymentFrozen}
               onClick={() => controller.remove(line.outletProductId)}
             >
+              <TrashIcon className="h-4 w-4" />
               Remove
             </button>
             {line.quantity > 1 && (
               <p className="cart-line-subtotal">
-                <span>Line subtotal</span>
+                <span>Item subtotal</span>
                 <strong>
                   {money(line.displayedUnitPriceMinor * line.quantity)}
                 </strong>
@@ -368,46 +385,50 @@ export function CartScreen({
             )}
           </article>
         ))}
-        {!state.quote && (
+      </section>
+      {!state.quote && (
+        <section className="quote-card" aria-labelledby="cart-estimate-title">
+          <div className="quote-card-heading">
+            <h2 id="cart-estimate-title">Order summary</h2>
+          </div>
           <div className="cart-display-total">
-            <span>Estimated subtotal</span>
+            <span>Items subtotal</span>
             <strong>{money(subtotal)}</strong>
           </div>
-        )}
-        {!state.quote && (
           <p className="catalogue-caption">
             Item prices are estimates. Delivery and processing fees are
             confirmed at review.
           </p>
-        )}
-        {!state.assignment && (
-          <p className="catalogue-caption" role="status">
-            Choose a delivery address before reviewing your order.
-            {onChangeAddress && (
-              <button
-                className="customer-button mt-2"
-                onClick={onChangeAddress}
-              >
-                Choose address
-              </button>
-            )}
-          </p>
-        )}
-        {state.quotePhase === "idle" && (
-          <button
-            className="customer-button customer-primary quote-action"
-            disabled={!state.assignment}
-            onClick={() => void controller.requestQuote()}
-          >
-            Review order
-          </button>
-        )}
-        {state.quotePhase === "quoting" && (
-          <p className="quote-loading" role="status">
-            Checking prices and delivery…
-          </p>
-        )}
-      </section>
+          {!state.assignment && (
+            <p className="catalogue-caption" role="status">
+              Choose a delivery address before reviewing your order.
+              {onChangeAddress && (
+                <button
+                  className="customer-button mt-2"
+                  disabled={state.paymentFrozen}
+                  onClick={onChangeAddress}
+                >
+                  Choose address
+                </button>
+              )}
+            </p>
+          )}
+          {state.quotePhase === "idle" && (
+            <button
+              className="customer-button customer-primary quote-action"
+              disabled={!state.assignment || state.paymentFrozen}
+              onClick={() => void controller.requestQuote()}
+            >
+              Review order
+            </button>
+          )}
+          {state.quotePhase === "quoting" && (
+            <p className="quote-loading" role="status">
+              Checking prices and delivery…
+            </p>
+          )}
+        </section>
+      )}
       {error && (
         <section className="quote-error" role="alert">
           <h2>{error[0]}</h2>
@@ -415,28 +436,25 @@ export function CartScreen({
           {state.canRetry && (
             <button
               className="customer-button customer-primary"
+              disabled={state.paymentFrozen}
               onClick={() => void controller.retryQuote()}
             >
-              Retry same quote request
+              Try again
             </button>
           )}
           {!state.canRetry && state.quotePhase !== "session-expired" && (
             <button
               className="customer-button"
+              disabled={state.paymentFrozen}
               onClick={() => void controller.requestQuote()}
             >
-              Request a new quote
+              Refresh total
             </button>
           )}
         </section>
       )}
       <QuoteSummary state={state} controller={controller} payment={payment} />
-      {payment && payment.state.phase !== "ready" && (
-        <PaymentPanel
-          {...payment}
-          acceptedTotalMinor={state.quote?.grandTotalMinor}
-        />
-      )}
+      {!state.paymentFrozen && paymentStatus}
     </div>
   );
 }
@@ -481,13 +499,13 @@ export function AddressChangeDialog({
         </p>
         <p>
           {pending.assignment
-            ? `This address is assigned to ${pending.assignment.outletDisplayName}. Your current basket belongs to another outlet.`
+            ? `Delivery to this address is from ${pending.assignment.outletDisplayName}. Your basket belongs to another store.`
             : "This address has been saved, but we are not delivering there yet."}
         </p>
         <p>
           Keep your current delivery address and basket, or use this address and
-          clear the basket and quote. This address remains saved for later if
-          you keep your current delivery address.
+          clear the basket and reviewed total. This address remains saved for
+          later if you keep your current delivery address.
         </p>
       </div>
       <div className="cart-dialog-actions">

@@ -9,10 +9,10 @@ import { sessionPresentation, WebOtpEntry } from "./SessionStatus";
 
 describe("sessionPresentation", () => {
   it.each([
-    ["loading", "Getting your store ready…", false],
+    ["loading", "Getting CKS Go ready…", false],
     ["bridgeUnavailable", "Open CKS Go from Savt", true],
     ["offline", "You’re offline", true],
-    ["expired", "Your session has expired", true],
+    ["expired", "Your Savt session has expired", true],
     ["retryableError", "CKS Go is temporarily unavailable", true],
     ["unrecoverableError", "Unable to open CKS Go", false],
   ] as const)("renders an explicit %s state", (phase, title, canRetry) => {

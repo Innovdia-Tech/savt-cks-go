@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ChevronRightIcon } from "../components/Icons";
 import { useCustomer } from "./context";
 import { errorMessage } from "./errors";
 import { DeliveryLocationSetup } from "./DeliveryLocationSetup";
@@ -7,7 +8,6 @@ import { AddressForm } from "../addresses/AddressForm";
 import { editAddressName } from "../addresses/presentation";
 import { useOptionalCheckout } from "../checkout/context";
 import type { Address } from "../addresses/contracts";
-import { ChevronRightIcon } from "../components/Icons";
 export { CustomerDataProvider } from "./context";
 export function ProfileSummary() {
   const { state } = useCustomer();
@@ -20,7 +20,7 @@ export function ProfileSummary() {
       <p className="text-xs font-bold uppercase tracking-widest text-green-800">
         Savt membership
       </p>
-      <h2 className="mt-2 break-words text-2xl font-black">
+      <h2 className="mt-2 break-words text-xl font-bold">
         {p.nameSnapshot || "Savt member"}
       </h2>
       {p.phoneE164Snapshot && (
@@ -56,7 +56,7 @@ export function ProfileSummary() {
 function AddressText({ address }: { address: Address }) {
   return (
     <div className="min-w-0 break-words text-sm leading-6">
-      <p className="font-black">
+      <p className="font-semibold">
         {address.label}
         {address.isDefault ? " · Default" : ""}
       </p>
@@ -110,7 +110,7 @@ export function DataFeedback({
                 })
               }
             >
-              Retry same request
+              Try again
             </button>
           ) : (
             <button
@@ -157,7 +157,7 @@ export function CustomerProfileScreen() {
   };
   return (
     <div className="customer-surface space-y-4 px-5 py-4">
-      <h1 className="text-2xl font-black">Profile &amp; addresses</h1>
+      <h1 className="text-xl font-bold">Profile &amp; addresses</h1>
       <ProfileSummary />
       {state.readOnly && (
         <p role="status" className="rounded-2xl bg-slate-100 p-4 text-sm">
@@ -207,7 +207,7 @@ export function CustomerProfileScreen() {
       ) : (
         <>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-xl font-black">Saved addresses</h2>
+            <h2 className="text-base font-semibold">Saved addresses</h2>
             <button
               className="customer-button customer-primary"
               disabled={blocked}
@@ -326,7 +326,7 @@ export function CheckoutAddress({
   const selected = controller.selectedAddress();
   return (
     <section className="customer-surface customer-card space-y-3">
-      <h2 className="font-black">Deliver to</h2>
+      <h2 className="font-semibold">Deliver to</h2>
       {state.listPhase === "loading" ? (
         <p role="status">Loading saved addresses…</p>
       ) : state.listPhase === "error" ? (
@@ -340,12 +340,10 @@ export function CheckoutAddress({
             aria-busy={selecting || undefined}
             onClick={onManage}
           >
-            Change delivery address
+            Change
           </button>
           <AddressText address={selected} />
-          {selecting && (
-            <p role="status">Checking the assigned outlet for this address…</p>
-          )}
+          {selecting && <p role="status">Checking delivery availability…</p>}
         </>
       ) : (
         <p>
@@ -369,7 +367,13 @@ export function CheckoutAddress({
     </section>
   );
 }
-export function DeliveryAddressLink({ onManage }: { onManage: () => void }) {
+export function DeliveryAddressLink({
+  onManage,
+  embeddedHome = false,
+}: {
+  onManage: () => void;
+  embeddedHome?: boolean;
+}) {
   const { state, controller } = useCustomer();
   const a = controller.selectedAddress();
   return (
@@ -386,10 +390,16 @@ export function DeliveryAddressLink({ onManage }: { onManage: () => void }) {
             ? "Loading delivery address…"
             : a
               ? `${a.label} · ${[a.addressLine1, a.city].filter(Boolean).join(", ")}`
-              : "Add a delivery address"}
+              : "Add delivery address"}
         </strong>
       </span>
-      <ChevronRightIcon className="delivery-address-link__chevron" />
+      {embeddedHome ? (
+        <ChevronRightIcon className="delivery-address-link__chevron" />
+      ) : (
+        <span className="delivery-address-link__change">
+          {a ? "Change" : "Add"}
+        </span>
+      )}
     </button>
   );
 }

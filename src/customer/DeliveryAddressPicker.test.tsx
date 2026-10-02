@@ -12,6 +12,24 @@ vi.mock("../checkout/context", () => ({ useCheckout: () => fixture.checkout }));
 import { DeliveryAddressPicker } from "./DeliveryAddressPicker";
 
 describe("delivery address picker", () => {
+  it("leaves page Back to Flutter while keeping standalone recovery", () => {
+    fixture.customer = {
+      state: { addresses: [], listPhase: "ready" },
+      controller: { selectedAddress: () => undefined },
+    };
+    fixture.checkout = { state: { transitionPhase: "idle" } };
+    const render = (embeddedHost: boolean) =>
+      renderToStaticMarkup(
+        createElement(DeliveryAddressPicker, {
+          embeddedHost,
+          onDone: () => {},
+          onBack: () => {},
+          onManage: () => {},
+        }),
+      );
+    expect(render(true)).not.toContain("Back to Home");
+    expect(render(false)).toContain("Back to Home");
+  });
   it("shows active full-card actions, obvious selection, current location, and add action without a select", () => {
     const home = { ...syntheticAddress, latitude: 5.92, longitude: 116.08 };
     fixture.customer = {
