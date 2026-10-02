@@ -2,6 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+.support-action {
+  padding: 8px 0;
+}
+.support-action__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 8px;
+}
+.support-action__prompt {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+.support-action--delivery .support-action__row {
+  flex-direction: column;
+  align-items: flex-start;
+}
+.support-action .ui-button {
+  min-height: 44px;
+  min-width: 44px;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 0 8px;
+  background: transparent;
+}
+.support-action p {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .app-shell--shopping {
   position: relative;
 }

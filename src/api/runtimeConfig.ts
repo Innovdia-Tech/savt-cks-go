@@ -1,5 +1,3 @@
-import { parseSupportWhatsApp } from "../orders/support";
-
 export type RuntimeConfig = {
   apiOrigin: string;
   developmentApi: boolean;
@@ -72,8 +70,6 @@ export const loadRuntimeConfig = (
     ),
     developmentApi,
     developmentBridge,
-    supportWhatsApp: parseSupportWhatsApp(
-      String(environment.VITE_CKS_GO_SUPPORT_WHATSAPP ?? ""),
-    ),
+    supportWhatsApp: "",
   };
 };

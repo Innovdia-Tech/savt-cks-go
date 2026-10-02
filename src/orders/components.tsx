@@ -5,7 +5,7 @@ import type {
   OrderListItem,
 } from "./contracts";
 import type { OrdersController, OrdersState } from "./state";
-import { buildOrderSupportUrl, openOrderSupport } from "./support";
+import { SupportAction } from "../support/SupportAction";
 import { StatusBadge, SystemState } from "../components/ui";
 
 type Actions = Pick<
@@ -325,7 +325,6 @@ export function OrderDetailScreen({
   );
   const times = progressTimes(order);
   const activeOrder = currentOrderStages.includes(order.customerStage);
-  const helpUrl = buildOrderSupportUrl(supportWhatsApp, order.orderNumber);
   return (
     <div className="order-detail-stack order-detail-stack--shopping">
       <section className="order-detail-hero">
@@ -469,17 +468,11 @@ export function OrderDetailScreen({
         className="order-section order-help"
         aria-labelledby="order-help-title"
       >
-        <h3 id="order-help-title">Get help with this order</h3>
-        {helpUrl ? (
-          <button
-            className="customer-button"
-            onClick={() => openOrderSupport(supportWhatsApp, order.orderNumber)}
-          >
-            Open WhatsApp support
-          </button>
-        ) : (
-          <p>WhatsApp support is not available yet.</p>
-        )}
+        <h3 id="order-help-title">Need help with this order?</h3>
+        <SupportAction
+          digits={supportWhatsApp}
+          orderNumber={order.orderNumber}
+        />
       </section>
     </div>
   );

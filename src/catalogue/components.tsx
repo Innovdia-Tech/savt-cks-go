@@ -1,4 +1,6 @@
 import { guardHistoryNavigation } from "./navigation";
+import { useSupportWhatsApp } from "../support/context";
+import { SupportAction } from "../support/SupportAction";
 import { useEffect, useRef, useState } from "react";
 import {
   useCategoryArtworkUrl,
@@ -349,6 +351,7 @@ export function CatalogueStatus({
   onManage,
   onAdd,
   refreshEnabled = false,
+  supportWhatsApp = "",
 }: {
   phase: CatalogueState["phase"];
   error: string | null;
@@ -358,6 +361,7 @@ export function CatalogueStatus({
   onManage: () => void;
   onAdd?: () => void;
   refreshEnabled?: boolean;
+  supportWhatsApp?: string;
 }) {
   if (phase === "no-service")
     return (
@@ -402,6 +406,7 @@ export function CatalogueStatus({
             + Add new address
           </button>
         )}
+        <SupportAction digits={supportWhatsApp} context="delivery" />
       </section>
     );
   const phases: Partial<Record<CatalogueState["phase"], [string, string]>> = {
@@ -527,13 +532,15 @@ export function CatalogueProductPages({
 
 export function CatalogueApp({
   onLogout,
-  supportWhatsApp = "",
+  supportWhatsApp: suppliedSupportWhatsApp,
   embeddedHost = false,
 }: {
   onLogout?: () => void;
   supportWhatsApp?: string;
   embeddedHost?: boolean;
 }) {
+  const configuredSupportWhatsApp = useSupportWhatsApp();
+  const supportWhatsApp = suppliedSupportWhatsApp ?? configuredSupportWhatsApp;
   const { state, controller, controls, refresh, refreshing } = useCatalogue();
   const checkout = useCheckout();
   const payment = usePayment();
@@ -815,6 +822,7 @@ export function CatalogueApp({
           />
         )}
         <DeliveryLocationSetup
+          supportWhatsApp={supportWhatsApp}
           onDone={() => {
             navigate("home");
             void controller.retry();
@@ -933,6 +941,9 @@ export function CatalogueApp({
       <div
         className={`catalogue-root catalogue-root--shopping ${route === "home" ? "catalogue-root--home" : ""}`}
       >
+        {route === "home" && state.phase !== "no-service" && (
+          <SupportAction digits={supportWhatsApp} />
+        )}
         {route === "profile" ? (
           <>
             <CustomerProfileScreen shellOwnsTransientNotice />
@@ -1133,6 +1144,7 @@ export function CatalogueApp({
                 )}
                 {state.phase !== "ready" ? (
                   <CatalogueStatus
+                    supportWhatsApp={supportWhatsApp}
                     refreshEnabled={refreshEnabled}
                     phase={state.phase}
                     error={state.error}

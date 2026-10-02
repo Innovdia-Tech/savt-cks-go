@@ -184,6 +184,7 @@ it("renders a saved selected address with a warm no-coverage Home action", () =>
     createElement(CatalogueStatus, {
       phase: "no-service",
       error: "CUSTOMER_NO_SERVICEABLE_OUTLET",
+      supportWhatsApp: "60123456789",
       selectedAddress: {
         label: "Home",
         addressLine1: "Lot 12, Jalan Pintas",
@@ -213,6 +214,14 @@ it("renders a saved selected address with a warm no-coverage Home action", () =>
   expect(unavailable).toMatch(/aria-hidden="true"[^>]*><svg/);
   expect(unavailable).toContain('data-icon="location-unavailable"');
   expect(unavailable).toContain("Lot 12, Jalan Pintas");
+  expect(unavailable).toContain("Need help with your delivery address?");
+  expect(unavailable.indexOf("Choose another address")).toBeGreaterThan(-1);
+  expect(unavailable.indexOf("Choose another address")).toBeLessThan(
+    unavailable.indexOf("support-action"),
+  );
+  expect(unavailable.indexOf("+ Add new address")).toBeLessThan(
+    unavailable.indexOf("support-action"),
+  );
   expect(unavailable).toContain("Choose another address");
   expect(unavailable).toContain("Add new address");
   expect(unavailable).not.toContain("CUSTOMER_NO_SERVICEABLE_OUTLET");
