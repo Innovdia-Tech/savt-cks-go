@@ -6,19 +6,20 @@ colors:
   cks-primary-pressed: "#AB171C"
   savt-reward: "#4CAF50"
   savt-reward-dark: "#3F8E1E"
-  background: "#F8FAF6"
+  background: "#FAFAFA"
   surface: "#FFFFFF"
-  border: "#E6ECE2"
-  text: "#111827"
-  text-muted: "#667083"
+  border: "#E9E9E9"
+  text: "#231F20"
+  text-muted: "#707070"
+  icon-muted: "#878787"
   info: "#3B82F6"
   warning: "#F59E0B"
   error: "#EF4444"
 typography:
   heading-large:
     fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "24px"
-    lineHeight: "32px"
+    fontSize: "20px"
+    lineHeight: "28px"
   heading:
     fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "20px"
@@ -49,7 +50,7 @@ components:
     textColor: "#3F8E1E"
     borderRadius: "999px"
   app-shell:
-    backgroundColor: "#F8FAF6"
+    backgroundColor: "#FAFAFA"
     maxWidth: "430px"
 ---
 
@@ -69,12 +70,13 @@ Runtime ownership uses Model B: CSS custom properties in `src/styles.css` own ac
 
 - CKS Red is the primary commerce/action role: Add to basket, checkout, payment, order actions, active customer navigation and Basket emphasis.
 - Savt Green and Savt Green Dark are reserved for Savt Cash, rewards, savings, earned benefits and positive Savt ecosystem messages. Green is not the universal CTA color.
-- Background, surface, border, ink and muted text follow the Figma neutrals. Info, warning and error are semantic and always paired with copy/icon/shape, never color alone.
+- CUST-UX04 aligns background, surface, border and ink with Savt’s neutral language. Supporting text uses #707070 for normal-text contrast; #878787 is reserved for neutral icons. Info, warning and error are semantic and always paired with copy/icon/shape, never color alone.
 - Error red and brand red have different roles even when visually related: destructive/error messaging uses the error token; ordinary safe commerce uses CKS primary.
+- Small CKS-red text uses a white surface to retain AA contrast with the exact brand red. Search actions, catalogue links and selected category chips preserve neutral white backing rather than introducing another red.
 
 ## Typography
 
-Inter is primary with the system stack as a metric-compatible fallback. Large headings are 24/32 bold, section headings 20/28 semibold, body 14/20 regular, and supporting/meta text 12/18. Buttons use 13/18 semibold. Feature files should consume the shared type scale instead of inventing sizes.
+Inter uses the same locally bundled regular, medium, semibold and bold assets as Savt, with the system stack as fallback. Main titles are 20/28 at 700; sections 16/24 at 600; product names 14px at 600 with two lines; prices 16px at 700; body 14/20 at 400; supporting copy 13px at 400; meta 12/18 at 400; buttons 14/18 at 600; navigation labels 12px at 500. The Flutter host title is Inter 18px at 600. Feature files consume the shared type scale. Decorative lettering may retain a heavier weight, but ordinary customer hierarchy stops at 700.
 
 ## Layout
 
@@ -82,7 +84,7 @@ The Figma reference is 390×844, but production is fluid from 320px upward. The 
 
 ## Elevation & Depth
 
-Static surfaces use borders first. Product/address cards may use the Figma soft shadow `0 5px 14px rgb(16 24 40 / 7%)`; persistent navigation uses a restrained upward shadow. Heavy elevation and decorative glass effects are anti-references. Loading, empty and error swaps reserve compatible geometry.
+Static surfaces use light semantic borders. Product cards and category artwork have no decorative shadow; persistent navigation uses the restrained `0 -2px 8px rgb(35 31 32 / 4%)` shadow. Heavy elevation and decorative glass effects are anti-references. Loading, empty and error swaps reserve compatible geometry.
 
 ## Shapes
 
@@ -93,8 +95,8 @@ Buttons/fields use 14px radii, cards 16px, chips/badges full pills, and sheets 2
 - Primary button: solid CKS Red with white text, stable disabled/loading geometry and a visible CKS focus ring.
 - Secondary button: white/light surface, semantic border and dark text. Tertiary actions are restrained text buttons.
 - Product card: bordered white card, reserved image geometry, 14px name, CKS-red price/action, and only contract-supported availability. Reward chips appear only when reward data exists.
-- Search/input/textarea: white surface, semantic border, 14px radius, labelled control, visible focus and an app-owned clear action for search. Textareas do not expose manual resize.
-- Bottom navigation: Home, Browse, Basket and Orders only. Browse shows backend-visible outlet categories; Home previews the preferred available Phase 1 subset with approved local artwork. Active commerce navigation uses CKS Red. Account is hidden until a supported route exists.
+- Search: light neutral fill, no prominent border, 16px input text, search icon and app-owned clear action. Inputs/textareas retain labelled controls and visible focus. Textareas do not expose manual resize.
+- Bottom navigation: Home, Browse, Basket and Orders only. Browse shows backend-visible outlet categories; Home previews the preferred available Phase 1 subset with approved local artwork. Active navigation uses CKS-red outline icon and label without a stacked underline or pill. Navigation icons use a 24px canvas, 2px stroke and rounded caps/joins; Orders uses a receipt icon. Account is hidden until a supported route exists.
 - Basket summary: when nonempty, a CKS-red merchandise subtotal control sits immediately above bottom navigation. It uses the current cart lines, omits fees and trusted-quote adjustments, and hides on Basket. Its confirmation motion respects reduced-motion settings.
 - Loading/empty/error: shared stable-footprint components with human-readable copy and safe recovery. Raw backend codes never render.
 - Quantity sheet: native accessible dialog foundation, viewport-bounded with safe-area padding. Quantity controls are pill-shaped with named increment/decrement buttons.
@@ -194,3 +196,7 @@ Reconciled drift: historical CUST02B prose describes the earlier compact product
 The Home delivery link opens a dedicated mobile picker with active saved-address cards, a visible selected state, current-location shortcut, search entry and add action. The selected state uses CKS red; Default remains secondary metadata. Inactive addresses belong to Profile management. Saved-address selection runs the existing authoritative assignment check before changing Home context. Text-only addresses enter location repair and retain the same address ID.
 
 Typed search uses the authenticated CKS Go customer location API and bounded Google Places predictions. Search debounces at 300 ms, cancels stale work and keeps its session token only in memory. The customer chooses a prediction, confirms its resolved geographic location, then enters delivery details. Native GPS remains tap-initiated and returns to the same confirmation step. Delivery details prefill bounded text while coordinates remain hidden and attached to the confirmed point. The visual confirmation is textual until an approved browser map provider exists; it never imitates a map. Google Maps text attribution sits with the prediction list using the permitted compact presentation.
+
+## CUST-UX04 Savt continuity
+
+Runtime changes retain the accepted Home sequence and all controller authority. Delivery context leads with Deliver to and a concise Change action. Featured products avoids unsupported personalization. Browse consumes the existing accumulated ACTIVE category directory used by Home, without a second source or customer directory pagination; selected categories supply the screen/search title. Category artwork stays 64–66px with medium two-line labels. The entire merchandise-only Basket bar remains tappable, with a decorative chevron. Primary buttons use flat elevation; inactive outline icons use #878787 while their labels use the accessible supporting neutral. Embedded Home relies on Flutter for Back, Close and the page-level CKS Go title. Prices/review errors use customer language; quote classes and payment finality remain internal and unchanged. Order stage PICK_AND_PACK renders Preparing your order.

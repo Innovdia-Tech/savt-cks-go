@@ -108,7 +108,7 @@ describe("real cart and trusted quote presentation", () => {
     expect(html).toContain("remains saved for later");
     expect(html).toContain("Keep current delivery address");
     expect(html).toContain("Use this address &amp; clear basket");
-    expect(html).not.toContain("No serviceable outlet");
+    expect(html).not.toContain("Delivery isn&#x27;t available here yet");
   });
   it("uses accepted checkout rows and server totals with ordinary data", () => {
     const quote = parseQuote(quoteEnvelope());
@@ -175,7 +175,7 @@ describe("real cart and trusted quote presentation", () => {
       "Processing fee",
       "Total",
       "Estimated delivery",
-      "Expires",
+      "Prices valid until",
       "Home",
       "Demo outlet",
     ])
@@ -255,21 +255,24 @@ describe("real cart and trusted quote presentation", () => {
         onBrowse: () => {},
       } as never),
     );
-    expect(html).toContain("Review updated total");
-    expect(html).toContain("Accept updated total");
+    expect(html).toContain("Your total has changed");
+    expect(html).toContain("Continue with");
     expect(html).not.toMatch(/pay|confirm order/i);
   });
 
   it.each([
     ["CHECKOUT_OUTLET_PRODUCT_UNAVAILABLE", "no longer available"],
     ["CHECKOUT_INSUFFICIENT_STOCK", "stock changed"],
-    ["CHECKOUT_OUTLET_ASSIGNMENT_MISMATCH", "assigned outlet changed"],
+    ["CHECKOUT_OUTLET_ASSIGNMENT_MISMATCH", "store changed"],
     ["CUSTOMER_ADDRESS_CHANGED", "address changed"],
-    ["CUSTOMER_ASSIGNMENT_INCOMPLETE", "assignment could not be completed"],
-    ["CUSTOMER_NO_SERVICEABLE_OUTLET", "No serviceable outlet"],
+    ["CUSTOMER_ASSIGNMENT_INCOMPLETE", "couldn&#x27;t use this address"],
+    [
+      "CUSTOMER_NO_SERVICEABLE_OUTLET",
+      "Delivery isn&#x27;t available here yet",
+    ],
     ["NETWORK_ERROR", "offline"],
     ["REQUEST_TIMEOUT", "timed out"],
-    ["INVALID_RESPONSE", "could not safely read"],
+    ["INVALID_RESPONSE", "couldn&#x27;t refresh your total"],
     ["CUSTOMER_SESSION_INVALID", "Session expired"],
   ])("renders safe recovery copy for %s", (error, text) => {
     const html = renderToStaticMarkup(
@@ -305,8 +308,8 @@ describe("real cart and trusted quote presentation", () => {
         onBrowse: () => {},
       } as never),
     );
-    expect(html).toContain("Quote expired");
-    expect(html).toContain("Get a new quote");
+    expect(html).toContain("Prices need refreshing");
+    expect(html).toContain("Refresh total");
     expect(html).not.toMatch(/pay|confirm order/i);
   });
 
@@ -339,11 +342,11 @@ describe("real cart and trusted quote presentation", () => {
   });
 
   it.each([
+    ["CUSTOMER_ASSIGNMENT_INCOMPLETE", "couldn&#x27;t use this address"],
     [
-      "CUSTOMER_ASSIGNMENT_INCOMPLETE",
-      "assignment provider could not complete",
+      "CUSTOMER_NO_SERVICEABLE_OUTLET",
+      "Delivery isn&#x27;t available here yet",
     ],
-    ["CUSTOMER_NO_SERVICEABLE_OUTLET", "No serviceable outlet"],
     ["CUSTOMER_ADDRESS_CHANGED", "saved address changed"],
   ])("names address assignment recovery for %s", (error, text) => {
     const html = renderToStaticMarkup(
@@ -353,3 +356,29 @@ describe("real cart and trusted quote presentation", () => {
     expect(html).not.toContain(error);
   });
 });
+
+it.each(["ready", "price-review", "expired", "error"])(
+  "keeps internal checkout concepts out of visible %s copy",
+  (quotePhase) => {
+    const html = renderToStaticMarkup(
+      createElement(CartScreen, {
+        state: {
+          ...base,
+          quote: quotePhase === "error" ? null : parseQuote(quoteEnvelope()),
+          quotePhase,
+          error: quotePhase === "error" ? "INVALID_RESPONSE" : null,
+          canRetry: quotePhase === "error",
+        },
+        controller,
+        onBrowse: () => {},
+      } as never),
+    );
+    const copy = html.replace(/<[^>]*>/g, " ");
+    expect(copy).not.toMatch(
+      /quote|assignment|serviceable|trusted|idempotency/i,
+    );
+    if (quotePhase === "price-review")
+      expect(copy).toMatch(/Continue with RM.*\d/);
+    if (quotePhase === "error") expect(copy).toContain("Try again");
+  },
+);

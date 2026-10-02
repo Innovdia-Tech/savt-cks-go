@@ -277,19 +277,19 @@ const errors: Record<string, [string, string]> = {
   ],
   CUSTOMER_ASSIGNMENT_CONTEXT_UNAVAILABLE: [
     "Browsing is temporarily unavailable",
-    "We could not validate your browsing session. Try again later.",
+    "We couldn’t load products. Try again later.",
   ],
   CUSTOMER_ASSIGNMENT_CONTEXT_EXPIRED: [
     "Browsing session expired",
-    "Refresh the assignment to continue browsing.",
+    "Refresh products to keep shopping.",
   ],
   CUSTOMER_ASSIGNED_OUTLET_UNAVAILABLE: [
-    "Assigned outlet unavailable",
-    "Refresh the assignment to check service for this address.",
+    "This store can’t accept orders right now.",
+    "Try again or choose another delivery address.",
   ],
   CUSTOMER_OUTLET_ASSIGNMENT_MISMATCH: [
-    "Assignment changed",
-    "Refresh the assignment before browsing.",
+    "Your delivery store has changed",
+    "Try again to see products for your address.",
   ],
   CUSTOMER_ADDRESS_CHANGED: [
     "Address changed",
@@ -297,7 +297,7 @@ const errors: Record<string, [string, string]> = {
   ],
   CUSTOMER_ASSIGNMENT_CHANGED: [
     "Service availability changed",
-    "Try the automatic assignment again.",
+    "Try again to check delivery for your address.",
   ],
   CUSTOMER_ADDRESS_NOT_FOUND: [
     "Address unavailable",
@@ -309,7 +309,7 @@ const errors: Record<string, [string, string]> = {
   ],
   CHECKOUT_LOCATION_UNAVAILABLE: [
     "Set your delivery location",
-    "Confirm your delivery location to check service from your assigned store.",
+    "Confirm your delivery location to see which store can deliver to you.",
   ],
   CUSTOMER_PRODUCT_NOT_FOUND: [
     "Product unavailable",
@@ -324,16 +324,16 @@ const errors: Record<string, [string, string]> = {
     "We couldn't check delivery availability. Please try again.",
   ],
   INVALID_RESPONSE: [
-    "Catalogue response unavailable",
-    "We could not safely load this response. Try again later.",
+    "Products unavailable",
+    "We couldn’t load products. Try again later.",
   ],
   CUSTOMER_SESSION_INVALID: [
-    "Session expired",
-    "Return to Savt to reopen CKS Go.",
+    "Your Savt session has expired",
+    "Please return to Savt and sign in again.",
   ],
   CUSTOMER_CSRF_INVALID: [
     "Session needs refreshing",
-    "Return to Savt to reopen CKS Go.",
+    "Please return to Savt and sign in again.",
   ],
 };
 export function CatalogueStatus({
@@ -361,7 +361,7 @@ export function CatalogueStatus({
       >
         {selectedAddress && (
           <div className="catalogue-no-service__address">
-            <span>Delivering to</span>
+            <span>Deliver to</span>
             <strong>{selectedAddress.label}</strong>
             <p>
               {[
@@ -377,7 +377,7 @@ export function CatalogueStatus({
         <SystemState
           tone="empty"
           title="We're not delivering here yet"
-          description="Your address has been saved, but CKS Go doesn't currently have an available outlet that can deliver here. Choose another delivery address to continue shopping."
+          description="Your address has been saved. Choose another delivery address to continue shopping."
           actionLabel="Choose another address"
           onAction={onManage}
         />
@@ -403,7 +403,7 @@ export function CatalogueStatus({
     ],
     "no-address": [
       "Set your delivery location",
-      "Add a delivery location before you start shopping.",
+      "Add a delivery address before you start shopping.",
     ],
     coordinates: [
       "Set your delivery location",
@@ -411,7 +411,7 @@ export function CatalogueStatus({
     ],
     "assignment-loading": [
       "Checking delivery availability…",
-      "We'll show this outlet's groceries when the check is complete.",
+      "We’ll show groceries for your address shortly.",
     ],
     loading: ["Loading catalogue", "Fetching the latest products."],
     "session-expired": errors.CUSTOMER_SESSION_INVALID,
@@ -815,6 +815,7 @@ export function CatalogueApp({
   if (route === "delivery-address" || route === "delivery-address/new") {
     return (
       <DeliveryAddressPicker
+        embeddedHost={embeddedHost}
         initialAdd={route === "delivery-address/new"}
         onDone={() => {
           navigate("home");
@@ -859,15 +860,15 @@ export function CatalogueApp({
       developmentFixture={referenceFixture}
       title={
         route === "categories"
-          ? "Browse"
+          ? selectedCategoryName || "Browse"
           : detailId
             ? "Product details"
             : route === "cart"
               ? payment.state.phase === "paid"
                 ? "Order confirmed"
-                : "Your basket"
+                : `Your basket (${basketSummary.count})`
               : route === "orders"
-                ? "My Orders"
+                ? "Orders"
                 : orderDetailId
                   ? "Order details"
                   : ""
@@ -920,6 +921,7 @@ export function CatalogueApp({
                   route === "home" ||
                   route === "categories" ||
                   route === "orders" ||
+                  route === "cart" ||
                   Boolean(detailId) ||
                   Boolean(orderDetailId)
                     ? "sr-only"
@@ -929,7 +931,7 @@ export function CatalogueApp({
                 {route === "home"
                   ? "CKS Go home"
                   : route === "categories"
-                    ? "Browse"
+                    ? selectedCategoryName || "Browse"
                     : detailId
                       ? "Product details"
                       : route === "cart"
@@ -940,7 +942,7 @@ export function CatalogueApp({
                           ? "Order details"
                           : "Orders"}
               </h1>
-              {detailId && (
+              {detailId && !embeddedHost && (
                 <button
                   className="catalogue-link"
                   onClick={() => navigate(productOrigin.current)}
@@ -948,7 +950,7 @@ export function CatalogueApp({
                   Back to products
                 </button>
               )}
-              {orderDetailId && (
+              {orderDetailId && !embeddedHost && (
                 <button
                   className="catalogue-link"
                   onClick={() => navigate("orders")}
@@ -1000,8 +1002,8 @@ export function CatalogueApp({
                     value={query}
                     placeholder={
                       route === "categories" && selectedCategoryName
-                        ? `Search in ${selectedCategoryName}…`
-                        : "Search products…"
+                        ? `Search ${selectedCategoryName}`
+                        : "Search products"
                     }
                     onCompositionStart={() => setComposing(true)}
                     onCompositionEnd={() => setComposing(false)}
@@ -1063,58 +1065,33 @@ export function CatalogueApp({
                     </div>
                   </section>
                 )}
-                {route === "categories" &&
-                  (state.categories.length > 0 || state.categoryPage > 1) && (
-                    <section aria-labelledby="browse-categories-title">
-                      <h2
-                        id="browse-categories-title"
-                        className="catalogue-browse-heading"
+                {route === "categories" && state.homeCategories.length > 0 && (
+                  <section aria-labelledby="browse-categories-title">
+                    <h2
+                      id="browse-categories-title"
+                      className="catalogue-browse-heading"
+                    >
+                      Shop by category
+                    </h2>
+                    <div className="catalogue-categories">
+                      <button
+                        aria-pressed={!state.categoryId}
+                        onClick={() => void controller.category()}
                       >
-                        Shop by category
-                      </h2>
-                      <div className="catalogue-categories">
+                        All
+                      </button>
+                      {state.homeCategories.map((c) => (
                         <button
-                          aria-pressed={!state.categoryId}
-                          onClick={() => void controller.category()}
+                          key={c.id}
+                          aria-pressed={state.categoryId === c.id}
+                          onClick={() => void controller.category(c.id)}
                         >
-                          All
+                          {c.name}
                         </button>
-                        {state.categories.map((c) => (
-                          <button
-                            key={c.id}
-                            aria-pressed={state.categoryId === c.id}
-                            onClick={() => void controller.category(c.id)}
-                          >
-                            {c.name}
-                          </button>
-                        ))}
-                      </div>
-                      {(state.categoryPage > 1 || state.categoryHasNext) && (
-                        <div className="catalogue-pages">
-                          <button
-                            disabled={state.categoryPage <= 1}
-                            onClick={() =>
-                              void controller.categoryPage(
-                                state.categoryPage - 1,
-                              )
-                            }
-                          >
-                            Previous categories
-                          </button>
-                          <button
-                            disabled={!state.categoryHasNext}
-                            onClick={() =>
-                              void controller.categoryPage(
-                                state.categoryPage + 1,
-                              )
-                            }
-                          >
-                            More categories
-                          </button>
-                        </div>
-                      )}
-                    </section>
-                  )}
+                      ))}
+                    </div>
+                  </section>
+                )}
                 {state.phase !== "ready" ? (
                   <CatalogueStatus
                     phase={state.phase}
@@ -1160,20 +1137,15 @@ export function CatalogueApp({
                   <>
                     {state.categories.length === 0 && (
                       <p className="catalogue-notice">
-                        No categories are available for this outlet.
-                      </p>
-                    )}
-                    {route === "categories" && selectedCategoryName && (
-                      <p className="catalogue-caption">
-                        Browse &gt; {selectedCategoryName}
+                        No categories are available from this store yet.
                       </p>
                     )}
                     <div className="catalogue-section-heading catalogue-products-heading">
                       <div>
                         <h2>
                           {route === "home"
-                            ? "Featured for You"
-                            : "Product results"}
+                            ? "Featured products"
+                            : selectedCategoryName || "All products"}
                         </h2>
                         {route === "categories" && (
                           <p className="catalogue-caption">
@@ -1244,19 +1216,19 @@ export function CatalogueApp({
                           state.q
                             ? "No search results"
                             : state.categoryId
-                              ? "No products are available in this category right now."
+                              ? "No products here yet"
                               : "No products in this selection"
                         }
                         description={
                           state.q
                             ? "Try another product name or clear your search."
                             : state.categoryId
-                              ? "Choose another category or return to All."
+                              ? "Try another category or view all products."
                               : "Choose another category or try again later."
                         }
                         actionLabel={
                           route === "categories" && state.categoryId && !state.q
-                            ? "Show all products"
+                            ? "View all products"
                             : undefined
                         }
                         onAction={() => void controller.category(undefined, 1)}

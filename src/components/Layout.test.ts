@@ -81,7 +81,7 @@ describe("HeaderActions", () => {
       }),
     );
     expect(html).toContain("CKS Go");
-    expect(html).toContain('aria-label="Open basket"');
+    expect(html).toContain('aria-label="Open basket, 2 items"');
     expect(html).toContain('aria-label="Close CKS Go"');
     expect(html).toContain("app-header__shopping-actions--shopping");
   });
@@ -221,7 +221,7 @@ describe("HeaderActions", () => {
       }),
     );
     expect(home).toContain("Home · Lot 57");
-    expect(home).toContain('aria-label="Open basket"');
+    expect(home).toContain('aria-label="Open basket, 2 items"');
     expect(home).not.toContain(">CKS Go<");
     expect(home).not.toContain('aria-label="Close CKS Go"');
     expect(home).not.toContain('aria-label="Back"');
@@ -238,4 +238,25 @@ describe("HeaderActions", () => {
     expect(browse).not.toContain('aria-label="Close CKS Go"');
     expect(browse).not.toContain('aria-label="Back"');
   });
+});
+
+it("uses a receipt for Orders and a decorative Basket summary chevron", () => {
+  const nav = renderToStaticMarkup(
+    createElement(BottomNavigation, {
+      active: "Orders",
+      cartCount: 0,
+      onNavigate: () => {},
+    }),
+  );
+  expect(nav).toContain('d="M7 3h10');
+  const basket = renderToStaticMarkup(
+    createElement(BasketSummaryBar, {
+      count: 3,
+      subtotal: "RM 29.40",
+      onOpen: () => {},
+    }),
+  );
+  expect(basket).toContain("<svg");
+  expect(basket).toContain('aria-hidden="true"');
+  expect(basket).not.toContain("Delivery fee");
 });

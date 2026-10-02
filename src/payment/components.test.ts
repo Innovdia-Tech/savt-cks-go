@@ -102,7 +102,7 @@ describe("customer payment presentation", () => {
       paymentIntentId: "intent-redacted",
       error: "NETWORK_ERROR",
     });
-    expect(html).toContain("Retry status check");
+    expect(html).toContain("Check payment again");
     expect(html).not.toContain("Reopen secure payment");
     expect(html.match(/<button/g) ?? []).toHaveLength(1);
   });

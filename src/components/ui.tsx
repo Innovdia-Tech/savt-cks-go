@@ -74,7 +74,7 @@ const statusPresentations: Record<
   AVAILABLE: { label: "Available", tone: "positive" },
   UNAVAILABLE: { label: "Unavailable", tone: "neutral" },
   ORDER_RECEIVED: { label: "Order received", tone: "info" },
-  PICK_AND_PACK: { label: "Picking and packing", tone: "warning" },
+  PICK_AND_PACK: { label: "Preparing your order", tone: "warning" },
   OUT_FOR_DELIVERY: { label: "Out for delivery", tone: "info" },
   DELIVERED: { label: "Delivered", tone: "positive" },
   CANCELLED: { label: "Cancelled", tone: "negative" },

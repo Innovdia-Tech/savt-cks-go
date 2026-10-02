@@ -47,7 +47,7 @@ export function PaymentPanel({
     return (
       <PaymentNotice
         title="Payment unavailable"
-        message="We could not verify the Order created for this payment. Check again before taking another action."
+        message="We couldn’t confirm your order. Check payment again before paying again."
       />
     );
   if (state.phase === "ready")
@@ -125,7 +125,7 @@ export function PaymentPanel({
         <h2>Payment failed</h2>
         <p>
           This payment did not complete. Your basket is saved. Review it and
-          request a fresh quote before paying again.
+          refresh your total before paying again.
         </p>
         <button className={action} onClick={() => controller.restart()}>
           Review basket
@@ -141,7 +141,7 @@ export function PaymentPanel({
     );
   return (
     <section className="payment-card payment-warning" role="alert">
-      <p className="quote-eyebrow">Safe recovery</p>
+      <p className="quote-eyebrow">Check your payment</p>
       <h2>Payment unavailable</h2>
       <p>
         {state.paymentIntentId
@@ -150,14 +150,14 @@ export function PaymentPanel({
       </p>
       {state.canRetryInitiation ? (
         <button className={action} onClick={() => void controller.initiate()}>
-          Retry payment initiation
+          Try again
         </button>
       ) : state.paymentIntentId ? (
         <button
           className={action}
           onClick={() => void controller.checkStatus()}
         >
-          Retry status check
+          Check payment again
         </button>
       ) : (
         <button className={action} onClick={() => controller.restart()}>

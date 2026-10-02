@@ -263,7 +263,9 @@ export function AddressForm({
       className="customer-card space-y-4"
       aria-busy={state.busy}
     >
-      {!location && <h2 className="text-xl font-black">Delivery details</h2>}
+      {!location && (
+        <h2 className="text-base font-semibold">Delivery details</h2>
+      )}
       <p className="text-sm text-slate-600">
         Confirm the details below. Your delivery location is saved securely in
         the background.
@@ -440,7 +442,7 @@ export function AddressForm({
             cancelDelete();
           }}
         >
-          <h2 id="delete-address-title" className="text-xl font-black">
+          <h2 id="delete-address-title" className="text-base font-semibold">
             Delete this address?
           </h2>
           <p id="delete-address-description" className="my-4">

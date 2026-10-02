@@ -7,7 +7,7 @@ export const productionAdvertisingSlides: readonly AdvertisingSlide[] = [
     eyebrow: "CKS Go",
     title: "Fresh choices, closer to home",
     description:
-      "Browse groceries from the CKS outlet assigned to your delivery address.",
+      "Browse groceries from the CKS store delivering to your address.",
     theme: "berry",
     imageUrl: cksGroceryBannerArtworkUrl,
     action: { label: "Shop categories", target: "categories" },
@@ -17,14 +17,14 @@ export const productionAdvertisingSlides: readonly AdvertisingSlide[] = [
     eyebrow: "Everyday groceries",
     title: "Your essentials in one simple shop",
     description:
-      "Search the current outlet catalogue and add available items to your basket.",
+      "Search products from your store and add groceries to your basket.",
     theme: "sunrise",
     action: { label: "Browse groceries", target: "categories" },
   },
   {
     id: "cks-go-neighbourhood-store",
     eyebrow: "CKS Retail",
-    title: "Shop from your assigned neighbourhood store",
+    title: "Shop your neighbourhood store",
     description:
       "Availability and prices come from the CKS Go catalogue for your selected delivery address.",
     theme: "forest",

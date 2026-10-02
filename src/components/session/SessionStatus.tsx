@@ -23,13 +23,13 @@ const presentations: Record<
   { title: string; detail: string; canRetry: boolean }
 > = {
   loading: {
-    title: "Getting your store ready…",
+    title: "Getting CKS Go ready…",
     detail: "",
     canRetry: false,
   },
   bridgeUnavailable: {
     title: "Open CKS Go from Savt",
-    detail: "The secure Savt handoff is not available in this browser.",
+    detail: "Return to Savt and open CKS Go again.",
     canRetry: true,
   },
   offline: {
@@ -38,8 +38,8 @@ const presentations: Record<
     canRetry: true,
   },
   expired: {
-    title: "Your session has expired",
-    detail: "Return to Savt or relaunch the secure customer session.",
+    title: "Your Savt session has expired",
+    detail: "Please return to Savt and sign in again.",
     canRetry: true,
   },
   retryableError: {
@@ -129,17 +129,17 @@ export function WebOtpEntry({
     <main className="grid min-h-dvh place-items-center bg-app-background px-4 py-8 text-savt-ink">
       <section className="w-full max-w-[390px] rounded-[32px] border border-white/80 bg-white p-6 shadow-lift sm:p-7">
         <div
-          className="mx-auto grid h-14 w-14 place-items-center rounded-[20px] bg-cks-soft text-lg font-black text-cks-primary"
+          className="mx-auto grid h-14 w-14 place-items-center rounded-[20px] bg-cks-soft text-lg font-bold text-cks-primary"
           aria-hidden="true"
         >
           CKS
         </div>
-        <p className="mt-4 text-center text-xs font-black uppercase tracking-[0.18em] text-cks-primary">
+        <p className="mt-4 text-center text-xs font-semibold text-cks-primary">
           CKS Go
         </p>
         {state.phase === "pilotDenied" ? (
           <>
-            <h1 className="mt-3 text-center text-2xl font-black text-slate-950">
+            <h1 className="mt-3 text-center text-xl font-bold text-slate-950">
               CKS Go is not available for this account yet.
             </h1>
             <p className="mt-3 text-center text-sm leading-6 text-slate-600">
@@ -149,7 +149,7 @@ export function WebOtpEntry({
           </>
         ) : isMobile ? (
           <>
-            <h1 className="mt-3 text-center text-2xl font-black text-slate-950">
+            <h1 className="mt-3 text-center text-xl font-bold text-slate-950">
               Sign in with your Savt account
             </h1>
             <p className="mt-2 text-center text-sm leading-6 text-slate-600">
@@ -202,7 +202,7 @@ export function WebOtpEntry({
           </>
         ) : isOtp ? (
           <>
-            <h1 className="mt-3 text-center text-2xl font-black text-slate-950">
+            <h1 className="mt-3 text-center text-xl font-bold text-slate-950">
               Verify your mobile number
             </h1>
             <p className="mt-2 text-center text-sm leading-6 text-slate-600">
@@ -336,7 +336,7 @@ export function CustomerSessionBoundary({
             <span className="text-2xl">!</span>
           )}
         </div>
-        <h1 className="mt-5 text-2xl font-black text-slate-950">
+        <h1 className="mt-5 text-xl font-bold text-slate-950">
           {presentation.title}
         </h1>
         <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
@@ -351,7 +351,7 @@ export function CustomerSessionBoundary({
           <button
             type="button"
             onClick={() => void controller.retry()}
-            className="mt-6 min-h-12 w-full rounded-control bg-cks-primary px-5 text-sm font-black text-white shadow-button"
+            className="mt-6 min-h-12 w-full rounded-control bg-cks-primary px-5 text-sm font-semibold text-white shadow-button"
           >
             Try again
           </button>
@@ -359,7 +359,7 @@ export function CustomerSessionBoundary({
           <button
             type="button"
             onClick={() => window.history.back()}
-            className="mt-6 min-h-12 w-full rounded-[18px] bg-slate-950 px-5 text-sm font-black text-white"
+            className="mt-6 min-h-12 w-full rounded-[18px] bg-slate-950 px-5 text-sm font-semibold text-white"
           >
             Back to Savt
           </button>
@@ -378,7 +378,7 @@ export function StoreLoading() {
     >
       <strong className="text-2xl text-cks-primary">CKS Go</strong>
       <div className="delivery-setup__spinner" aria-hidden="true" />
-      <h1>Getting your store ready…</h1>
+      <h1>Getting CKS Go ready…</h1>
     </main>
   );
 }

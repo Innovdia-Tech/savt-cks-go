@@ -120,3 +120,7 @@ Support opens a separate browser context through `window.open` with `noopener,no
 | Save location            | Confirm location, complete details, tap Save | Address mutation, then assignment   | Return Home with updated delivery context                      | Keep uncommitted selection and show a safe error  |
 
 Autocomplete tokens exist only for one in-memory search interaction. Query changes abort stale requests; no query mutates an address, assignment, quote or payment. Confirmed coordinates stay hidden and do not change when the customer corrects address text. The picker excludes inactive addresses. No browser map credential is configured for UX02, so no map or pin canvas is rendered.
+
+## CUST-UX04 presentation refinement
+
+The canonical runtime tokens remain in `src/styles.css`. Shared Inter assets, neutral surfaces, CKS-red actions and the 20/16/14px title/section/body rhythm align the embedded experience with Savt. Browse renders the existing accumulated `homeCategories` ACTIVE directory; request fencing, category codes and outlet authority remain in `catalogue/state.ts`. No customer breadcrumb or category-directory pagination is rendered. Product names allow two lines and stable Add/stepper targets remain at least 44px. Orders navigation uses an outline receipt; PICK_AND_PACK renders Preparing your order. Customer review copy says total/prices/delivery rather than quote/assignment; API contracts, calculations and retry identity remain unchanged. Flutter continues to own embedded Back/Close/title.

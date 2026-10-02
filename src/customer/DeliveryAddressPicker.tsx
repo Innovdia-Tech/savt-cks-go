@@ -24,11 +24,13 @@ export function DeliveryAddressPicker({
   onBack,
   onManage,
   initialAdd = false,
+  embeddedHost = false,
 }: {
   onDone: () => void;
   onBack: () => void;
   onManage: () => void;
   initialAdd?: boolean;
+  embeddedHost?: boolean;
 }) {
   const { state, controller } = useCustomer();
   const checkout = useCheckout();
@@ -117,9 +119,11 @@ export function DeliveryAddressPicker({
 
   return (
     <main className="delivery-setup delivery-picker">
-      <button type="button" className="delivery-flow__back" onClick={onBack}>
-        ← Back to Home
-      </button>
+      {!embeddedHost && (
+        <button type="button" className="delivery-flow__back" onClick={onBack}>
+          ← Back to Home
+        </button>
+      )}
       <h1>Delivery address</h1>
       <p className="delivery-picker__intro">
         Choose where we should deliver your order.

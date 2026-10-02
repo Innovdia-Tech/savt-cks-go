@@ -38,7 +38,7 @@ describe("shared customer UI primitives", () => {
     ["AVAILABLE", "Available"],
     ["UNAVAILABLE", "Unavailable"],
     ["ORDER_RECEIVED", "Order received"],
-    ["PICK_AND_PACK", "Picking and packing"],
+    ["PICK_AND_PACK", "Preparing your order"],
     ["OUT_FOR_DELIVERY", "Out for delivery"],
     ["DELIVERED", "Delivered"],
     ["CANCELLED", "Cancelled"],

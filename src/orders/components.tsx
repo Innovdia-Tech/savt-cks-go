@@ -33,16 +33,18 @@ function StateCard({
   action,
   actionLabel,
   busy = false,
+  tone = "error",
 }: {
   title: string;
   message: string;
   action?: () => void;
   actionLabel?: string;
   busy?: boolean;
+  tone?: "empty" | "error";
 }) {
   return (
     <SystemState
-      tone={busy ? "loading" : action ? "error" : "empty"}
+      tone={busy ? "loading" : tone}
       title={title}
       description={message}
       actionLabel={actionLabel}
@@ -68,7 +70,7 @@ const stagePresentation: Record<
       "We have your order. The outlet will begin preparing your items.",
   },
   PICK_AND_PACK: {
-    title: "Pick & Pack",
+    title: "Preparing your order",
     explanation: "The outlet is selecting and packing your groceries.",
   },
   OUT_FOR_DELIVERY: {
@@ -134,13 +136,7 @@ export function OrdersScreen({
     if (state.listPhase === "idle") void controller.load();
   }, [state.listPhase, controller]);
   if (state.listPhase === "idle" || state.listPhase === "loading")
-    return (
-      <StateCard
-        title="Loading your orders"
-        message="Getting your latest order history from CKS Go."
-        busy
-      />
-    );
+    return <StateCard title="Loading your orders…" message="" busy />;
   if (state.listPhase === "session-expired")
     return (
       <StateCard
@@ -152,7 +148,7 @@ export function OrdersScreen({
     return (
       <StateCard
         title="Orders unavailable"
-        message="Your order history could not be loaded safely. Check your connection and try again."
+        message="We couldn’t load your orders. Check your connection and try again."
         action={() => void controller.refresh()}
         actionLabel="Try again"
       />
@@ -163,7 +159,8 @@ export function OrdersScreen({
       <>
         <StateCard
           title="No orders yet"
-          message="Completed checkout orders will appear here after CKS Go confirms payment and Order identity."
+          tone="empty"
+          message="Your CKS Go orders will appear here after checkout."
           action={onBrowse}
           actionLabel="Browse products"
         />
@@ -305,13 +302,7 @@ export function OrderDetailScreen({
   supportWhatsApp?: string;
 }) {
   if (state.detailPhase === "idle" || state.detailPhase === "loading")
-    return (
-      <StateCard
-        title="Loading order details"
-        message="Getting the customer-safe Order projection from CKS Go."
-        busy
-      />
-    );
+    return <StateCard title="Loading order details…" message="" busy />;
   if (state.detailPhase === "session-expired")
     return (
       <StateCard
@@ -323,7 +314,7 @@ export function OrderDetailScreen({
     return (
       <StateCard
         title="Order unavailable"
-        message="This order could not be found or loaded for this customer session."
+        message="We couldn’t load this order. Return to your orders and try again."
         action={onBack}
         actionLabel="Back to orders"
       />
@@ -374,9 +365,7 @@ export function OrderDetailScreen({
                     </time>
                   ) : reached || current ? (
                     <small>
-                      {current
-                        ? copy.explanation
-                        : "Stage confirmed; update time unavailable."}
+                      {current ? copy.explanation : "Update time unavailable."}
                     </small>
                   ) : null}
                 </div>
@@ -471,7 +460,7 @@ export function OrderDetailScreen({
           )}
           {state.receiptPhase === "error" && (
             <p className="order-action-error" role="alert">
-              The receipt could not be downloaded safely. Try again later.
+              We couldn’t download your receipt. Try again later.
             </p>
           )}
         </section>

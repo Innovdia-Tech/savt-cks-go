@@ -5,7 +5,8 @@ import {
   ChevronLeftIcon,
   GridIcon,
   HomeIcon,
-  TruckIcon,
+  ReceiptIcon,
+  ChevronRightIcon,
 } from "./Icons";
 import type { Outlet } from "../catalogue/contracts";
 import type { Screen } from "../types";
@@ -131,7 +132,7 @@ export function BasketSummaryBar({
       <span>
         Basket · {count} {count === 1 ? "item" : "items"}
       </span>
-      <strong>{subtotal}</strong>
+      <span className="basket-summary__total"><strong>{subtotal}</strong><ChevronRightIcon className="h-5 w-5" /></span>
     </button>
   );
 }
@@ -218,7 +219,7 @@ export function CartButton({
     <button
       type="button"
       onClick={onCart}
-      aria-label="Open basket"
+      aria-label={cartCount > 0 ? `Open basket, ${cartCount} ${cartCount === 1 ? "item" : "items"}` : "Open basket"}
       className="app-header__cart"
     >
       <BagIcon className="h-5 w-5" />
@@ -296,7 +297,7 @@ export function BottomNavigation({
       action: () => onNavigate("cart"),
       count: cartCount,
     },
-    { label: "Orders", icon: TruckIcon, action: () => onNavigate("tracking") },
+    { label: "Orders", icon: ReceiptIcon, action: () => onNavigate("tracking") },
   ];
 
   return (
@@ -318,7 +319,7 @@ export function BottomNavigation({
             }
           >
             <span className="bottom-navigation__icon" aria-hidden="true">
-              <Icon className="h-5 w-5" />
+              <Icon className="h-6 w-6" />
             </span>
             <span className="bottom-navigation__label">{item.label}</span>
             {!!item.count && item.label === "Basket" && (
