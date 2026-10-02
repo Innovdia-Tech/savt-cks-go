@@ -66,6 +66,28 @@ describe("shared customer UI primitives", () => {
     expect(html).toContain('aria-label="Clear search"');
   });
 
+  it.each(["", "Apple"])(
+    "renders only one app-owned clear action when the query %j has text",
+    (value) => {
+      const html = renderToStaticMarkup(
+        createElement(SearchField, {
+          id: "products",
+          label: "Search products",
+          value,
+          onChange: () => {},
+          onClear: () => {},
+        }),
+      );
+      expect(html.match(/aria-label="Clear search"/g) ?? []).toHaveLength(
+        value ? 1 : 0,
+      );
+      if (value)
+        expect(html).toMatch(
+          /aria-label="Clear search"[^>]*><span aria-hidden="true">×<\/span><\/button>/,
+        );
+    },
+  );
+
   it("keeps native keyboard search submission and clear without a visible submit button", () => {
     const html = renderToStaticMarkup(
       createElement(SearchField, {

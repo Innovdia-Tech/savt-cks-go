@@ -6,7 +6,8 @@ import type {
 } from "./contracts";
 import type { OrdersController, OrdersState } from "./state";
 import { SupportAction } from "../support/SupportAction";
-import { StatusBadge, SystemState } from "../components/ui";
+import { IconButton, StatusBadge, SystemState } from "../components/ui";
+import { ReceiptIcon, RefreshIcon } from "../components/Icons";
 
 type Actions = Pick<
   OrdersController,
@@ -118,17 +119,54 @@ function OrderCard({
   );
 }
 
-export function OrdersScreen({
+export function OrdersRefreshButton({
   state,
   controller,
-  onOpen,
-  onBrowse,
 }: {
+  state: OrdersState;
+  controller: Actions;
+}) {
+  const busy = state.listPhase === "idle" || state.listPhase === "loading";
+  return (
+    <IconButton
+      label="Refresh orders"
+      title="Refresh orders"
+      className="orders-header-refresh"
+      disabled={busy || state.listPhase === "session-expired"}
+      aria-busy={busy || undefined}
+      onClick={() => void controller.refresh()}
+    >
+      <RefreshIcon />
+    </IconButton>
+  );
+}
+
+type OrdersScreenProps = {
   state: OrdersState;
   controller: Actions;
   onOpen: (orderId: string) => void;
   onBrowse: () => void;
-}) {
+  supportWhatsApp?: string;
+};
+
+export function OrdersScreen({
+  supportWhatsApp = "",
+  ...props
+}: OrdersScreenProps) {
+  return (
+    <>
+      <SupportAction digits={supportWhatsApp} context="orders" />
+      <OrdersContent {...props} />
+    </>
+  );
+}
+
+function OrdersContent({
+  state,
+  controller,
+  onOpen,
+  onBrowse,
+}: OrdersScreenProps) {
   const [statusView, setStatusView] = useState<"current" | "history">(
     "current",
   );
@@ -156,21 +194,14 @@ export function OrdersScreen({
   const page = state.page;
   if (!page || (page.data.length === 0 && page.meta.total === 0))
     return (
-      <>
-        <StateCard
-          title="No orders yet"
-          tone="empty"
-          message="Your CKS Go orders will appear here after checkout."
-          action={onBrowse}
-          actionLabel="Browse products"
-        />
-        <button
-          className="order-refresh"
-          onClick={() => void controller.refresh()}
-        >
-          Refresh orders
-        </button>
-      </>
+      <SystemState
+        title="No orders yet"
+        tone="empty"
+        description="Your CKS Go orders will appear here after checkout."
+        icon={<ReceiptIcon className="h-7 w-7" />}
+        onAction={onBrowse}
+        actionLabel="Browse products"
+      />
     );
   const current = page.data.filter((order) =>
     currentOrderStages.includes(order.customerStage),
@@ -254,12 +285,6 @@ export function OrdersScreen({
           </button>
         </nav>
       )}
-      <button
-        className="order-refresh"
-        onClick={() => void controller.refresh()}
-      >
-        Refresh orders
-      </button>
     </div>
   );
 }

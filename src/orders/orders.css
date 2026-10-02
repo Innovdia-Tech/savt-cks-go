@@ -69,6 +69,14 @@
   gap: 12px;
   margin-top: 8px;
 }
+.orders-header-refresh {
+  border: 0;
+  color: var(--color-text-muted);
+  background: transparent;
+}
+.orders-header-refresh:not(:disabled):hover {
+  background: var(--color-surface-muted);
+}
 .orders-status-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -262,8 +262,37 @@ describe("customer orders presentation", () => {
     expect(html).toContain("No orders yet");
     expect(html).toContain("ui-system-state--empty");
     expect(html).toContain("Browse products");
-    expect(html).toContain("Refresh orders");
+    expect(html).toContain("<svg");
+    expect(html).not.toContain("Refresh orders");
   });
+
+  it.each([0, 1])(
+    "places general support before Orders content with %i orders",
+    (total) => {
+      const html = renderToStaticMarkup(
+        createElement(OrdersScreen, {
+          state: state({
+            page: total
+              ? page
+              : {
+                  data: [],
+                  meta: { page: 1, pageSize: 25, total: 0, totalPages: 0 },
+                },
+          }),
+          controller,
+          supportWhatsApp: "60123456789",
+          onOpen: () => {},
+          onBrowse: () => {},
+        } as never),
+      );
+      expect(html).toContain("Need help?");
+      expect(html).toContain("Get help</button>");
+      expect(html.indexOf("support-action")).toBeLessThan(
+        html.indexOf(total ? "orders-status-tabs" : "No orders yet"),
+      );
+      expect(html).not.toContain("Refresh orders");
+    },
+  );
 
   it("keeps navigation when a loaded page is empty but server total is nonzero", () => {
     const html = renderToStaticMarkup(

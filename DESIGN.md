@@ -98,6 +98,10 @@ Buttons/fields use 14px radii, cards 16px, chips/badges full pills, and sheets 2
 
 ## Components
 
+CUST-UX06 keeps one Home Categories action, “Browse all”, and removes the Featured products action and general Home help. General help is a compact white Orders row directly below the header, with the existing outline help icon and CKS-red action. Orders has one neutral 44px refresh icon in the web header; its zero-order state uses the receipt icon and centered Browse products action. Contextual delivery, payment-error and order-detail support retains its existing presentation and behavior.
+
+The shared SearchField owns its single clear control: a neutral small × inside the field, a transparent 44px target, and reserved right padding. Its scoped CSS suppresses WebKit cancel/decoration controls while preserving search input semantics, keyboard submission, focus, composition and debounce. Product detail uses 16px page insets, a white contained-media surface with the existing 20px sheet radius, separate unboxed product information, and one subtle metadata card. The existing 16px price role and sticky purchase owner remain canonical.
+
 - Primary button: solid CKS Red with white text, stable disabled/loading geometry and a visible CKS focus ring.
 - Secondary button: white/light surface, semantic border and dark text. Tertiary actions are restrained text buttons.
 - Product card: bordered white card, reserved image geometry, 14px name, CKS-red price/action, and only contract-supported availability. Reward chips appear only when reward data exists.

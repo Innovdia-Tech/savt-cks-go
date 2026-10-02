@@ -25,10 +25,18 @@ const fixture = vi.hoisted(() => ({
     categoryPage: 1,
     categoryHasNext: true,
     products: { data: [], meta: { total: 0 } },
+    detail: null as { data: import("./contracts").Detail } | null,
     assignment: null,
     readOnly: false,
   },
   customer: { listPhase: "ready", notice: null },
+  orders: {
+    listPhase: "ready",
+    page: {
+      data: [],
+      meta: { page: 1, pageSize: 25, total: 0, totalPages: 0 },
+    },
+  },
   address: {
     status: "ACTIVE",
     label: "Home",
@@ -51,7 +59,7 @@ vi.mock("../payment/context", () => ({
   usePayment: () => ({ state: { phase: "idle" }, controller: {} }),
 }));
 vi.mock("../orders/context", () => ({
-  useOrders: () => ({ state: {}, controller: {} }),
+  useOrders: () => ({ state: fixture.orders, controller: {} }),
 }));
 vi.mock("../customer/context", () => ({
   useCustomer: () => ({
@@ -63,6 +71,7 @@ vi.mock("../customer/context", () => ({
 
 beforeEach(() => {
   fixture.catalogue.categoryId = undefined;
+  fixture.catalogue.detail = null;
   vi.stubGlobal("window", {
     location: { hash: "#home", search: "" },
     matchMedia: () => ({ matches: true }),
@@ -70,7 +79,73 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 const render = () =>
-  renderToStaticMarkup(createElement(CatalogueApp, { embeddedHost: true }));
+  renderToStaticMarkup(
+    createElement(CatalogueApp, {
+      embeddedHost: true,
+      supportWhatsApp: "60123456789",
+    }),
+  );
+
+it("gives Home one Browse all action and keeps general help on Orders", () => {
+  const html = render();
+  expect(html.match(/>Browse all /g)).toHaveLength(1);
+  expect(html).not.toContain("See all");
+  expect(html).not.toContain("Get help");
+  expect(html).not.toContain("support-action");
+});
+
+it("puts one named refresh in the Orders header and general help directly below it", () => {
+  window.location.hash = "#orders";
+  const html = render();
+  const header = html.split("<header")[1]?.split("</header>")[0] ?? "";
+  expect(header).toContain('aria-label="Refresh orders"');
+  expect(html.match(/aria-label="Refresh orders"/g)).toHaveLength(1);
+  expect(html.indexOf("support-action")).toBeGreaterThan(
+    html.indexOf("</header>"),
+  );
+  expect(html.indexOf("support-action")).toBeLessThan(
+    html.indexOf("No orders yet"),
+  );
+});
+
+it("preserves authoritative product detail content and its purchase action", () => {
+  window.location.hash = "#detail/00000000-0000-4000-8000-000000000100";
+  fixture.catalogue.detail = {
+    data: {
+      productId: "00000000-0000-4000-8000-000000000100",
+      outletProductId: "00000000-0000-4000-8000-000000000200",
+      name: "Rice 1 kg",
+      imageUrl: "https://catalogue.example.com/media/rice.jpg",
+      category: { id: "pantry", name: "Pantry" },
+      subcategory: { id: "rice", name: "Rice and grains" },
+      brand: { id: "brand", name: "Example brand" },
+      uom: { code: "PACK", name: "Pack" },
+      packSize: "1 kg",
+      sellingPriceMinor: 1234,
+      currency: "MYR",
+      availability: "AVAILABLE",
+      description: "Store in a cool, dry place.",
+      storageType: "AMBIENT",
+    },
+  };
+  const html = render();
+  for (const text of [
+    "Rice 1 kg",
+    "1 kg",
+    "12.34",
+    "Store in a cool, dry place.",
+    "Pantry",
+    "Rice and grains",
+    "Example brand",
+    "Pack",
+    "ambient",
+    "Add to Basket",
+  ])
+    expect(html).toContain(text);
+  expect(html).toContain('src="https://catalogue.example.com/media/rice.jpg"');
+  expect(html).toContain('aria-labelledby="product-details-title"');
+  expect(html).not.toContain("support-action");
+});
 
 it("describes featured products without claiming personalization or duplicating native chrome", () => {
   const html = render();
@@ -98,7 +173,7 @@ it("renders exactly four Home shortcuts in fixed code order with backend labels 
     html.split('class="catalogue-category-tiles"')[1]?.split("</section>")[0] ??
     "";
   expect(html).toContain('id="home-categories-title">Categories');
-  expect(html).toContain("See all");
+  expect(html).toContain("Browse all");
   const expected = [
     ["Fresh Produce", "fresh-produce.webp"],
     ["Household", "household.webp"],

@@ -153,14 +153,15 @@ try {
     assert.equal(await support(page).count(), 0); // shopping usable while config loads
     assert.equal(await nav(page).count(), 4);
     release({ data: { whatsapp: "+60123456789" } });
+    await page.getByRole("button", { name: "Orders", exact: true }).click();
     await support(page).waitFor();
     assert.match(
-      await page.locator(".support-action--home").innerText(),
+      await page.locator(".support-action--orders").innerText(),
       /Need help\?\s*Get help/,
     );
     assert.equal(await nav(page).filter({ hasText: /help/i }).count(), 0);
     await checkUtility(page, support(page));
-    await capture(page, "home", viewport);
+    await capture(page, "orders", viewport);
     await support(page).focus();
     await support(page).press("Enter");
     assert.equal(
@@ -171,14 +172,18 @@ try {
       general,
     );
     assert.equal(await page.evaluate(() => window.__supportOpened.length), 0);
+    await page.getByRole("button", { name: "Home", exact: true }).click();
+    assert.equal(await support(page).count(), 0);
     await page
       .getByRole("button", { name: /^Add .+ to basket$/ })
       .first()
       .click();
     await page.locator(".basket-summary").waitFor();
     const basketSummary = await page.locator(".basket-summary").innerText();
+    await page.getByRole("button", { name: "Orders", exact: true }).click();
+    await support(page).waitFor();
     await checkUtility(page, support(page));
-    await capture(page, "home-with-basket", viewport);
+    await capture(page, "orders-with-basket", viewport);
     await generalHandoff(page);
     assert.equal(
       await page.locator(".basket-summary").innerText(),
@@ -207,7 +212,7 @@ try {
       ).searchParams.get("text"),
       "Hi CKS Go Support, I need help with my order CKSGO-0001.\n\nMy enquiry:",
     );
-    await page.getByRole("button", { name: "Home", exact: true }).click();
+    await page.getByRole("button", { name: "Orders", exact: true }).click();
     await support(page).waitFor();
     await page.evaluate(() => {
       delete window.SavtCksGoBridge;
@@ -361,7 +366,7 @@ try {
       await page.close();
     }
     console.log(
-      `PASS ${viewport.width}x${viewport.height}: A–G; Home, delivery/setup/confirm, order, failed/unavailable payment; ready/pending/paid excluded; basket preserved; external handoff/failure`,
+      `PASS ${viewport.width}x${viewport.height}: general Orders help; Home omission; delivery/setup/confirm, order, failed/unavailable payment; ready/pending/paid excluded; basket preserved; external handoff/failure`,
     );
   }
   for (const response of [
@@ -373,6 +378,7 @@ try {
       response,
     );
     await page.waitForLoadState("networkidle");
+    await page.getByRole("button", { name: "Orders", exact: true }).click();
     assert.equal(await support(page).count(), 0);
     assert.equal(await page.locator(".support-action").count(), 0);
     assert.deepEqual(errors, []);

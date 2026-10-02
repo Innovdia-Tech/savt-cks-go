@@ -120,26 +120,41 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
     },
     ref,
   ) {
+    const inputRef = useRef<HTMLInputElement>(null);
     const field = (
       <>
         <label htmlFor={id}>{label}</label>
         <div className="ui-search-field__control">
-          <span className="ui-search-field__icon" aria-hidden="true">
-            <SearchIcon />
-          </span>
-          <input
-            {...props}
-            id={id}
-            ref={ref}
-            type="search"
-            value={value}
-            onChange={onChange}
-          />
-          {value && (
-            <IconButton label="Clear search" onClick={onClear}>
-              ×
-            </IconButton>
-          )}
+          <div className="ui-search-field__input">
+            <span className="ui-search-field__icon" aria-hidden="true">
+              <SearchIcon />
+            </span>
+            <input
+              {...props}
+              id={id}
+              ref={(node) => {
+                inputRef.current = node;
+                if (typeof ref === "function") return ref(node);
+                if (ref) ref.current = node;
+              }}
+              type="search"
+              value={value}
+              onChange={onChange}
+            />
+            {value && (
+              <IconButton
+                className="ui-search-field__clear"
+                label="Clear search"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  onClear();
+                  inputRef.current?.focus({ preventScroll: true });
+                }}
+              >
+                <span aria-hidden="true">×</span>
+              </IconButton>
+            )}
+          </div>
           {onSubmit && submitControl === "button" && (
             <Button type="submit" variant="secondary">
               {submitLabel}

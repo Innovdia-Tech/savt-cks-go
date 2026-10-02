@@ -15,7 +15,7 @@ export function SupportAction({
 }: {
   digits: string;
   orderNumber?: string;
-  context?: "home" | "delivery" | "payment";
+  context?: "home" | "orders" | "delivery" | "payment";
 }) {
   const [failed, setFailed] = useState(false);
   const available = orderNumber
@@ -51,7 +51,7 @@ export function SupportAction({
           }
         >
           <HelpIcon />
-          {!orderNumber && context === "home"
+          {!orderNumber && (context === "home" || context === "orders")
             ? "Get help"
             : "Get help on WhatsApp"}
         </Button>
