@@ -1,3 +1,4 @@
+const paymentIntentId = "20000000-0000-4000-8000-000000000002";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   BrowserBridgeAdapter,
@@ -136,6 +137,7 @@ describe("FlutterBridgeAdapter", () => {
     await expect(
       bridge.requestPaymentHandoff(
         "https://payments.example.test/checkout/approved",
+        paymentIntentId,
       ),
     ).resolves.toBeUndefined();
 
@@ -144,6 +146,7 @@ describe("FlutterBridgeAdapter", () => {
       type: "payment-handoff",
       payload: {
         checkoutUrl: "https://payments.example.test/checkout/approved",
+        paymentIntentId,
       },
     });
   });
@@ -156,9 +159,9 @@ describe("FlutterBridgeAdapter", () => {
   ])("rejects unsafe payment handoff URL %s before posting", async (url) => {
     const host = fixture();
     const bridge = new FlutterBridgeAdapter(host.environment);
-    await expect(bridge.requestPaymentHandoff(url)).rejects.toEqual(
-      new BridgeError("invalid"),
-    );
+    await expect(
+      bridge.requestPaymentHandoff(url, paymentIntentId),
+    ).rejects.toEqual(new BridgeError("invalid"));
     expect(host.postMessage).not.toHaveBeenCalled();
   });
 
@@ -168,7 +171,10 @@ describe("FlutterBridgeAdapter", () => {
       removeHandoffListener: () => undefined,
     });
     await expect(
-      unavailable.requestPaymentHandoff("https://payments.example.test/pay"),
+      unavailable.requestPaymentHandoff(
+        "https://payments.example.test/pay",
+        paymentIntentId,
+      ),
     ).rejects.toEqual(new BridgeError("unavailable"));
 
     const host = fixture();
@@ -178,8 +184,36 @@ describe("FlutterBridgeAdapter", () => {
     await expect(
       new FlutterBridgeAdapter(host.environment).requestPaymentHandoff(
         "https://payments.example.test/pay",
+        paymentIntentId,
       ),
     ).rejects.toEqual(new BridgeError("unavailable"));
+  });
+});
+
+describe("payment recovery identity", () => {
+  it("clears recovery using only the opaque ID", () => {
+    const host = fixture();
+    new FlutterBridgeAdapter(host.environment).clearPaymentRecovery(
+      paymentIntentId,
+    );
+    expect(JSON.parse(host.postMessage.mock.calls[0]![0])).toEqual({
+      type: "payment-recovery-clear",
+      payload: { paymentIntentId },
+    });
+  });
+  it.each([
+    "",
+    "not-a-uuid",
+    "20000000-0000-4000-8000-000000000002?status=PAID",
+  ])("rejects malformed payment ID %s before native posting", async (id) => {
+    const host = fixture();
+    await expect(
+      new FlutterBridgeAdapter(host.environment).requestPaymentHandoff(
+        "https://payments.example.test/pay",
+        id,
+      ),
+    ).rejects.toEqual(new BridgeError("invalid"));
+    expect(host.postMessage).not.toHaveBeenCalled();
   });
 });
 
@@ -204,17 +238,22 @@ describe("DevelopmentBridgeAdapter", () => {
     const bridge = new DevelopmentBridgeAdapter(true, false);
     await bridge.requestPaymentHandoff(
       "https://payments.example.test/checkout/approved",
+      paymentIntentId,
     );
     expect(bridge.getPaymentHandoffs()).toEqual([
       "https://payments.example.test/checkout/approved",
     ]);
     await expect(
-      bridge.requestPaymentHandoff("http://payments.example.test/checkout"),
+      bridge.requestPaymentHandoff(
+        "http://payments.example.test/checkout",
+        paymentIntentId,
+      ),
     ).rejects.toEqual(new BridgeError("invalid"));
 
     await expect(
       new DevelopmentBridgeAdapter(false, false).requestPaymentHandoff(
         "https://payments.example.test/checkout",
+        paymentIntentId,
       ),
     ).rejects.toEqual(new BridgeError("unavailable"));
   });
@@ -223,11 +262,13 @@ describe("DevelopmentBridgeAdapter", () => {
     const bridge = new DevelopmentBridgeAdapter(true, false);
     bridge.failNextPaymentHandoff();
     const url = "https://payments.example.test/checkout/approved";
-    await expect(bridge.requestPaymentHandoff(url)).rejects.toEqual(
-      new BridgeError("unavailable"),
-    );
+    await expect(
+      bridge.requestPaymentHandoff(url, paymentIntentId),
+    ).rejects.toEqual(new BridgeError("unavailable"));
     expect(bridge.getPaymentHandoffs()).toEqual([]);
-    await expect(bridge.requestPaymentHandoff(url)).resolves.toBeUndefined();
+    await expect(
+      bridge.requestPaymentHandoff(url, paymentIntentId),
+    ).resolves.toBeUndefined();
     expect(bridge.getPaymentHandoffs()).toEqual([url]);
   });
 });
@@ -259,12 +300,16 @@ describe("standalone browser payment handoff", () => {
     );
     await bridge.requestPaymentHandoff(
       "https://payments.example.test/checkout/approved",
+      paymentIntentId,
     );
     expect(navigate).toHaveBeenCalledExactlyOnceWith(
       "https://payments.example.test/checkout/approved",
     );
     await expect(
-      bridge.requestPaymentHandoff("http://payments.example.test/pay"),
+      bridge.requestPaymentHandoff(
+        "http://payments.example.test/pay",
+        paymentIntentId,
+      ),
     ).rejects.toEqual(new BridgeError("invalid"));
     expect(navigate).toHaveBeenCalledTimes(1);
   });
@@ -274,7 +319,10 @@ describe("standalone browser payment handoff", () => {
       throw new Error("private URL");
     });
     await expect(
-      bridge.requestPaymentHandoff("https://payments.example.test/pay"),
+      bridge.requestPaymentHandoff(
+        "https://payments.example.test/pay",
+        paymentIntentId,
+      ),
     ).rejects.toEqual(new BridgeError("unavailable"));
   });
 });
@@ -303,7 +351,10 @@ describe("local simulator browser payment handoff", () => {
       open,
     });
     await expect(
-      new BrowserBridgeAdapter(navigate).requestPaymentHandoff(checkoutUrl),
+      new BrowserBridgeAdapter(navigate).requestPaymentHandoff(
+        checkoutUrl,
+        paymentIntentId,
+      ),
     ).resolves.toBeUndefined();
     expect(open).toHaveBeenCalledExactlyOnceWith(
       checkoutUrl,
@@ -322,7 +373,10 @@ describe("local simulator browser payment handoff", () => {
       },
     });
     await expect(
-      new BrowserBridgeAdapter(navigate).requestPaymentHandoff(checkoutUrl),
+      new BrowserBridgeAdapter(navigate).requestPaymentHandoff(
+        checkoutUrl,
+        paymentIntentId,
+      ),
     ).rejects.toEqual(new BridgeError("unavailable"));
     expect(navigate).not.toHaveBeenCalled();
   });
@@ -336,6 +390,7 @@ describe("local simulator browser payment handoff", () => {
     });
     await new BrowserBridgeAdapter(navigate).requestPaymentHandoff(
       "https://payments.example.test/checkout/approved",
+      paymentIntentId,
     );
     expect(navigate).toHaveBeenCalledExactlyOnceWith(
       "https://payments.example.test/checkout/approved",

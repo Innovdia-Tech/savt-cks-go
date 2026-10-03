@@ -1,5 +1,16 @@
 # Customer UI contract
 
+## FE-FINAL01 native payment return recovery
+
+The FE-FINAL01 brief supersedes PAY06B's lack of recovery after app/WebView
+destruction. Flutter persists only a CKS UUID before external checkout. Cold
+return supplies that UUID to the authenticated CKS payment status GET. `CartScreen`
+renders the canonical `PaymentPanel` even when basket lines were lost on cold
+start. It displays backend status and existing status/retry/order-detail actions;
+it does not invent basket lines, amounts or successful payment evidence.
+Warm return retains the host and its existing payment observation. Existing
+payment finality, styles and redaction rules remain authoritative.
+
 ## CUST-UX06 Android pilot polish
 
 The approved CUST-UX06 brief supersedes the earlier general Home-help placement. `CatalogueApp` keeps Categories → Browse all → all authoritative Browse categories/products, and omits the Featured products CTA and general Home help. `OrdersScreen` reuses `SupportAction` through the `orders` variant immediately below the web Orders header. The fixed general enquiry, backend support config, fail-closed behavior and external handoff remain unchanged. Delivery, genuine payment-error and order-detail support keep their established owners.

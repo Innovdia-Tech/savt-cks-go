@@ -36,12 +36,17 @@ const Context = createContext<PaymentController | null>(null);
 
 export function PaymentProvider({
   controller,
+  initialPaymentIntentId = null,
   children,
 }: {
   controller: PaymentController;
+  initialPaymentIntentId?: string | null;
   children: ReactNode;
 }) {
   const checkout = useCheckout();
+  useEffect(() => {
+    if (initialPaymentIntentId) void controller.restore(initialPaymentIntentId);
+  }, [controller, initialPaymentIntentId]);
   useEffect(() => {
     controller.syncQuote(checkout.state.quote, checkout.state.quotePhase);
   }, [controller, checkout.state.quote, checkout.state.quotePhase]);

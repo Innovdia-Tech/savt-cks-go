@@ -110,6 +110,30 @@ For local simulator acceptance, explicitly set `VITE_CKS_GO_LOCAL_PAYMENT_SIMULA
 
 External return, focus and visibility trigger backend observation only. PENDING, FAILED and PAID_PROCESSING remain non-confirming. The customer sees “Order Confirmed” only for PAID with strict backend-projected Order identity. Logout/session loss clears payment memory and fences late asynchronous completion. CUST03B adds a link from that exact confirmed state to backend-backed order detail without changing this finality rule.
 
+### Native return recovery (FE-FINAL01)
+
+The native `payment-handoff` payload is exactly `{ checkoutUrl, paymentIntentId }`.
+The ID is the existing opaque CKS UUIDv4. Flutter validates both values and saves
+only that UUID in its CKS-only recovery preference before external navigation.
+No amount, payment/order state, credentials or Savt member identity are included.
+
+The merchant return target is
+`https://api-prod.savt.com.my/app?action=cks-go-payment-return`. The link carries
+navigation only. Warm returns reveal the existing CKS host and use its existing
+visibility/status observation. Cold returns launch the configured trusted CKS URL
+with a UUID-only fragment, consumed and removed before rendering. After native
+session authentication, the payment provider restores status through the existing
+CKS payment GET; it obtains checkout reference and result from that response.
+
+The web sends `{ type: "payment-recovery-clear", payload: { paymentIntentId } }`
+only after an authoritative terminal payment state. Pending, paid-processing,
+transport failures and process death retain recovery. Flutter also clears it at
+Savt logout, account switch and other existing session boundaries.
+
+Railway is unchanged by the source repair. After client rollout, configure
+`SAVT_PAYMENT_RETURN_URL` to the target above; payment intents already created
+retain their stored return URL.
+
 ## Customer order history and tracking (CUST03B)
 
 The customer web calls CKS Go's `GET /api/v1/customer/orders` and `GET /api/v1/customer/orders/:orderId`. It uses the customer-safe receipt download path returned by the strict order-detail contract. The browser never creates or cancels an Order, invents a customer stage, derives fulfilment authority, calls a payment provider, or presents internal operational fields.

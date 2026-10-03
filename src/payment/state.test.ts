@@ -88,7 +88,8 @@ const fixture = (
       }),
   };
   const bridge = {
-    requestPaymentHandoff: vi.fn<(url: string) => Promise<void>>(),
+    requestPaymentHandoff:
+      vi.fn<(url: string, intent: string) => Promise<void>>(),
   };
   const session = new SessionFixture();
   const freeze = vi.fn(() => true);
@@ -109,6 +110,102 @@ const fixture = (
 };
 
 describe("PaymentController", () => {
+  it("retains recovery when stale FAILED follows received payment evidence", async () => {
+    const { controller, bridge, api } = fixture();
+    const clear = vi.fn();
+    Object.assign(bridge, { clearPaymentRecovery: clear });
+    api.result
+      .mockResolvedValueOnce(result("PAID_PROCESSING"))
+      .mockResolvedValue(result("FAILED"));
+    await controller.restore(paymentIntentId);
+    expect(controller.getSnapshot().phase).toBe("paid-processing");
+    expect(clear).not.toHaveBeenCalled();
+  });
+  it("restores only an opaque intent and reads authoritative backend status without creating payment", async () => {
+    const { controller, api, bridge } = fixture();
+    const read = deferred<PaymentResult>();
+    api.result.mockReturnValueOnce(read.promise);
+    const restoring = controller.restore(paymentIntentId);
+    expect(controller.getSnapshot()).toMatchObject({
+      phase: "checking",
+      paymentIntentId,
+      order: null,
+    });
+    read.resolve(result("PENDING"));
+    await restoring;
+    expect(api.result).toHaveBeenCalledWith(paymentIntentId);
+    expect(controller.getSnapshot().phase).toBe("retryable-pending");
+    expect(api.create).not.toHaveBeenCalled();
+    expect(bridge.requestPaymentHandoff).not.toHaveBeenCalled();
+  });
+
+  it.each(["PAID", "FAILED", "PAID_PROCESSING"] as const)(
+    "uses backend %s evidence for cold recovery",
+    async (status) => {
+      const { controller, api } = fixture();
+      api.result.mockResolvedValue(result(status));
+      await controller.restore(paymentIntentId);
+      expect(controller.getSnapshot().phase).toBe(
+        status === "PAID"
+          ? "paid"
+          : status === "FAILED"
+            ? "failed"
+            : "paid-processing",
+      );
+    },
+  );
+
+  it("rejects malformed recovery IDs without calling the backend", async () => {
+    const { controller, api } = fixture();
+    await expect(controller.restore("status=PAID")).rejects.toMatchObject({
+      code: "VALIDATION_FAILED",
+    });
+    expect(api.result).not.toHaveBeenCalled();
+  });
+
+  it("discards cold recovery evidence after session loss", async () => {
+    const { controller, api, session } = fixture();
+    const read = deferred<PaymentResult>();
+    api.result.mockReturnValueOnce(read.promise);
+    const restoring = controller.restore(paymentIntentId);
+    session.set("expired");
+    read.resolve(result("PAID"));
+    await restoring;
+    expect(controller.getSnapshot()).toMatchObject({
+      phase: "session-expired",
+      paymentIntentId: null,
+      order: null,
+    });
+  });
+
+  it.each(["PENDING", "PAID_PROCESSING", "PAID", "FAILED"] as const)(
+    "clears native recovery only for backend terminal %s",
+    async (status) => {
+      const { controller, bridge, api } = fixture();
+      const clear = vi.fn();
+      Object.assign(bridge, { clearPaymentRecovery: clear });
+      api.result.mockResolvedValue(result(status));
+      await controller.restore(paymentIntentId);
+      if (status === "PAID" || status === "FAILED")
+        expect(clear).toHaveBeenCalledExactlyOnceWith(paymentIntentId);
+      else expect(clear).not.toHaveBeenCalled();
+    },
+  );
+
+  it("retains recovery and rejects malformed paid backend evidence", async () => {
+    const { controller, bridge, api } = fixture();
+    const clear = vi.fn();
+    Object.assign(bridge, { clearPaymentRecovery: clear });
+    api.result.mockResolvedValue(result("PAID", { order: null }));
+    await controller.restore(paymentIntentId);
+    expect(controller.getSnapshot()).toMatchObject({
+      phase: "error",
+      error: "INVALID_RESPONSE",
+      order: null,
+    });
+    expect(clear).not.toHaveBeenCalled();
+  });
+
   it.each(["PENDING", "PAID"] as const)(
     "ignores an old third return GET while a new checkout observes %s",
     async (newResult) => {
@@ -202,8 +299,8 @@ describe("PaymentController", () => {
       expect(api.create).toHaveBeenCalledTimes(2);
       expect(api.retry).not.toHaveBeenCalled();
       expect(bridge.requestPaymentHandoff.mock.calls).toEqual([
-        [checkoutUrl],
-        [newCheckoutUrl],
+        [checkoutUrl, paymentIntentId],
+        [newCheckoutUrl, successor],
       ]);
       unsubscribe();
     },
@@ -366,8 +463,8 @@ describe("PaymentController", () => {
       paymentIntentId: successor,
     });
     expect(bridge.requestPaymentHandoff.mock.calls).toEqual([
-      [checkoutUrl],
-      [newCheckoutUrl],
+      [checkoutUrl, paymentIntentId],
+      [newCheckoutUrl, successor],
     ]);
     await controller.checkStatus();
     expect(api.result).toHaveBeenLastCalledWith(successor);
@@ -559,9 +656,9 @@ describe("PaymentController", () => {
     expect(controller.getSnapshot().phase).toBe("handoff-error");
     await controller.reopen();
     expect(bridge.requestPaymentHandoff.mock.calls).toEqual([
-      [checkoutUrl],
-      [newCheckoutUrl],
-      [newCheckoutUrl],
+      [checkoutUrl, paymentIntentId],
+      [newCheckoutUrl, successor],
+      [newCheckoutUrl, successor],
     ]);
     expect(api.retry).toHaveBeenCalledOnce();
   });
@@ -586,7 +683,10 @@ describe("PaymentController", () => {
     await controller.initiate();
     expect(freeze).toHaveBeenCalledWith(quoteId);
     expect(api.create).toHaveBeenCalledWith(quoteId, "Q".repeat(43), key);
-    expect(bridge.requestPaymentHandoff).toHaveBeenCalledWith(checkoutUrl);
+    expect(bridge.requestPaymentHandoff).toHaveBeenCalledWith(
+      checkoutUrl,
+      paymentIntentId,
+    );
     expect(controller.getSnapshot()).toEqual({
       phase: "pending",
       paymentIntentId,
