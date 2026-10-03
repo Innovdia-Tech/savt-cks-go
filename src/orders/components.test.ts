@@ -442,6 +442,7 @@ describe("customer orders presentation", () => {
     const receipt = {
       ...detail,
       canCancel: false,
+      milestones: { ...detail.milestones, completedAt: at },
       receipt: {
         receiptAvailable: true,
         receiptReference: "CKS-20260921-0001",
@@ -452,12 +453,16 @@ describe("customer orders presentation", () => {
     } as OrderDetail;
     const html = renderToStaticMarkup(
       createElement(OrderDetailScreen, {
-        state: state({ detail: receipt }),
+        state: state({
+          detail: receipt,
+          documentsPhase: "ready",
+          documents: documents(),
+        }),
         controller,
         onBack: () => {},
       } as never),
     );
-    expect(html).toContain("Download receipt");
+    expect(html).toContain("Download Final Sales Receipt");
     expect(html).not.toContain(receipt.receipt.downloadPath!);
     expect(html).not.toContain("Estimate unavailable");
   });
@@ -651,7 +656,7 @@ const documents = (id = orderId) => ({
   finalSalesReceipt: null,
 });
 
-describe("Payment Receipt presentation", () => {
+describe("customer receipt presentation", () => {
   const receiptState = (patch = {}) =>
     state({
       documentsPhase: "ready",
@@ -670,25 +675,104 @@ describe("Payment Receipt presentation", () => {
       } as never),
     );
 
-  it("shows a secondary Payment Receipt action and explains normal final receipt unavailability", () => {
+  it("offers the paid-order receipt with its authoritative total immediately", () => {
     const html = render();
-    expect(html).toContain("Documents");
+    expect(html).toContain(">Receipt</h3>");
     expect(html).toContain("Payment received");
-    expect(html).toContain("Download Payment Receipt");
-    expect(html).toContain("Final Receipt");
-    expect(html).toContain("Available after your order is completed");
+    const receipt = html.match(
+      /<section[^>]*aria-labelledby="order-receipt-title"[\s\S]*?<\/section>/,
+    )?.[0];
+    expect(receipt).toMatch(/RM\s*45\.90/);
+    expect(receipt).not.toMatch(/RM\s*35\.00/);
+    expect(html).toContain("Download Receipt");
+    expect(html).not.toContain("Payment Receipt");
+    expect(html).not.toContain("Final Receipt");
+    expect(html).not.toContain("Final Sales Receipt");
+    expect(html).not.toContain("Available after your order is completed");
     expect(html).not.toContain("FINAL_RECEIPT_NOT_READY");
     expect(html).not.toContain(documents().paymentReceipt.downloadPath);
-    expect(html).not.toMatch(/customer-primary[^>]*>Download Payment Receipt/);
+  });
+
+  it.each([
+    "ORDER_RECEIVED",
+    "PICK_AND_PACK",
+    "OUT_FOR_DELIVERY",
+    "DELIVERED",
+  ] as const)(
+    "hides the final document before completion at %s, even with a stale capability",
+    (customerStage) => {
+      const html = render({
+        detail: {
+          ...detail,
+          customerStage,
+          receipt: {
+            receiptAvailable: true,
+            receiptReference: detail.orderNumber,
+            issuedAt: at,
+            metadataPath: `/api/v1/orders/${orderId}/receipt`,
+            downloadPath: `/api/v1/orders/${orderId}/receipt/download`,
+          },
+        },
+      });
+      expect(html).toContain("Download Receipt");
+      expect(html).not.toContain("Final Sales Receipt");
+      expect(html).not.toContain("Final Receipt");
+    },
+  );
+
+  const completed = {
+    ...detail,
+    customerStage: "DELIVERED" as const,
+    milestones: { ...detail.milestones, completedAt: at },
+    receipt: {
+      receiptAvailable: true,
+      receiptReference: detail.orderNumber,
+      issuedAt: at,
+      metadataPath: `/api/v1/orders/${orderId}/receipt`,
+      downloadPath: `/api/v1/orders/${orderId}/receipt/download`,
+    },
+  };
+
+  it("keeps the normal receipt and adds a separate secondary final document after completion", () => {
+    const html = render({ detail: completed });
+    expect(html).toContain(">Receipt</h3>");
+    expect(html).toContain("Payment received");
+    expect(html).toContain("Download Receipt");
+    expect(html).toContain(">Final Sales Receipt</h3>");
+    expect(html).toContain("Final fulfilled-order record");
+    expect(html).toContain("Download Final Sales Receipt");
+    expect(html.indexOf("Download Receipt")).toBeLessThan(
+      html.indexOf("Final Sales Receipt"),
+    );
+  });
+
+  it("leaves the normal receipt downloadable while the completed-order final document is being prepared", () => {
+    const html = render({ detail: { ...completed, receipt: detail.receipt } });
+    expect(html).toContain("Download Receipt");
+    expect(html).toContain("Final Sales Receipt");
+    expect(html).not.toContain("Download Final Sales Receipt");
+  });
+
+  it("offers receipt recovery when a successful availability read has no receipt capability", () => {
+    const html = render({
+      detail: completed,
+      documents: {
+        ...documents(),
+        paymentReceiptAvailable: false,
+        paymentReceipt: null,
+      },
+    });
+    expect(html).toContain("Receipt temporarily unavailable");
+    expect(html).toContain("Try again");
+    expect(html).not.toContain("Download Receipt");
+    expect(html).not.toContain("Final Sales Receipt");
   });
 
   it("announces pending work and disables its download action", () => {
     const html = render({ paymentReceiptPhase: "downloading" });
-    expect(html).toContain("Preparing Payment Receipt…");
+    expect(html).toContain("Preparing receipt…");
     expect(html).toContain('aria-busy="true"');
-    expect(html).toMatch(
-      /<button[^>]*disabled=""[^>]*>Preparing Payment Receipt…/,
-    );
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Preparing receipt…/);
   });
 
   it("offers safe explicit retry without rendering backend errors", () => {
@@ -696,8 +780,10 @@ describe("Payment Receipt presentation", () => {
       paymentReceiptPhase: "error",
       paymentReceiptError: "PAYMENT_RECEIPT_INTEGRITY_FAILED",
     });
-    expect(html).toContain("Try downloading again");
-    expect(html).toContain("We couldn’t download your Payment Receipt");
+    expect(html).toContain("Download Receipt");
+    expect(html).toContain(
+      "We couldn’t download your receipt. Please try again.",
+    );
     expect(html).not.toContain("PAYMENT_RECEIPT_INTEGRITY_FAILED");
   });
 
@@ -707,9 +793,31 @@ describe("Payment Receipt presentation", () => {
       const html = render({ documentsPhase, documents: null });
       expect(html).toContain("Where your order is");
       expect(html).toContain(
-        documentsPhase === "loading" ? "Checking your documents…" : "Try again",
+        documentsPhase === "loading" ? "Loading your receipt…" : "Try again",
       );
-      expect(html).not.toContain("Download Payment Receipt");
+      expect(html).not.toContain("Download Receipt");
+      expect(html).not.toContain("Final Sales Receipt");
+    },
+  );
+
+  it.each([detail, completed])(
+    "shows only receipt-specific recovery when metadata fails",
+    (order) => {
+      const html = render({
+        detail: order,
+        documentsPhase: "error",
+        documents: null,
+      });
+      expect(html).toContain("Receipt temporarily unavailable");
+      expect(html).toContain(
+        "We couldn’t load your receipt. Please try again.",
+      );
+      expect(html).toContain("Try again");
+      expect(html).not.toContain("Documents");
+      expect(html).not.toContain("Final Receipt");
+      expect(html).not.toContain("Final Sales Receipt");
+      expect(html).toContain("Where your order is");
+      expect(html).toContain("Grand total");
     },
   );
 });

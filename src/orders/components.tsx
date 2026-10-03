@@ -344,94 +344,90 @@ function OrderDocumentsSection({
   const paymentAvailable =
     state.documentsPhase === "ready" &&
     state.documents?.paymentReceiptAvailable;
+  const receiptUnavailable =
+    state.documentsPhase === "error" ||
+    (state.documentsPhase === "ready" && !paymentAvailable);
+  const showFinalReceipt =
+    state.documentsPhase === "ready" &&
+    !receiptUnavailable &&
+    Boolean(state.detail?.milestones.completedAt);
   const finalAvailable = state.detail?.receipt.receiptAvailable;
   return (
-    <section
-      className="order-section order-documents"
-      aria-labelledby="order-documents-title"
-    >
-      <h3 id="order-documents-title">Documents</h3>
-      {(state.documentsPhase === "idle" ||
-        state.documentsPhase === "loading") && (
-        <p role="status">Checking your documents…</p>
-      )}
-      {state.documentsPhase === "error" && (
-        <div>
-          <p role="alert">
-            We couldn’t check your documents. Please try again.
-          </p>
-          <button
-            className="customer-button"
-            onClick={() => void controller.refreshDocuments()}
-          >
-            Try again
-          </button>
-        </div>
-      )}
-      {state.documentsPhase === "ready" && (
-        <div className="order-document">
-          <h4>Payment Receipt</h4>
-          <p>
-            {paymentAvailable
-              ? "Payment received"
-              : "Your Payment Receipt is not available yet."}
-          </p>
-          {paymentAvailable ? (
+    <>
+      <section
+        className="order-section order-documents"
+        aria-labelledby="order-receipt-title"
+      >
+        <h3 id="order-receipt-title">
+          {receiptUnavailable ? "Receipt temporarily unavailable" : "Receipt"}
+        </h3>
+        {(state.documentsPhase === "idle" ||
+          state.documentsPhase === "loading") && (
+          <p role="status">Loading your receipt…</p>
+        )}
+        {receiptUnavailable && (
+          <div>
+            <p role="alert">We couldn’t load your receipt. Please try again.</p>
             <button
               className="customer-button"
+              onClick={() => void controller.refreshDocuments()}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+        {paymentAvailable && (
+          <div className="order-document">
+            <p>Payment received</p>
+            <strong>{money(state.detail!.money.grandTotalMinor)}</strong>
+            <button
+              className="customer-button customer-primary"
               disabled={state.paymentReceiptPhase === "downloading"}
               aria-busy={state.paymentReceiptPhase === "downloading"}
               onClick={() => void saveReceipt(controller, true)}
             >
               {state.paymentReceiptPhase === "downloading"
-                ? "Preparing Payment Receipt…"
-                : state.paymentReceiptPhase === "error"
-                  ? "Try downloading again"
-                  : "Download Payment Receipt"}
+                ? "Preparing receipt…"
+                : "Download Receipt"}
             </button>
-          ) : (
+            {state.paymentReceiptPhase === "error" && (
+              <p className="order-action-error" role="alert">
+                We couldn’t download your receipt. Please try again.
+              </p>
+            )}
+          </div>
+        )}
+      </section>
+      {showFinalReceipt && (
+        <section
+          className="order-section order-documents"
+          aria-labelledby="order-final-receipt-title"
+        >
+          <h3 id="order-final-receipt-title">Final Sales Receipt</h3>
+          <p>Final fulfilled-order record</p>
+          {finalAvailable && (
             <button
               className="customer-button"
-              onClick={() => void controller.refreshDocuments()}
+              disabled={state.receiptPhase === "downloading"}
+              aria-busy={state.receiptPhase === "downloading"}
+              onClick={() => void saveReceipt(controller)}
             >
-              Check again
+              {state.receiptPhase === "downloading"
+                ? "Preparing Final Sales Receipt…"
+                : "Download Final Sales Receipt"}
             </button>
           )}
-          {state.paymentReceiptPhase === "error" && (
+          {!finalAvailable && (
+            <p role="status">Your Final Sales Receipt is being prepared.</p>
+          )}
+          {state.receiptPhase === "error" && (
             <p className="order-action-error" role="alert">
-              We couldn’t download your Payment Receipt. Please try again.
+              We couldn’t download your Final Sales Receipt. Please try again.
             </p>
           )}
-        </div>
+        </section>
       )}
-      <div className="order-document">
-        <h4>Final Receipt</h4>
-        <p>
-          {finalAvailable
-            ? "Your final order receipt is ready."
-            : state.detail?.milestones.completedAt
-              ? "Your final receipt is being prepared."
-              : "Available after your order is completed"}
-        </p>
-        {finalAvailable && (
-          <button
-            className="customer-button"
-            disabled={state.receiptPhase === "downloading"}
-            aria-busy={state.receiptPhase === "downloading"}
-            onClick={() => void saveReceipt(controller)}
-          >
-            {state.receiptPhase === "downloading"
-              ? "Preparing receipt…"
-              : "Download receipt"}
-          </button>
-        )}
-        {state.receiptPhase === "error" && (
-          <p className="order-action-error" role="alert">
-            We couldn’t download your receipt. Try again later.
-          </p>
-        )}
-      </div>
-    </section>
+    </>
   );
 }
 
