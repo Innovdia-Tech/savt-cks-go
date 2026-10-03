@@ -80,7 +80,10 @@
 .orders-status-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  border-bottom: 1px solid #dce5eb;
+  border: 1px solid #dce5eb;
+  border-radius: 12px;
+  background: var(--color-surface);
+  overflow: hidden;
 }
 .orders-status-tabs button {
   min-height: 48px;
@@ -93,6 +96,9 @@
 .orders-status-tabs button[aria-pressed="true"] {
   border-color: var(--color-cks-primary);
   color: var(--color-cks-primary);
+}
+.orders-status-tabs button:focus-visible {
+  outline-offset: -3px;
 }
 .order-card.order-card--shopping {
   position: relative;
@@ -288,9 +294,9 @@
   color: var(--color-text);
 }
 .order-detail-stack--shopping .order-detail-hero {
-  border: 0;
-  border-radius: 0;
-  padding: 4px 0 8px;
+  border: 1px solid #dce5eb;
+  border-radius: 12px;
+  padding: 12px;
 }
 .order-detail-stack--shopping .order-detail-hero h2 {
   font-size: 17px;

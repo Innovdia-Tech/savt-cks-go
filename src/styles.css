@@ -73,6 +73,8 @@
   justify-content: space-between;
 }
 .support-action--orders {
+  border: 1px solid #dce5eb;
+  border-radius: 12px;
   background: var(--color-surface);
   padding: 0 var(--space-2);
 }
