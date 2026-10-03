@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import type { PaymentController, PaymentState } from "./state";
-import { ClockIcon } from "../components/Icons";
+import { CheckIcon, ClockIcon } from "../components/Icons";
 import { SupportAction } from "../support/SupportAction";
 import { useSupportWhatsApp } from "../support/context";
+import { isLocalPaymentSimulatorBrowserEnabled } from "./local-simulator";
 
 type PaymentActions = Pick<
   PaymentController,
@@ -39,19 +40,23 @@ export function PaymentPanel({
   if (state.phase === "paid" && state.order)
     return (
       <section className="payment-card payment-success" aria-live="polite">
-        <p className="quote-eyebrow">Payment successful</p>
-        <h2>Order confirmed</h2>
-        <p>Payment is complete and your CKS Go order is ready to track.</p>
+        <h2>
+          <CheckIcon className="h-6 w-6" /> Order confirmed
+        </h2>
         <dl className="payment-evidence">
           <dt>Order number</dt>
           <dd>{state.order.orderNumber}</dd>
         </dl>
+        <p>
+          Payment received. We’ve received your order. The outlet will prepare
+          it shortly.
+        </p>
         {onViewOrder && (
           <button
             className={action}
             onClick={() => onViewOrder(state.order!.orderId)}
           >
-            View order
+            Track order
           </button>
         )}
       </section>
@@ -96,10 +101,18 @@ export function PaymentPanel({
       >
         <h2>
           <ClockIcon className="h-6 w-6" />
-          Payment pending
+          Confirming your payment…
         </h2>
-        <p>We're checking your payment status.</p>
+        <p>This usually takes a moment.</p>
         <p>Your order will appear once payment is confirmed.</p>
+        {isLocalPaymentSimulatorBrowserEnabled() && (
+          <button
+            className="customer-button payment-action"
+            onClick={() => void controller.checkStatus()}
+          >
+            Check payment status
+          </button>
+        )}
       </section>
     );
   if (state.phase === "retryable-pending" || state.phase === "retrying")
@@ -112,20 +125,27 @@ export function PaymentPanel({
   if (state.phase === "checking")
     return (
       <PaymentNotice
-        title="Checking payment status"
-        message="Confirming the latest payment result with CKS Go."
+        title="Confirming your payment…"
+        message="This usually takes a moment."
         busy
       />
     );
   if (state.phase === "paid-processing")
     return (
-      <section className="payment-card" aria-live="polite">
-        <p className="quote-eyebrow">Order confirmation in progress</p>
-        <h2>Payment received — finalising your order</h2>
+      <section className="payment-card" role="status" aria-live="polite">
+        <h2>Confirming your payment…</h2>
         <p>
-          Payment is still processing and the order is not confirmed yet.
-          Returning to CKS Go later will check the result again.
+          This usually takes a moment. Your order will appear once payment is
+          confirmed. Return to CKS Go later to check again.
         </p>
+        {isLocalPaymentSimulatorBrowserEnabled() && (
+          <button
+            className={action}
+            onClick={() => void controller.checkStatus()}
+          >
+            Check payment status
+          </button>
+        )}
       </section>
     );
   if (state.phase === "handoff-error")
@@ -134,8 +154,8 @@ export function PaymentPanel({
         <p className="quote-eyebrow">Payment remains pending</p>
         <h2>Could not open secure payment</h2>
         <p>
-          The existing payment attempt was kept. Continue that same attempt in
-          the secure page; no new payment will be created.
+          The payment page couldn’t open. Continue secure payment to finish
+          paying.
         </p>
         <button className={action} onClick={() => void controller.reopen()}>
           Continue secure payment
@@ -193,8 +213,8 @@ export function PaymentPanel({
       <h2>Payment unavailable</h2>
       <p>
         {state.paymentIntentId
-          ? "CKS Go could not verify the latest payment status. No order has been confirmed."
-          : "CKS Go could not safely confirm this payment response. No order has been confirmed."}
+          ? "We couldn’t confirm your payment yet. Your payment may still be processing. Check its status before paying again."
+          : "We couldn’t confirm the payment request. Your basket is saved. Please try again."}
       </p>
       {state.canRetryInitiation ? (
         <button className={action} onClick={() => void controller.initiate()}>
@@ -205,7 +225,7 @@ export function PaymentPanel({
           className={action}
           onClick={() => void controller.checkStatus()}
         >
-          Check payment again
+          Check payment status
         </button>
       ) : (
         <button className={action} onClick={() => controller.restart()}>
@@ -238,7 +258,7 @@ function RecoveryActions({
         disabled={busy}
         onClick={() => void controller.checkStatus()}
       >
-        Check Payment Status
+        Check payment status
       </button>
     </div>
   );

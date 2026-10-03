@@ -102,7 +102,7 @@ describe("HeaderActions", () => {
       }),
     );
     expect(html).toContain("CKS Go");
-    expect(html).toContain('aria-label="Open basket, 2 items"');
+    expect(html).not.toContain('aria-label="Open basket');
     expect(html).toContain('aria-label="Close CKS Go"');
     expect(html).toContain("app-header__shopping-actions--shopping");
   });

@@ -582,3 +582,26 @@
     transition: none;
   }
 }
+
+.order-documents,
+.order-document {
+  display: grid;
+  gap: var(--space-2);
+}
+.order-document + .order-document {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+}
+.order-document h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.order-documents .customer-button {
+  min-height: 44px;
+  width: 100%;
+}
+.order-documents .customer-button:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}

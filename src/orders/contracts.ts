@@ -466,3 +466,70 @@ export const parseCancellation = (value: unknown): CancellationResult => {
     invalid();
   return item as CancellationResult;
 };
+
+export type OrderDocument = {
+  kind: "PAYMENT_RECEIPT" | "FINAL_SALES_RECEIPT";
+  receiptReference: string;
+  issuedAt: string;
+  metadataPath: string;
+  downloadPath: string;
+};
+export type OrderDocuments = {
+  orderId: string;
+  paymentReceiptAvailable: boolean;
+  finalSalesReceiptAvailable: boolean;
+  paymentReceipt: OrderDocument | null;
+  finalSalesReceipt: OrderDocument | null;
+};
+
+export const parseOrderDocuments = (value: unknown): OrderDocuments => {
+  const item = exact(exact(value, ["data"]).data, [
+    "orderId",
+    "paymentReceiptAvailable",
+    "finalSalesReceiptAvailable",
+    "paymentReceipt",
+    "finalSalesReceipt",
+  ]);
+  if (!uuid(item.orderId)) invalid();
+  const validateDocument = (
+    available: unknown,
+    raw: unknown,
+    kind: OrderDocument["kind"],
+    suffix: string,
+  ) => {
+    if (typeof available !== "boolean") return invalid();
+    if (!available) {
+      if (raw !== null) invalid();
+      return;
+    }
+    const document = exact(raw, [
+      "kind",
+      "receiptReference",
+      "issuedAt",
+      "metadataPath",
+      "downloadPath",
+    ]);
+    const path = `/api/v1/orders/${item.orderId}/${suffix}`;
+    if (
+      document.kind !== kind ||
+      !text(document.receiptReference, 120) ||
+      !date(document.issuedAt) ||
+      document.metadataPath !== path ||
+      document.downloadPath !== `${path}/download`
+    )
+      invalid();
+  };
+  validateDocument(
+    item.paymentReceiptAvailable,
+    item.paymentReceipt,
+    "PAYMENT_RECEIPT",
+    "payment-receipt",
+  );
+  validateDocument(
+    item.finalSalesReceiptAvailable,
+    item.finalSalesReceipt,
+    "FINAL_SALES_RECEIPT",
+    "receipt",
+  );
+  return item as OrderDocuments;
+};

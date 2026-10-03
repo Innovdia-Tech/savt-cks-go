@@ -1,4 +1,5 @@
 import { date, exact, record, uuid } from "../customer/contracts";
+import { isLocalPaymentSimulatorCheckoutUrl } from "./local-simulator";
 
 export type PaymentCreate = {
   checkoutReference: string;
@@ -47,6 +48,7 @@ const envelope = (value: unknown) => {
 export const isSafeCheckoutUrl = (value: unknown): value is string => {
   if (typeof value !== "string" || value.trim() !== value || !value)
     return false;
+  if (isLocalPaymentSimulatorCheckoutUrl(value)) return true;
   try {
     const url = new URL(value);
     return url.protocol === "https:" && !url.username && !url.password;

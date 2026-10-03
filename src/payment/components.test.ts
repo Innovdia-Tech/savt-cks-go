@@ -1,9 +1,17 @@
-import { createElement } from "react";
+import {
+  Children,
+  createElement,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PaymentPanel } from "./components";
-import type { PaymentState } from "./state";
+import { PaymentController, type PaymentState } from "./state";
+import type { CheckoutQuote } from "../checkout/contracts";
+import { BrowserBridgeAdapter } from "../webview/bridge";
 
 const base: PaymentState = {
   phase: "ready",
@@ -32,6 +40,45 @@ const render = (state: PaymentState) =>
   );
 
 describe("customer payment presentation", () => {
+  it.each(["REQUEST_TIMEOUT", "NETWORK_ERROR", "INVALID_RESPONSE"])(
+    "keeps an uncertain %s payment request safe to retry without claiming it did not start",
+    (error) => {
+      const html = render({
+        ...base,
+        phase: "error",
+        error,
+        canRetryInitiation: true,
+      });
+      expect(html).toContain("We couldn’t confirm the payment request.");
+      expect(html).toContain("Try again");
+      expect(html).not.toContain("We couldn’t start your payment");
+      expect(html).not.toContain(error);
+    },
+  );
+  it.each(["pending", "checking", "paid-processing"] as const)(
+    "keeps %s payment copy unconfirmed until authoritative PAID and an order",
+    (phase) => {
+      const html = render({
+        ...base,
+        phase,
+        paymentIntentId: "private-intent",
+      });
+      expect(html).toContain("Confirming your payment…");
+      expect(html).toContain("This usually takes a moment.");
+      expect(html).not.toMatch(
+        /Payment received|Payment successful|Order confirmed|private-intent/,
+      );
+    },
+  );
+
+  it("gives payment handoff recovery without operational terminology", () => {
+    const html = render({ ...base, phase: "handoff-error" });
+    expect(html).toContain("Continue secure payment");
+    expect(html).not.toMatch(
+      /payment attempt|same attempt|provider|callback|webhook/i,
+    );
+  });
+
   it("keeps payment recovery memory-only with no storage or URL persistence", () => {
     for (const file of [
       "api.ts",
@@ -57,7 +104,7 @@ describe("customer payment presentation", () => {
       "We haven&#x27;t received payment confirmation. If you closed the payment page before finishing, you can try again.",
     );
     expect(html).toContain("Try Payment Again");
-    expect(html).toContain("Check Payment Status");
+    expect(html).toContain("Check payment status");
     expect(html).not.toContain("Continue secure payment");
     expect(html).not.toContain("Order confirmed");
   });
@@ -99,7 +146,7 @@ describe("customer payment presentation", () => {
       canRetryPayment: true,
     });
     expect(html).toContain("Try Payment Again");
-    expect(html).toContain("Check Payment Status");
+    expect(html).toContain("Check payment status");
     expect(html).not.toMatch(
       /REQUEST_TIMEOUT|idempotency|409|PENDING|intent-redacted/,
     );
@@ -131,12 +178,12 @@ describe("customer payment presentation", () => {
   it.each([
     ["initiating", "Opening secure payment"],
     ["opening", "Opening secure payment"],
-    ["pending", "Payment pending"],
+    ["pending", "Confirming your payment…"],
     ["retryable-pending", "Payment not completed"],
     ["retrying", "Preparing a new payment"],
-    ["checking", "Checking payment status"],
+    ["checking", "Confirming your payment…"],
     ["failed", "Payment failed"],
-    ["paid-processing", "Payment received — finalising your order"],
+    ["paid-processing", "Confirming your payment…"],
     ["handoff-error", "Could not open secure payment"],
   ] as const)("shows %s without confirming an order", (phase, copy) => {
     const html = render({
@@ -176,7 +223,7 @@ describe("customer payment presentation", () => {
       phase: "pending",
       paymentIntentId: "intent-redacted",
     });
-    expect(html).toContain("We&#x27;re checking your payment status.");
+    expect(html).toContain("This usually takes a moment.");
     expect(html).toContain("Your order will appear once payment is confirmed.");
     expect(html).toContain('role="status"');
     expect(html).not.toContain("Returning from the payment page");
@@ -205,7 +252,7 @@ describe("customer payment presentation", () => {
       paymentIntentId: "intent-redacted",
       error: "NETWORK_ERROR",
     });
-    expect(html).toContain("Check payment again");
+    expect(html).toContain("Check payment status");
     expect(html).not.toContain("Reopen secure payment");
     expect(html.match(/<button/g) ?? []).toHaveLength(1);
   });
@@ -221,7 +268,7 @@ describe("customer payment presentation", () => {
         status: "CONFIRMED",
       },
     });
-    expect(html).toContain("Payment successful");
+    expect(html).toContain("Payment received.");
     expect(html).toContain("Order confirmed");
     expect(html).toContain("ORD-2026-0001");
     expect(html).not.toContain("CONFIRMED");
@@ -244,7 +291,7 @@ describe("customer payment presentation", () => {
         onViewOrder: () => {},
       } as never),
     );
-    expect(paid).toContain("View order");
+    expect(paid).toContain("Track order");
     const processing = renderToStaticMarkup(
       createElement(PaymentPanel, {
         state: {
@@ -256,7 +303,7 @@ describe("customer payment presentation", () => {
         onViewOrder: () => {},
       } as never),
     );
-    expect(processing).not.toContain("View order");
+    expect(processing).not.toContain("Track order");
   });
 
   it("never renders internal codes, payment URL, quote token, or intent ID", () => {
@@ -289,12 +336,12 @@ describe("secondary payment error support", () => {
     [{ ...base, phase: "error", canRetryInitiation: true }, "Try again"],
     [
       { ...base, phase: "error", paymentIntentId: "intent-private" },
-      "Check payment again",
+      "Check payment status",
     ],
     [{ ...base, phase: "error" }, "Review basket"],
     [
       { ...base, phase: "error", canRetryPayment: true },
-      "Check Payment Status",
+      "Check payment status",
     ],
     [
       {
@@ -308,6 +355,7 @@ describe("secondary payment error support", () => {
     const html = renderSupport(state);
     expect(html).toContain("Need help?");
     expect(html).toContain(">Get help on WhatsApp</button>");
+    expect(html).toContain(recovery);
     expect(html.indexOf(recovery)).toBeLessThan(html.indexOf("support-action"));
     expect(html).toContain("Open CKS Go support in WhatsApp");
     expect(html).not.toContain("intent-private");
@@ -368,4 +416,194 @@ describe("secondary payment error support", () => {
     expect(JSON.stringify(frozen)).toBe(before);
     for (const fn of Object.values(actions)) expect(fn).not.toHaveBeenCalled();
   });
+});
+
+describe("local simulator pending status action", () => {
+  const localOrigin = "http://127.0.0.1:4312";
+  const pending: PaymentState = {
+    ...base,
+    phase: "pending",
+    paymentIntentId: "20000000-0000-4000-8000-000000000002",
+  };
+  beforeEach(() => {
+    vi.stubEnv("DEV", true);
+    vi.stubEnv("PROD", false);
+    vi.stubEnv("VITE_CKS_GO_LOCAL_PAYMENT_SIMULATOR_ORIGIN", localOrigin);
+    vi.stubGlobal("window", {
+      location: { href: "http://127.0.0.1:5173/" },
+      open: () => null,
+    });
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  const findStatusButton = (
+    node: ReactNode,
+  ):
+    ReactElement<{ children?: ReactNode; onClick: () => void }> | undefined => {
+    if (!isValidElement<{ children?: ReactNode; onClick: () => void }>(node))
+      return undefined;
+    if (
+      node.type === "button" &&
+      node.props.children === "Check payment status"
+    )
+      return node;
+    for (const child of Children.toArray(node.props.children)) {
+      const button = findStatusButton(child);
+      if (button) return button;
+    }
+    return undefined;
+  };
+
+  it.each([
+    {
+      setting: "",
+      development: true,
+      production: false,
+      href: "http://127.0.0.1:5173/",
+    },
+    {
+      setting: undefined,
+      development: true,
+      production: false,
+      href: "http://127.0.0.1:5173/",
+    },
+    {
+      setting: localOrigin,
+      development: false,
+      production: false,
+      href: "http://127.0.0.1:5173/",
+    },
+    {
+      setting: localOrigin,
+      development: true,
+      production: true,
+      href: "http://127.0.0.1:5173/",
+    },
+    {
+      setting: localOrigin,
+      development: true,
+      production: false,
+      href: "https://127.0.0.1:5173/",
+    },
+    {
+      setting: localOrigin,
+      development: true,
+      production: false,
+      href: "http://customer.example.test/",
+    },
+    {
+      setting: "http://localhost:4312",
+      development: true,
+      production: false,
+      href: "http://127.0.0.1:5173/",
+    },
+  ])(
+    "hides the local status action outside its explicit development allowance: %o",
+    ({ setting, development, production, href }) => {
+      vi.stubEnv("DEV", development);
+      vi.stubEnv("PROD", production);
+      vi.stubEnv("VITE_CKS_GO_LOCAL_PAYMENT_SIMULATOR_ORIGIN", setting);
+      vi.stubGlobal("window", { location: { href } });
+      for (const phase of ["pending", "paid-processing"] as const) {
+        expect(render({ ...pending, phase })).not.toContain(
+          "Check payment status",
+        );
+      }
+    },
+  );
+
+  it.each(["pending", "paid-processing"] as const)(
+    "shows one explicit status action while local payment is %s",
+    (phase) => {
+      const html = render({ ...pending, phase });
+      expect(html).toContain("Check payment status");
+      expect(html.match(/<button/g)).toHaveLength(1);
+      expect(html).not.toContain("Try Payment Again");
+      expect(html).not.toContain("Order confirmed");
+    },
+  );
+
+  it.each(["PENDING", "PAID_PROCESSING"] as const)(
+    "reads %s status only on an explicit click without another create, retry or invented finality",
+    async (status) => {
+      const quoteId = "10000000-0000-4000-8000-000000000001";
+      const paymentIntentId = pending.paymentIntentId!;
+      const api = {
+        create: vi.fn().mockResolvedValue({
+          checkoutReference: quoteId,
+          payment: {
+            paymentIntentId,
+            status: "PENDING",
+            checkoutUrl:
+              localOrigin +
+              "/api/integrations/cks-go/v1/payment-simulator/ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq",
+          },
+        }),
+        result: vi.fn().mockResolvedValue({
+          checkoutReference: quoteId,
+          status,
+          order: null,
+        }),
+        retry: vi.fn(),
+      };
+      const actual = new PaymentController(
+        api,
+        new BrowserBridgeAdapter(),
+        {
+          getSnapshot: () => ({ phase: "authenticated" }),
+          subscribe: () => () => {},
+        },
+        () => true,
+        () => {},
+        () => Date.parse("2026-09-21T02:00:00.000Z"),
+        () => "30000000-0000-4000-8000-000000000003",
+      );
+      actual.syncQuote(
+        {
+          quoteId,
+          quoteToken: "Q".repeat(43),
+          quoteExpiresAt: "2026-09-21T02:10:00.000Z",
+        } as CheckoutQuote,
+        "ready",
+      );
+      await actual.initiate();
+      expect(actual.getSnapshot().phase).toBe("pending");
+      expect(api.result).not.toHaveBeenCalled();
+      const renderStatusButton = () => {
+        let statusButton: ReturnType<typeof findStatusButton>;
+        function StatusActionHarness() {
+          const panel = PaymentPanel({
+            state: actual.getSnapshot(),
+            controller: actual,
+          });
+          statusButton = findStatusButton(panel);
+          return panel;
+        }
+        renderToStaticMarkup(createElement(StatusActionHarness));
+        return statusButton;
+      };
+      const button = renderStatusButton();
+      expect(button).toBeDefined();
+      button!.props.onClick();
+      await vi.waitFor(() => {
+        expect(api.result).toHaveBeenCalledExactlyOnceWith(paymentIntentId);
+        expect(actual.getSnapshot()).toMatchObject({
+          phase: status === "PAID_PROCESSING" ? "paid-processing" : "pending",
+          order: null,
+          canRetryPayment: false,
+        });
+      });
+      const nextButton = renderStatusButton();
+      expect(nextButton).toBeDefined();
+      expect(api.result).toHaveBeenCalledOnce();
+      nextButton!.props.onClick();
+      await vi.waitFor(() => expect(api.result).toHaveBeenCalledTimes(2));
+      expect(api.create).toHaveBeenCalledOnce();
+      expect(api.retry).not.toHaveBeenCalled();
+      actual.dispose();
+    },
+  );
 });

@@ -102,6 +102,8 @@ CUST-UX06 keeps one Home Categories action, “Browse all”, and removes the Fe
 
 The shared SearchField owns its single clear control: a neutral small × inside the field, a transparent 44px target, and reserved right padding. Its scoped CSS suppresses WebKit cancel/decoration controls while preserving search input semantics, keyboard submission, focus, composition and debounce. Product detail uses 16px page insets, a white contained-media surface with the existing 20px sheet radius, separate unboxed product information, and one subtle metadata card. The existing 16px price role and sticky purchase owner remain canonical.
 
+CUSTOMER-UX-POLISH01 removes the redundant standalone Home header Basket shortcut. Persistent bottom navigation keeps its quantity badge, and the nonempty merchandise subtotal shortcut remains useful after adding products. Basket leads with Checkout; a paid, backend-projected order leads with Order confirmed, its order number, a short acknowledgement and Track order. Payment Receipt remains a neutral secondary action in Order details below tracking. Product storage uses Room temperature for AMBIENT, with no taxonomy change. This refinement preserves every visual token and the existing brand and layout.
+
 - Primary button: solid CKS Red with white text, stable disabled/loading geometry and a visible CKS focus ring.
 - Secondary button: white/light surface, semantic border and dark text. Tertiary actions are restrained text buttons.
 - Product card: bordered white card, reserved image geometry, 14px name, CKS-red price/action, and only contract-supported availability. Reward chips appear only when reward data exists.

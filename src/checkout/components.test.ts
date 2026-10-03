@@ -144,7 +144,7 @@ describe("real cart and trusted quote presentation", () => {
     expect(html).toContain("Order summary");
     expect(html).toContain("Items subtotal");
     expect(html).toMatch(/(?:RM|MYR).*9\.00/);
-    expect(html).toContain("Review order");
+    expect(html).toContain("Checkout");
     expect(html).toContain("Deliver to");
     expect(html).toContain("1 Example Street, Demo City, Sabah");
     expect(html).toContain('aria-label="Change delivery address"');
@@ -309,13 +309,13 @@ describe("real cart and trusted quote presentation", () => {
         onChangeAddress: () => {},
       } as never),
     );
-    expect(frozen).toContain("Payment pending");
+    expect(frozen).toContain("Confirming your payment…");
     expect(frozen.match(/disabled=""/g)?.length).toBe(4);
     expect(frozen).toMatch(/aria-label="Change delivery address" disabled=""/);
-    expect(frozen.indexOf("Payment pending")).toBeLessThan(
+    expect(frozen.indexOf("Confirming your payment…")).toBeLessThan(
       frozen.indexOf("Deliver to"),
     );
-    expect(frozen.indexOf("Payment pending")).toBeLessThan(
+    expect(frozen.indexOf("Confirming your payment…")).toBeLessThan(
       frozen.indexOf("Your items"),
     );
   });

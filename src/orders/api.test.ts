@@ -142,3 +142,131 @@ describe("OrdersApi", () => {
     ).toBe(true);
   });
 });
+
+const documents = (id = orderId) => ({
+  orderId: id,
+  paymentReceiptAvailable: true,
+  finalSalesReceiptAvailable: false,
+  paymentReceipt: {
+    kind: "PAYMENT_RECEIPT" as const,
+    receiptReference: "CKS-20260921-0001",
+    issuedAt: "2026-09-21T04:00:00.000Z",
+    metadataPath: `/api/v1/orders/${id}/payment-receipt`,
+    downloadPath: `/api/v1/orders/${id}/payment-receipt/download`,
+  },
+  finalSalesReceipt: null,
+});
+
+describe("payment receipt client", () => {
+  it("reads separate owned document capabilities with credentials and no query", async () => {
+    let request: { url: string; init?: RequestInit } | undefined;
+    const api = new OrdersApi(
+      "https://cks.example",
+      session,
+      async (input, init) => {
+        request = { url: String(input), init };
+        return Response.json({ data: documents() });
+      },
+    );
+    await expect(api.documents(orderId)).resolves.toEqual(documents());
+    expect(request?.url).toBe(
+      `https://cks.example/api/v1/customer/orders/${orderId}/documents`,
+    );
+    expect(request?.init).toMatchObject({
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    });
+    expect(request?.init?.body).toBeUndefined();
+    expect(JSON.stringify(request)).not.toContain("C".repeat(43));
+  });
+
+  it("fetches the exact payment PDF through the session, without credentials in its URL", async () => {
+    let request: { url: string; init?: RequestInit } | undefined;
+    const api = new OrdersApi("", session, async (input, init) => {
+      request = { url: String(input), init };
+      return new Response("%PDF-1.7 test", {
+        headers: { "content-type": "application/pdf" },
+      });
+    });
+    const path = `/api/v1/orders/${orderId}/payment-receipt/download`;
+    const pdf = await api.downloadPaymentReceipt(orderId, path);
+    expect(await pdf.text()).toBe("%PDF-1.7 test");
+    expect(request).toMatchObject({
+      url: path,
+      init: {
+        credentials: "include",
+        cache: "no-store",
+        headers: { Accept: "application/pdf" },
+      },
+    });
+    for (const unsafe of [
+      path + "?token=secret",
+      "https://evil.example/file",
+      `/api/v1/orders/${orderId}/receipt/download`,
+    ]) {
+      await expect(
+        api.downloadPaymentReceipt(orderId, unsafe),
+      ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+    }
+  });
+
+  it.each([401, 403, 404, 409])(
+    "never produces a PDF from HTTP %s",
+    async (status) => {
+      const api = new OrdersApi("", session, async () =>
+        Response.json(
+          {
+            error: {
+              code: "PAYMENT_RECEIPT_NOT_READY",
+              message: "private backend detail",
+            },
+          },
+          { status },
+        ),
+      );
+      await expect(
+        api.downloadPaymentReceipt(
+          orderId,
+          documents().paymentReceipt.downloadPath,
+        ),
+      ).rejects.toBeInstanceOf(OrdersError);
+    },
+  );
+
+  it.each([
+    new Response("private JSON", {
+      headers: { "content-type": "application/json" },
+    }),
+    new Response(null, { headers: { "content-type": "application/pdf" } }),
+  ])("rejects non-PDF or empty download content", async (response) => {
+    const api = new OrdersApi("", session, async () => response);
+    await expect(
+      api.downloadPaymentReceipt(
+        orderId,
+        documents().paymentReceipt.downloadPath,
+      ),
+    ).rejects.toMatchObject({ code: "INVALID_RESPONSE" });
+  });
+
+  it("bounds a stalled payment PDF response body", async () => {
+    const api = new OrdersApi(
+      "",
+      session,
+      async () =>
+        ({
+          ok: true,
+          status: 200,
+          headers: new Headers({ "content-type": "application/pdf" }),
+          blob: () => new Promise(() => {}),
+        }) as Response,
+      5,
+    );
+    await expect(
+      api.downloadPaymentReceipt(
+        orderId,
+        documents().paymentReceipt.downloadPath,
+      ),
+    ).rejects.toMatchObject({ code: "REQUEST_TIMEOUT" });
+  });
+});

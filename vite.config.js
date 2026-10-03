@@ -8,6 +8,14 @@ export default defineConfig(({ command, mode }) => {
       "VITE_CUSTOMER_API_ORIGIN must be empty for same-origin customer builds. Configure CKS_GO_API_PROXY_TARGET on the server instead.",
     );
   }
+  if (
+    command === "build" &&
+    environment.VITE_CKS_GO_LOCAL_PAYMENT_SIMULATOR_ORIGIN
+  ) {
+    throw new Error(
+      "VITE_CKS_GO_LOCAL_PAYMENT_SIMULATOR_ORIGIN must be empty for customer builds.",
+    );
+  }
   return {
     plugins: [react()],
     optimizeDeps: {

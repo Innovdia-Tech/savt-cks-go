@@ -121,6 +121,11 @@ const state = (patch: Partial<OrdersState> = {}): OrdersState => ({
   detailError: null,
   receiptPhase: "idle",
   receiptError: null,
+  documentsPhase: "idle",
+  documents: null,
+  documentsError: null,
+  paymentReceiptPhase: "idle",
+  paymentReceiptError: null,
   ...patch,
 });
 const controller = {
@@ -129,6 +134,9 @@ const controller = {
   nextPage: async () => {},
   previousPage: async () => {},
   downloadReceipt: async () => null,
+  downloadPaymentReceipt: async () => null,
+  refreshDocuments: async () => {},
+  reportReceiptSaveFailure: () => {},
 };
 
 const progressStep = (html: string, label: string) => {
@@ -627,4 +635,81 @@ it("uses plain loading and empty order copy", () => {
     "Your CKS Go orders will appear here after checkout.",
   );
   expect(empty).not.toContain("Order identity");
+});
+
+const documents = (id = orderId) => ({
+  orderId: id,
+  paymentReceiptAvailable: true,
+  finalSalesReceiptAvailable: false,
+  paymentReceipt: {
+    kind: "PAYMENT_RECEIPT" as const,
+    receiptReference: "CKS-20260921-0001",
+    issuedAt: "2026-09-21T04:00:00.000Z",
+    metadataPath: `/api/v1/orders/${id}/payment-receipt`,
+    downloadPath: `/api/v1/orders/${id}/payment-receipt/download`,
+  },
+  finalSalesReceipt: null,
+});
+
+describe("Payment Receipt presentation", () => {
+  const receiptState = (patch = {}) =>
+    state({
+      documentsPhase: "ready",
+      documents: documents(),
+      documentsError: null,
+      paymentReceiptPhase: "idle",
+      paymentReceiptError: null,
+      ...patch,
+    });
+  const render = (patch = {}) =>
+    renderToStaticMarkup(
+      createElement(OrderDetailScreen, {
+        state: receiptState(patch),
+        controller,
+        onBack: () => {},
+      } as never),
+    );
+
+  it("shows a secondary Payment Receipt action and explains normal final receipt unavailability", () => {
+    const html = render();
+    expect(html).toContain("Documents");
+    expect(html).toContain("Payment received");
+    expect(html).toContain("Download Payment Receipt");
+    expect(html).toContain("Final Receipt");
+    expect(html).toContain("Available after your order is completed");
+    expect(html).not.toContain("FINAL_RECEIPT_NOT_READY");
+    expect(html).not.toContain(documents().paymentReceipt.downloadPath);
+    expect(html).not.toMatch(/customer-primary[^>]*>Download Payment Receipt/);
+  });
+
+  it("announces pending work and disables its download action", () => {
+    const html = render({ paymentReceiptPhase: "downloading" });
+    expect(html).toContain("Preparing Payment Receipt…");
+    expect(html).toContain('aria-busy="true"');
+    expect(html).toMatch(
+      /<button[^>]*disabled=""[^>]*>Preparing Payment Receipt…/,
+    );
+  });
+
+  it("offers safe explicit retry without rendering backend errors", () => {
+    const html = render({
+      paymentReceiptPhase: "error",
+      paymentReceiptError: "PAYMENT_RECEIPT_INTEGRITY_FAILED",
+    });
+    expect(html).toContain("Try downloading again");
+    expect(html).toContain("We couldn’t download your Payment Receipt");
+    expect(html).not.toContain("PAYMENT_RECEIPT_INTEGRITY_FAILED");
+  });
+
+  it.each(["loading", "error"])(
+    "retains readable order details with %s documents",
+    (documentsPhase) => {
+      const html = render({ documentsPhase, documents: null });
+      expect(html).toContain("Where your order is");
+      expect(html).toContain(
+        documentsPhase === "loading" ? "Checking your documents…" : "Try again",
+      );
+      expect(html).not.toContain("Download Payment Receipt");
+    },
+  );
 });

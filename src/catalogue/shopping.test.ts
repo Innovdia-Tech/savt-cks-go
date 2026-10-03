@@ -1,5 +1,9 @@
 import { expect, it } from "vitest";
-import { homeCategories, homeCategoryArtwork } from "./shopping";
+import {
+  homeCategories,
+  homeCategoryArtwork,
+  productStorageLabel,
+} from "./shopping";
 import { cartMerchandiseSummary } from "../checkout/state";
 
 const categories = [
@@ -9,6 +13,17 @@ const categories = [
   { id: "fresh", code: "001", name: "Fresh Produce" },
   { id: "house", code: "002", name: "Household" },
 ];
+
+it.each([
+  ["AMBIENT", "Room temperature"],
+  ["CHILLED", "Chilled"],
+  ["FROZEN", "Frozen"],
+] as const)(
+  "presents %s storage without changing its meaning",
+  (storage, label) => {
+    expect(productStorageLabel(storage)).toBe(label);
+  },
+);
 
 it("selects authoritative Phase 1 Home categories by code in preferred order", () => {
   expect(homeCategories(categories).map(({ id }) => id)).toEqual([
