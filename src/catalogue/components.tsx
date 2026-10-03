@@ -27,7 +27,11 @@ import { MAX_LINE_QUANTITY } from "../checkout/contracts";
 import { QuantitySelector } from "../components/QuantitySelector";
 import { usePayment } from "../payment/context";
 import { useOrders } from "../orders/context";
-import { OrderDetailScreen, OrdersScreen } from "../orders/components";
+import {
+  OrderDetailScreen,
+  OrdersRefreshButton,
+  OrdersScreen,
+} from "../orders/components";
 import {
   Button,
   SearchField,
@@ -921,6 +925,14 @@ export function CatalogueApp({
       embeddedHost={embeddedHost}
       onRefresh={refresh}
       refreshDisabled={!refreshEnabled}
+      headerAction={
+        route === "orders" ? (
+          <OrdersRefreshButton
+            state={orders.state}
+            controller={orders.controller}
+          />
+        ) : undefined
+      }
       feedback={
         customer.state.noticeKind !== "persistent" ? (
           <CustomerNotice
@@ -939,11 +951,8 @@ export function CatalogueApp({
       }}
     >
       <div
-        className={`catalogue-root catalogue-root--shopping ${route === "home" ? "catalogue-root--home" : ""}`}
+        className={`catalogue-root catalogue-root--shopping ${route === "home" ? "catalogue-root--home" : ""} ${detailId ? "catalogue-root--detail" : ""}`.trim()}
       >
-        {route === "home" && state.phase !== "no-service" && (
-          <SupportAction digits={supportWhatsApp} />
-        )}
         {route === "profile" ? (
           <>
             <CustomerProfileScreen shellOwnsTransientNotice />
@@ -1025,6 +1034,7 @@ export function CatalogueApp({
               <OrdersScreen
                 state={orders.state}
                 controller={orders.controller}
+                supportWhatsApp={supportWhatsApp}
                 onOpen={(orderId) => navigate(`order/${orderId}`)}
                 onBrowse={() => navigate("home")}
               />
@@ -1090,7 +1100,7 @@ export function CatalogueApp({
                           void controller.category(undefined, 1);
                         }}
                       >
-                        See all <ChevronRightIcon className="h-4 w-4" />
+                        Browse all <ChevronRightIcon className="h-4 w-4" />
                       </button>
                     </div>
                     <div className="catalogue-category-tiles">
@@ -1158,31 +1168,45 @@ export function CatalogueApp({
                   p && (
                     <article className="catalogue-detail">
                       <ProductImage url={p.imageUrl} name={p.name} />
-                      <h2>{p.name}</h2>
-                      <p>{p.packSize || p.uom.name}</p>
-                      <strong>{money(p.sellingPriceMinor)}</strong>
-                      {p.availability !== "AVAILABLE" && <p>Unavailable</p>}
-                      {p.description && <p>{p.description}</p>}
-                      <dl>
-                        <dt>Category</dt>
-                        <dd>{p.category.name}</dd>
-                        {p.subcategory && (
-                          <>
-                            <dt>Subcategory</dt>
-                            <dd>{p.subcategory.name}</dd>
-                          </>
+                      <div className="catalogue-detail-info">
+                        <h2>{p.name}</h2>
+                        <p className="catalogue-detail-unit">
+                          {p.packSize || p.uom.name}
+                        </p>
+                        <strong>{money(p.sellingPriceMinor)}</strong>
+                        {p.availability !== "AVAILABLE" && <p>Unavailable</p>}
+                        {p.description && (
+                          <p className="catalogue-detail-description">
+                            {p.description}
+                          </p>
                         )}
-                        {p.brand && (
-                          <>
-                            <dt>Brand</dt>
-                            <dd>{p.brand.name}</dd>
-                          </>
-                        )}
-                        <dt>Unit</dt>
-                        <dd>{p.uom.name}</dd>
-                        <dt>Storage</dt>
-                        <dd>{p.storageType.toLowerCase()}</dd>
-                      </dl>
+                      </div>
+                      <section
+                        className="catalogue-detail-metadata"
+                        aria-labelledby="product-details-title"
+                      >
+                        <h3 id="product-details-title">Product details</h3>
+                        <dl>
+                          <dt>Category</dt>
+                          <dd>{p.category.name}</dd>
+                          {p.subcategory && (
+                            <>
+                              <dt>Subcategory</dt>
+                              <dd>{p.subcategory.name}</dd>
+                            </>
+                          )}
+                          {p.brand && (
+                            <>
+                              <dt>Brand</dt>
+                              <dd>{p.brand.name}</dd>
+                            </>
+                          )}
+                          <dt>Unit</dt>
+                          <dd>{p.uom.name}</dd>
+                          <dt>Storage</dt>
+                          <dd>{p.storageType.toLowerCase()}</dd>
+                        </dl>
+                      </section>
                     </article>
                   )
                 ) : (
@@ -1206,18 +1230,6 @@ export function CatalogueApp({
                           </p>
                         )}
                       </div>
-                      {route === "home" && (
-                        <button
-                          type="button"
-                          className="catalogue-link"
-                          onClick={() => {
-                            navigate("categories");
-                            void controller.category(undefined, 1);
-                          }}
-                        >
-                          See all <ChevronRightIcon className="h-4 w-4" />
-                        </button>
-                      )}
                     </div>
                     {visibleProducts.length ? (
                       <div className={"catalogue-grid"}>

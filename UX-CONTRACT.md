@@ -1,5 +1,15 @@
 # Customer UI contract
 
+## CUST-UX06 Android pilot polish
+
+The approved CUST-UX06 brief supersedes the earlier general Home-help placement. `CatalogueApp` keeps Categories → Browse all → all authoritative Browse categories/products, and omits the Featured products CTA and general Home help. `OrdersScreen` reuses `SupportAction` through the `orders` variant immediately below the web Orders header. The fixed general enquiry, backend support config, fail-closed behavior and external handoff remain unchanged. Delivery, genuine payment-error and order-detail support keep their established owners.
+
+`OrdersRefreshButton` occupies the shared shell's header action slot once; it invokes the existing refresh controller and disables during loading/session expiry. The zero-order presentation uses an Orders-specific receipt icon and Browse products action with the existing Home destination. Current/history grouping, pagination and order detail remain authoritative and unchanged.
+
+`SearchField` preserves `type="search"`, keyboard Search, forwarded input focus, consumer composition handlers, 300ms debounce and immediate explicit submit/clear. Only its component-scoped native cancel/decoration styling is suppressed. An empty query renders no clear control; a nonempty query has exactly one accessible Clear search action within the field and a 44px touch target. Clearing calls the existing `onClear`, resets catalogue search, retains category context and restores input focus. No other search inputs are restyled.
+
+Product detail retains every returned product value, media association and purchase behavior. Only the media, information and metadata composition changes. No catalogue data, payment authority, checkout calculation, stock, address, serviceability, navigation-item or pull-to-refresh behavior is changed.
+
 ## Canonical UI Map
 
 | Capability     | Canonical owner                                                 | Source of truth                  | Allowed variants                                                                   | Verification                            |

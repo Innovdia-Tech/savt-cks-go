@@ -35,6 +35,7 @@ type AppShellProps = {
   onRefresh?: () => Promise<boolean>;
   refreshDisabled?: boolean;
   feedback?: ReactNode;
+  headerAction?: ReactNode;
 };
 
 export type ShellHeaderContext = "home" | "browse" | "transaction" | "orders";
@@ -60,6 +61,7 @@ export function AppShell({
   onRefresh,
   refreshDisabled = false,
   feedback,
+  headerAction,
 }: AppShellProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pull = usePullToRefresh(scrollRef, onRefresh, refreshDisabled);
@@ -109,6 +111,7 @@ export function AppShell({
             onLogout={onLogout}
             onManage={onDeliveryAddress ?? (() => onNavigate("profile"))}
             embeddedHost={embeddedHost}
+            headerAction={headerAction}
             refreshControl={
               onRefresh && (!refreshDisabled || pull.refreshing) ? (
                 <RefreshButton
@@ -204,6 +207,7 @@ export function DeliveryHeader({
   cartCount = 0,
   embeddedHost = false,
   refreshControl,
+  headerAction,
 }: {
   context: ShellHeaderContext;
   onLogout?: () => void;
@@ -216,6 +220,7 @@ export function DeliveryHeader({
   cartCount?: number;
   embeddedHost?: boolean;
   refreshControl?: ReactNode;
+  headerAction?: ReactNode;
 }) {
   const shoppingContext = context === "home" || context === "browse";
 
@@ -234,7 +239,12 @@ export function DeliveryHeader({
             {refreshControl}
           </div>
         ) : title ? (
-          <div className="app-header__embedded-title">{title}</div>
+          <div
+            className={`app-header__embedded-title ${headerAction ? "app-header__embedded-title--action" : ""}`.trim()}
+          >
+            <span>{title}</span>
+            {headerAction}
+          </div>
         ) : null}
         {context === "home" && outlet && <AssignedOutletLine outlet={outlet} />}
       </header>
@@ -251,6 +261,7 @@ export function DeliveryHeader({
         onCart={onCart}
         cartCount={cartCount}
         refreshControl={refreshControl}
+        headerAction={headerAction}
       />
       {shoppingContext &&
         (addressLink ?? <DeliveryAddressLink onManage={onManage} />)}
@@ -306,6 +317,7 @@ export function HeaderActions({
   onCart,
   cartCount = 0,
   refreshControl,
+  headerAction,
 }: {
   onLogout?: () => void;
   context?: ShellHeaderContext;
@@ -314,6 +326,7 @@ export function HeaderActions({
   onCart?: () => void;
   cartCount?: number;
   refreshControl?: ReactNode;
+  headerAction?: ReactNode;
 }) {
   if (context === "home")
     return (
@@ -334,7 +347,9 @@ export function HeaderActions({
       </div>
     );
   return (
-    <div className="app-header__bar">
+    <div
+      className={`app-header__bar ${headerAction ? "app-header__bar--action" : ""}`.trim()}
+    >
       <IconButton
         label="Back"
         onClick={onBack ?? (() => window.history.back())}
@@ -342,6 +357,7 @@ export function HeaderActions({
         <ChevronLeftIcon className="h-4 w-4" />
       </IconButton>
       <span className="app-header__brand">{title}</span>
+      {headerAction}
       <button
         type="button"
         aria-label="Close CKS Go"
