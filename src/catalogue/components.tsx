@@ -18,7 +18,11 @@ import { useCustomer } from "../customer/context";
 import { useCatalogue } from "./context";
 import type { Product } from "./contracts";
 import type { CatalogueState } from "./state";
-import { homeCategories, homeCategoryArtwork } from "./shopping";
+import {
+  homeCategories,
+  homeCategoryArtwork,
+  productStorageLabel,
+} from "./shopping";
 import type { Screen } from "../types";
 import { useCheckout } from "../checkout/context";
 import { cartMerchandiseSummary } from "../checkout/state";
@@ -1204,7 +1208,7 @@ export function CatalogueApp({
                           <dt>Unit</dt>
                           <dd>{p.uom.name}</dd>
                           <dt>Storage</dt>
-                          <dd>{p.storageType.toLowerCase()}</dd>
+                          <dd>{productStorageLabel(p.storageType)}</dd>
                         </dl>
                       </section>
                     </article>

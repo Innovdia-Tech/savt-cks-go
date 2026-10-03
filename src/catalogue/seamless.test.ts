@@ -138,7 +138,7 @@ it("preserves authoritative product detail content and its purchase action", () 
     "Rice and grains",
     "Example brand",
     "Pack",
-    "ambient",
+    "Room temperature",
     "Add to Basket",
   ])
     expect(html).toContain(text);

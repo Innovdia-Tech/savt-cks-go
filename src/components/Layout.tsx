@@ -334,7 +334,6 @@ export function HeaderActions({
         <span className="app-header__brand">CKS Go</span>
         <div className="app-header__shopping-controls">
           {refreshControl}
-          <CartButton onCart={onCart} cartCount={cartCount} />
           <button
             type="button"
             aria-label="Close CKS Go"

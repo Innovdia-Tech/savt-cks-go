@@ -419,7 +419,7 @@ export function CartScreen({
               disabled={!state.assignment || state.paymentFrozen}
               onClick={() => void controller.requestQuote()}
             >
-              Review order
+              Checkout
             </button>
           )}
           {state.quotePhase === "quoting" && (

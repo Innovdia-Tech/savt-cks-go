@@ -10,6 +10,17 @@ The approved CUST-UX06 brief supersedes the earlier general Home-help placement.
 
 Product detail retains every returned product value, media association and purchase behavior. Only the media, information and metadata composition changes. No catalogue data, payment authority, checkout calculation, stock, address, serviceability, navigation-item or pull-to-refresh behavior is changed.
 
+## CUSTOMER-UX-POLISH01 customer wording override
+
+Source: the CUSTOMER-UX-POLISH01 customer journey brief, starting at accepted frontend commit `c6e351cc253b1a46b6a1595aa09c8831f6d6b5d5`. This section supersedes historical presentation copy below; controller authority, backend contracts and visual tokens are unchanged.
+
+- Pending, checking and paid-processing say “Confirming your payment…” and “This usually takes a moment.” They never claim payment was received or an order was confirmed.
+- Only authoritative PAID with a valid backend Order renders Order confirmed, the useful order number, payment acknowledgement and the existing order-detail callback labelled Track order. Payment Receipt retains its protected secondary Documents action below tracking.
+- Existing manual recovery uses Check payment status. An uncertain create response remains “We couldn’t confirm the payment request” and retains its existing idempotent retry. Handoff recovery uses plain customer language and the same reopen operation.
+- Home removes only its redundant header Basket button; bottom navigation, its item count and the contextual merchandise subtotal action remain. Basket’s existing quote action is labelled Checkout, with no new step or API call.
+- AMBIENT is presented as Room temperature; CHILLED and FROZEN remain Chilled and Frozen. Wire taxonomy and product data remain unchanged.
+- Current orders, Order history and the four customer tracking stages retain their existing mappings. Browse search-clear controls are explicitly excluded and untouched.
+
 ## Canonical UI Map
 
 | Capability     | Canonical owner                                                 | Source of truth                  | Allowed variants                                                                   | Verification                            |
