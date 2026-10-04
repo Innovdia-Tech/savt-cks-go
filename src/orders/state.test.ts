@@ -471,6 +471,100 @@ describe("paid order documents", () => {
     ...overrides,
   });
 
+  it.each([true, false])(
+    "bounds only embedded filenames for payment=%s",
+    async (payment) => {
+      const reference = "R".repeat(150);
+      const prefix = payment ? "CKS-Go-Payment-Receipt-" : "CKS-Go-Receipt-";
+      for (const embedded of [false, true]) {
+        const controller = new OrdersController(
+          port({
+            detail: async () => ({
+              ...detailWithReceipt(),
+              receipt: {
+                ...detailWithReceipt().receipt,
+                receiptReference: reference,
+              },
+            }),
+            documents: async () => ({
+              ...documents(),
+              paymentReceipt: {
+                ...documents().paymentReceipt,
+                receiptReference: reference,
+              },
+            }),
+          }),
+          new SessionStub(),
+        );
+        await controller.open(orderId);
+        const receipt = await (payment
+          ? controller.downloadPaymentReceipt(embedded)
+          : controller.downloadReceipt(embedded));
+        expect(receipt?.filename).toBe(
+          `${prefix}${embedded ? reference.slice(0, 120 - prefix.length - 4) : reference}.pdf`,
+        );
+        controller.dispose();
+      }
+    },
+  );
+
+  it.each([true, false])(
+    "holds payment=%s busy until save completes once",
+    async (payment) => {
+      const controller = new OrdersController(
+        port({ detail: async () => detailWithReceipt() }),
+        new SessionStub(),
+      );
+      await controller.open(orderId);
+      const receipt = await (payment
+        ? controller.downloadPaymentReceipt(true)
+        : controller.downloadReceipt(true));
+      const phase = () =>
+        payment
+          ? controller.getSnapshot().paymentReceiptPhase
+          : controller.getSnapshot().receiptPhase;
+      expect(phase()).toBe("downloading");
+      expect(
+        await (payment
+          ? controller.downloadPaymentReceipt(true)
+          : controller.downloadReceipt(true)),
+      ).toBeNull();
+      receipt!.completeSave!(true);
+      expect(phase()).toBe("saved");
+      const saved = controller.getSnapshot();
+      receipt!.completeSave!(false);
+      expect(controller.getSnapshot()).toBe(saved);
+    },
+  );
+  it.each([true, false])(
+    "save failure and stale completion remain scoped for payment=%s",
+    async (payment) => {
+      const controller = new OrdersController(
+        port({ detail: async () => detailWithReceipt() }),
+        new SessionStub(),
+      );
+      await controller.open(orderId);
+      const download = () =>
+        payment
+          ? controller.downloadPaymentReceipt(true)
+          : controller.downloadReceipt(true);
+      const receipt = await download();
+      receipt!.completeSave!(false);
+      expect(
+        payment
+          ? controller.getSnapshot().paymentReceiptError
+          : controller.getSnapshot().receiptError,
+      ).toBe("DOWNLOAD_FAILED");
+      const retry = await download();
+      expect(retry).not.toBeNull();
+      controller.closeDetail();
+      await controller.open(orderId);
+      const fresh = controller.getSnapshot();
+      retry!.completeSave!(true);
+      expect(controller.getSnapshot()).toBe(fresh);
+    },
+  );
+
   it("loads payment availability on ORDER_RECEIVED without enabling the final receipt", async () => {
     const controller = new OrdersController(port(), new SessionStub());
     await controller.open(orderId);

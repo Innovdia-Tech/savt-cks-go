@@ -775,6 +775,24 @@ describe("customer receipt presentation", () => {
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Preparing receipt…/);
   });
 
+  it.each([true, false])(
+    "native payment=%s success retains the readable order and announces saving",
+    (payment) => {
+      const html = render({
+        detail: completed,
+        ...(payment
+          ? { paymentReceiptPhase: "saved" as const }
+          : { receiptPhase: "saved" as const }),
+      });
+      expect(html).toContain('role="status">Receipt saved');
+      expect(html).toContain("Where your order is");
+      expect(html).toContain("Grand total");
+      expect(html).toContain("Download Receipt");
+      expect(html).toContain("Download Final Sales Receipt");
+      expect(html).not.toContain("Preparing receipt…");
+    },
+  );
+
   it("offers safe explicit retry without rendering backend errors", () => {
     const html = render({
       paymentReceiptPhase: "error",
