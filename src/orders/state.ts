@@ -32,15 +32,19 @@ export type OrdersState = {
   detailPhase: Phase;
   detail: OrderDetail | null;
   detailError: string | null;
-  receiptPhase: "idle" | "downloading" | "ready" | "error";
+  receiptPhase: "idle" | "downloading" | "ready" | "saved" | "error";
   receiptError: string | null;
   documentsPhase: Phase;
   documents: OrderDocuments | null;
   documentsError: string | null;
-  paymentReceiptPhase: "idle" | "downloading" | "ready" | "error";
+  paymentReceiptPhase: "idle" | "downloading" | "ready" | "saved" | "error";
   paymentReceiptError: string | null;
 };
-export type ReceiptDownload = { blob: Blob; filename: string };
+export type ReceiptDownload = {
+  blob: Blob;
+  filename: string;
+  completeSave?: (saved: boolean) => void;
+};
 
 const empty = (sessionExpired = false): OrdersState => ({
   listPhase: sessionExpired ? "session-expired" : "idle",
@@ -233,7 +237,9 @@ export class OrdersController {
     }
   }
 
-  async downloadPaymentReceipt(): Promise<ReceiptDownload | null> {
+  async downloadPaymentReceipt(
+    awaitSave = false,
+  ): Promise<ReceiptDownload | null> {
     const detail = this.state.detail;
     const documents = this.state.documents;
     const receipt = documents?.paymentReceipt;
@@ -265,10 +271,23 @@ export class OrdersController {
         this.state.detail?.orderId !== detail.orderId
       )
         return null;
-      this.update({ paymentReceiptPhase: "ready", paymentReceiptError: null });
+      if (!awaitSave)
+        this.update({
+          paymentReceiptPhase: "ready",
+          paymentReceiptError: null,
+        });
       return {
         blob,
-        filename: `CKS-Go-Payment-Receipt-${receipt.receiptReference.replace(/[^A-Za-z0-9_-]/g, "-")}.pdf`,
+        filename: `CKS-Go-Payment-Receipt-${receipt.receiptReference.replace(/[^A-Za-z0-9_-]/g, "-").slice(0, awaitSave ? 93 : undefined)}.pdf`,
+        ...(awaitSave
+          ? {
+              completeSave: this.saveCompletion(
+                true,
+                detail.orderId,
+                generation,
+              ),
+            }
+          : {}),
       };
     } catch (error) {
       if (generation !== this.paymentReceiptGeneration) return null;
@@ -294,6 +313,35 @@ export class OrdersController {
     );
   }
 
+  private saveCompletion(
+    payment: boolean,
+    orderId: string,
+    generation: number,
+  ): (saved: boolean) => void {
+    let settled = false;
+    return (saved) => {
+      if (
+        settled ||
+        this.state.detail?.orderId !== orderId ||
+        generation !==
+          (payment ? this.paymentReceiptGeneration : this.receiptGeneration)
+      )
+        return;
+      settled = true;
+      this.update(
+        payment
+          ? {
+              paymentReceiptPhase: saved ? "saved" : "error",
+              paymentReceiptError: saved ? null : "DOWNLOAD_FAILED",
+            }
+          : {
+              receiptPhase: saved ? "saved" : "error",
+              receiptError: saved ? null : "DOWNLOAD_FAILED",
+            },
+      );
+    };
+  }
+
   private abortDocuments(): void {
     ++this.documentsGeneration;
     ++this.paymentReceiptGeneration;
@@ -301,7 +349,7 @@ export class OrdersController {
     this.paymentReceiptAbort?.abort();
   }
 
-  async downloadReceipt(): Promise<ReceiptDownload | null> {
+  async downloadReceipt(awaitSave = false): Promise<ReceiptDownload | null> {
     const detail = this.state.detail;
     const path = detail?.receipt.downloadPath;
     const reference = detail?.receipt.receiptReference;
@@ -329,10 +377,20 @@ export class OrdersController {
         this.state.detail?.orderId !== detail.orderId
       )
         return null;
-      this.update({ receiptPhase: "ready", receiptError: null });
+      if (!awaitSave)
+        this.update({ receiptPhase: "ready", receiptError: null });
       return {
         blob,
-        filename: `CKS-Go-Receipt-${reference.replace(/[^A-Za-z0-9_-]/g, "-")}.pdf`,
+        filename: `CKS-Go-Receipt-${reference.replace(/[^A-Za-z0-9_-]/g, "-").slice(0, awaitSave ? 101 : undefined)}.pdf`,
+        ...(awaitSave
+          ? {
+              completeSave: this.saveCompletion(
+                false,
+                detail.orderId,
+                generation,
+              ),
+            }
+          : {}),
       };
     } catch (error) {
       if (generation !== this.receiptGeneration) return null;
