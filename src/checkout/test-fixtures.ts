@@ -66,3 +66,35 @@ export const quoteEnvelope = () => ({
     addressRowVersion: 7,
   },
 });
+
+export const minimumQuoteEnvelope = (basisMinor: 5000 | 10000) => {
+  const amounts = {
+    5000: { items: 4500, fee: 200, total: 5200 },
+    10000: { items: 9500, fee: 300, total: 10300 },
+  }[basisMinor];
+  const value = quoteEnvelope();
+  return {
+    data: {
+      ...value.data,
+      items: [
+        {
+          ...value.data.items[0],
+          quantity: 1,
+          unitPriceMinor: amounts.items,
+          lineSubtotalMinor: amounts.items,
+        },
+      ],
+      itemsSubtotalMinor: amounts.items,
+      netItemsTotalMinor: amounts.items,
+      baseDeliveryFeeMinor: 500,
+      finalDeliveryChargeMinor: 500,
+      processingFeeBasisMinor: basisMinor,
+      processingFee: {
+        ...value.data.processingFee,
+        minimumAmountMinor: 200,
+      },
+      processingFeeMinor: amounts.fee,
+      grandTotalMinor: amounts.total,
+    },
+  };
+};

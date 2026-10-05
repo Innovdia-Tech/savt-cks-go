@@ -7,7 +7,7 @@ import {
   AddressTransitionError,
   CartScreen,
 } from "./components";
-import { id, quoteEnvelope } from "./test-fixtures";
+import { id, minimumQuoteEnvelope, quoteEnvelope } from "./test-fixtures";
 import { PaymentController } from "../payment/state";
 import { PaymentError } from "../payment/api";
 import type { PaymentResult } from "../payment/contracts";
@@ -57,6 +57,55 @@ const controller = {
 };
 
 describe("real cart and trusted quote presentation", () => {
+  it.each([
+    ["legacy", quoteEnvelope, "0.42", "14.32"],
+    [
+      "null minimum",
+      () => {
+        const value = quoteEnvelope();
+        Object.assign(value.data.processingFee, { minimumAmountMinor: null });
+        return value;
+      },
+      "0.42",
+      "14.32",
+    ],
+    [
+      "zero minimum",
+      () => {
+        const value = quoteEnvelope();
+        Object.assign(value.data.processingFee, { minimumAmountMinor: 0 });
+        return value;
+      },
+      "0.42",
+      "14.32",
+    ],
+    ["RM50 basis", () => minimumQuoteEnvelope(5000), "2.00", "52.00"],
+    ["RM100 basis", () => minimumQuoteEnvelope(10000), "3.00", "103.00"],
+  ] as const)(
+    "loads %s on the checkout screen with the authoritative fee and total",
+    (_name, response, fee, total) => {
+      const quote = parseQuote(response());
+      const html = renderToStaticMarkup(
+        createElement(CartScreen, {
+          state: { ...base, quote, quotePhase: "ready" },
+          controller,
+          onBrowse: () => {},
+        } as never),
+      );
+      for (const [label, amount] of [
+        ["Processing fee", fee],
+        ["Total", total],
+      ])
+        expect(html).toMatch(
+          new RegExp(
+            `<dt[^>]*>${label}</dt><dd[^>]*>RM[^<]*${amount.replace(".", "\\.")}</dd>`,
+          ),
+        );
+      expect(html).toContain("Prices and fees confirmed");
+      expect(html).not.toContain("memory-only-quote-token");
+    },
+  );
+
   it.each([
     "PENDING",
     "FAILED",

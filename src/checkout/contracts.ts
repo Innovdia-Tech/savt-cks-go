@@ -47,6 +47,7 @@ export type CheckoutQuote = {
     feeType: "PERCENTAGE" | "FIXED";
     rate: string | null;
     fixedAmountMinor: number | null;
+    minimumAmountMinor?: number | null;
   };
   processingFeeMinor: number;
   grandTotalMinor: number;
@@ -127,9 +128,16 @@ const line = (value: unknown): QuoteLine => {
 };
 
 const processing = (value: unknown): CheckoutQuote["processingFee"] => {
+  if (!record(value)) return fail();
+  const hasMinimum = Object.hasOwn(value, "minimumAmountMinor");
   if (
-    !record(value) ||
-    !exact(value, ["enabled", "feeType", "rate", "fixedAmountMinor"]) ||
+    !exact(value, [
+      "enabled",
+      "feeType",
+      "rate",
+      "fixedAmountMinor",
+      ...(hasMinimum ? ["minimumAmountMinor"] : []),
+    ]) ||
     typeof value.enabled !== "boolean" ||
     !["PERCENTAGE", "FIXED"].includes(String(value.feeType)) ||
     !(
@@ -138,7 +146,13 @@ const processing = (value: unknown): CheckoutQuote["processingFee"] => {
         value.rate.length <= 32 &&
         /^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value.rate))
     ) ||
-    !nullableMoney(value.fixedAmountMinor)
+    !nullableMoney(value.fixedAmountMinor) ||
+    (hasMinimum &&
+      value.minimumAmountMinor !== null &&
+      !money(value.minimumAmountMinor)) ||
+    (value.feeType === "FIXED" &&
+      hasMinimum &&
+      value.minimumAmountMinor !== null)
   )
     return fail();
   if (

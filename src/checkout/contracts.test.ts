@@ -1,8 +1,162 @@
 import { describe, expect, it } from "vitest";
 import { parseQuote } from "./contracts";
-import { id, quoteEnvelope } from "./test-fixtures";
+import { id, minimumQuoteEnvelope, quoteEnvelope } from "./test-fixtures";
 
 describe("trusted quote response contract", () => {
+  it("keeps legacy processing rules without a minimum compatible", () => {
+    expect(parseQuote(quoteEnvelope()).processingFee).not.toHaveProperty(
+      "minimumAmountMinor",
+    );
+  });
+
+  it.each([null, 0])("accepts a percentage minimum of %s", (minimum) => {
+    const value = quoteEnvelope();
+    Object.assign(value.data.processingFee, { minimumAmountMinor: minimum });
+    expect(parseQuote(value).processingFee.minimumAmountMinor).toBe(minimum);
+  });
+
+  it.each([
+    [5000, 200, 5200],
+    [10000, 300, 10300],
+  ] as const)(
+    "accepts an RM2 minimum with basis %i and preserves the supplied fee and total",
+    (basis, fee, total) => {
+      expect(parseQuote(minimumQuoteEnvelope(basis))).toMatchObject({
+        processingFee: { minimumAmountMinor: 200 },
+        processingFeeMinor: fee,
+        grandTotalMinor: total,
+      });
+    },
+  );
+
+  it("accepts a frozen minimum above the settings Int32 bound", () => {
+    const value = minimumQuoteEnvelope(5000);
+    value.data.processingFee.minimumAmountMinor = 2_147_483_648;
+    value.data.processingFeeMinor = 2_147_483_648;
+    value.data.grandTotalMinor = 2_147_488_648;
+    expect(parseQuote(value).processingFee.minimumAmountMinor).toBe(
+      2_147_483_648,
+    );
+  });
+
+  it("accepts the documented safe-integer maximum for frozen quote money", () => {
+    const value = quoteEnvelope();
+    Object.assign(value.data.processingFee, {
+      minimumAmountMinor: Number.MAX_SAFE_INTEGER,
+    });
+    value.data.items[0].unitPriceMinor = 0;
+    value.data.items[0].lineSubtotalMinor = 0;
+    value.data.itemsSubtotalMinor = 0;
+    value.data.netItemsTotalMinor = 0;
+    value.data.baseDeliveryFeeMinor = 0;
+    value.data.finalDeliveryChargeMinor = 0;
+    value.data.processingFeeBasisMinor = 0;
+    value.data.processingFeeMinor = Number.MAX_SAFE_INTEGER;
+    value.data.grandTotalMinor = Number.MAX_SAFE_INTEGER;
+    expect(parseQuote(value).processingFee.minimumAmountMinor).toBe(
+      Number.MAX_SAFE_INTEGER,
+    );
+  });
+
+  it.each([
+    -1,
+    0.5,
+    200.5,
+    Number.MAX_SAFE_INTEGER + 1,
+    NaN,
+    Infinity,
+    -Infinity,
+    "200",
+    true,
+    false,
+    {},
+    [],
+    undefined,
+  ])("rejects invalid minimum %s", (minimum) => {
+    const value = quoteEnvelope();
+    Object.assign(value.data.processingFee, { minimumAmountMinor: minimum });
+    expect(() => parseQuote(value)).toThrow("Invalid checkout quote response");
+  });
+
+  it.each([true, false])(
+    "accepts legacy and null minimum Fixed rules when enabled is %s",
+    (enabled) => {
+      const value = quoteEnvelope();
+      Object.assign(value.data.processingFee, {
+        enabled,
+        feeType: "FIXED",
+        rate: null,
+        fixedAmountMinor: 42,
+      });
+      if (!enabled) {
+        value.data.processingFeeMinor = 0;
+        value.data.grandTotalMinor = 1390;
+      }
+      expect(parseQuote(value).processingFee.feeType).toBe("FIXED");
+      Object.assign(value.data.processingFee, { minimumAmountMinor: null });
+      expect(parseQuote(value).processingFee.minimumAmountMinor).toBeNull();
+    },
+  );
+
+  it("preserves a disabled percentage minimum and the zero backend fee", () => {
+    const value = minimumQuoteEnvelope(5000);
+    value.data.processingFee.enabled = false;
+    value.data.processingFeeMinor = 0;
+    value.data.grandTotalMinor = 5000;
+    expect(parseQuote(value)).toMatchObject({
+      processingFee: { enabled: false, minimumAmountMinor: 200 },
+      processingFeeMinor: 0,
+      grandTotalMinor: 5000,
+    });
+  });
+
+  it.each([
+    [true, 0],
+    [true, 200],
+    [false, 0],
+    [false, 200],
+  ])("rejects enabled=%s Fixed rules with minimum %i", (enabled, minimum) => {
+    const value = quoteEnvelope();
+    Object.assign(value.data.processingFee, {
+      enabled,
+      feeType: "FIXED",
+      rate: null,
+      fixedAmountMinor: 42,
+      minimumAmountMinor: minimum,
+    });
+    expect(() => parseQuote(value)).toThrow("Invalid checkout quote response");
+  });
+
+  it("rejects unknown processing fields alongside a valid minimum", () => {
+    const value = minimumQuoteEnvelope(5000);
+    Object.assign(value.data.processingFee, { unexpected: null });
+    expect(() => parseQuote(value)).toThrow("Invalid checkout quote response");
+  });
+
+  it.each(["enabled", "feeType", "rate", "fixedAmountMinor"])(
+    "still requires processing field %s alongside a valid minimum",
+    (key) => {
+      const value = minimumQuoteEnvelope(5000);
+      delete (value.data.processingFee as Record<string, unknown>)[key];
+      expect(() => parseQuote(value)).toThrow(
+        "Invalid checkout quote response",
+      );
+    },
+  );
+
+  it.each([
+    ["unknown quote field", { unexpected: null }],
+    ["invalid quote identity", { quoteId: "bad" }],
+    ["empty quote token", { quoteToken: "" }],
+    ["invalid outlet identity", { outletId: "bad" }],
+    ["incorrect processing basis", { processingFeeBasisMinor: 5001 }],
+    ["incorrect grand total", { grandTotalMinor: 5201 }],
+  ])("retains quote validation with a minimum: %s", (_name, patch) => {
+    const value = minimumQuoteEnvelope(5000);
+    Object.assign(value.data, patch);
+    expect(() => parseQuote(value)).toThrow("Invalid checkout quote response");
+  });
+
   it("parses authoritative lines, totals, timing, expiry and optional assignment evidence", () => {
     const quote = parseQuote(quoteEnvelope());
     expect(quote.items[0]).toMatchObject({
