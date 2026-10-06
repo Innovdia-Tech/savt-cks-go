@@ -61,5 +61,8 @@
     "swipeDoesNotActivate": true,
     "emptySectionsHidden": true,
     "advertisementFailureSoft": true
+  },
+  {
+    "refreshedArtworkRetriesAfterImageFailure": true
   }
 ]

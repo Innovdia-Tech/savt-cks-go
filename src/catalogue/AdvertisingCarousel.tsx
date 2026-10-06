@@ -138,6 +138,11 @@ export function AdvertisingCarousel({
   const multiple = renderableSlides.length > 1;
 
   useEffect(() => {
+    // A refreshed backend response may have repaired or replaced the artwork.
+    setFailedIds(new Set());
+  }, [slides]);
+
+  useEffect(() => {
     if (current >= renderableSlides.length) setCurrent(0);
   }, [current, renderableSlides.length]);
 

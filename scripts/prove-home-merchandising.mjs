@@ -70,6 +70,7 @@ async function fixture(viewport, options = {}) {
     updatedAt: now,
   };
   let adsFail = options.adsFail ?? false;
+  let imageFail = options.imageFail ?? false;
   let releaseProduct;
   const productHold = options.holdProduct
     ? new Promise((resolve) => {
@@ -112,11 +113,18 @@ async function fixture(viewport, options = {}) {
       context: req.headers()["x-cks-assignment-context"],
     });
     let body;
-    if (u.pathname.includes("/advertisement-media/"))
+    if (u.pathname.includes("/advertisement-media/")) {
+      if (imageFail)
+        return route.fulfill({
+          status: 503,
+          headers: { "cache-control": "no-store" },
+          body: "",
+        });
       return route.fulfill({
         contentType: "image/svg+xml",
         body: '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="500"><rect width="1200" height="500" fill="#f3e8d3"/><text x="80" y="270" font-family="sans-serif" font-size="64" fill="#74301e">HQ creative fixture</text></svg>',
       });
+    }
     if (u.pathname === "/api/v1/customer/session")
       body = {
         data: {
@@ -265,6 +273,9 @@ async function fixture(viewport, options = {}) {
     opened,
     messages,
     releaseProduct,
+    retryImages: () => {
+      imageFail = false;
+    },
     retryAds: () => {
       adsFail = false;
     },
@@ -511,6 +522,24 @@ try {
     advertisementFailureSoft: true,
   });
   await failed.page.close();
+  const recoveredImage = await fixture(
+    { width: 390, height: 844 },
+    { imageFail: true },
+  );
+  await recoveredImage.page.waitForLoadState("networkidle");
+  assert.equal(
+    await recoveredImage.page.locator(".advertising-carousel").count(),
+    0,
+  );
+  recoveredImage.retryImages();
+  await recoveredImage.page
+    .getByRole("button", { name: "Refresh Home", exact: true })
+    .click();
+  await recoveredImage.page
+    .locator('img[alt="HQ uploaded fixture banner"]')
+    .waitFor();
+  results.push({ refreshedArtworkRetriesAfterImageFailure: true });
+  await recoveredImage.page.close();
   await writeFile(
     join(evidence, "acceptance.json"),
     JSON.stringify(results, null, 2) + "\n",
