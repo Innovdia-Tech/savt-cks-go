@@ -1,0 +1,20 @@
+{
+  "synthetic": true,
+  "backendHead": "5f73579305096680febaf5fc4f5c2bd3ba778c3e",
+  "transport": "loopback HTTP -> actual web proxy -> pinned CheckoutQuoteController/Service/serializer; synthetic test ports",
+  "requests": 4,
+  "smallQuotesCreated": 1,
+  "legacyQuotesCreated": 1,
+  "newClientAcceptedExactFixture": true,
+  "oldClientRejectsNewPayload": true,
+  "oldClientFreshAndReplay": "409 CHECKOUT_FEE_CONTRACT_UPGRADE_REQUIRED; no extra quote",
+  "oldAndNewClientsAcceptLegacy": true,
+  "money": {
+    "netItems": 1000,
+    "delivery": 500,
+    "fee": 300,
+    "total": 1800
+  },
+  "backendUnchanged": true,
+  "payments": 0
+}

@@ -12,7 +12,9 @@ describe("trusted quote response contract", () => {
   it.each([null, 0])("accepts a percentage minimum of %s", (minimum) => {
     const value = quoteEnvelope();
     Object.assign(value.data.processingFee, { minimumAmountMinor: minimum });
-    expect(parseQuote(value).processingFee.minimumAmountMinor).toBe(minimum);
+    expect(parseQuote(value).processingFee).toMatchObject({
+      minimumAmountMinor: minimum,
+    });
   });
 
   it.each([
@@ -34,9 +36,9 @@ describe("trusted quote response contract", () => {
     value.data.processingFee.minimumAmountMinor = 2_147_483_648;
     value.data.processingFeeMinor = 2_147_483_648;
     value.data.grandTotalMinor = 2_147_488_648;
-    expect(parseQuote(value).processingFee.minimumAmountMinor).toBe(
-      2_147_483_648,
-    );
+    expect(parseQuote(value).processingFee).toMatchObject({
+      minimumAmountMinor: 2_147_483_648,
+    });
   });
 
   it("accepts the documented safe-integer maximum for frozen quote money", () => {
@@ -53,9 +55,9 @@ describe("trusted quote response contract", () => {
     value.data.processingFeeBasisMinor = 0;
     value.data.processingFeeMinor = Number.MAX_SAFE_INTEGER;
     value.data.grandTotalMinor = Number.MAX_SAFE_INTEGER;
-    expect(parseQuote(value).processingFee.minimumAmountMinor).toBe(
-      Number.MAX_SAFE_INTEGER,
-    );
+    expect(parseQuote(value).processingFee).toMatchObject({
+      minimumAmountMinor: Number.MAX_SAFE_INTEGER,
+    });
   });
 
   it.each([
@@ -94,7 +96,9 @@ describe("trusted quote response contract", () => {
       }
       expect(parseQuote(value).processingFee.feeType).toBe("FIXED");
       Object.assign(value.data.processingFee, { minimumAmountMinor: null });
-      expect(parseQuote(value).processingFee.minimumAmountMinor).toBeNull();
+      expect(parseQuote(value).processingFee).toMatchObject({
+        minimumAmountMinor: null,
+      });
     },
   );
 
@@ -190,7 +194,7 @@ describe("trusted quote response contract", () => {
     } = quoteEnvelope().data;
     data.processingFee.rate = "0.03";
 
-    expect(parseQuote({ data }).processingFee.rate).toBe("0.03");
+    expect(parseQuote({ data }).processingFee).toMatchObject({ rate: "0.03" });
   });
 
   it.each(["0", "0.03", "0.0300", "1", "1.5"])(
@@ -198,7 +202,7 @@ describe("trusted quote response contract", () => {
     (rate) => {
       const value = quoteEnvelope();
       value.data.processingFee.rate = rate;
-      expect(parseQuote(value).processingFee.rate).toBe(rate);
+      expect(parseQuote(value).processingFee).toMatchObject({ rate });
     },
   );
 

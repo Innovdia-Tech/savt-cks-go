@@ -44,8 +44,10 @@ describe("trusted quote HTTP boundary", () => {
       "content-type",
       "idempotency-key",
       "x-cks-csrf",
+      "x-cks-fee-contract",
     ]);
     expect(headers.get("Idempotency-Key")).toBe(key);
+    expect(headers.get("X-CKS-Fee-Contract")).toBe("small-order-fee-v1");
     expect(headers.get("x-cks-csrf")).toMatch(/^[\w-]{43}$/);
     expect(headers.has("X-CKS-Assignment-Context")).toBe(false);
     expect(String(url)).not.toMatch(/customerAddress|assignment|context|csrf/i);
@@ -74,6 +76,9 @@ describe("trusted quote HTTP boundary", () => {
 
   it.each([
     [409, "CHECKOUT_OUTLET_PRODUCT_UNAVAILABLE"],
+    [409, "CHECKOUT_FEE_CONTRACT_UPGRADE_REQUIRED"],
+    [409, "CHECKOUT_PROCESSING_FEE_UNCONFIGURED"],
+    [409, "CHECKOUT_PROCESSING_FEE_INVALID"],
     [409, "CHECKOUT_INSUFFICIENT_STOCK"],
     [409, "CHECKOUT_OUTLET_ASSIGNMENT_MISMATCH"],
     [409, "CUSTOMER_ADDRESS_CHANGED"],

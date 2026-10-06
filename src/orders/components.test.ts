@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import type { OrderDetail, OrderPage } from "./contracts";
 import { OrderDetailScreen, OrdersScreen } from "./components";
 import type { OrdersState } from "./state";
@@ -138,6 +139,51 @@ const controller = {
   refreshDocuments: async () => {},
   reportReceiptSaveFailure: () => {},
 };
+
+describe("historical and new-policy order fee labels", () => {
+  it.each([
+    "legacy-percentage",
+    "small-charged",
+    "small-zero-tier",
+    "small-disabled",
+  ])("uses frozen %s evidence for the label and amount", (name) => {
+    const q = JSON.parse(
+      readFileSync(
+        new URL(
+          `../checkout/fixtures/small-order-fee01/${name}.json`,
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    ).data;
+    const order = structuredClone(detail);
+    Object.assign(order.money, {
+      itemsSubtotalMinor: q.itemsSubtotalMinor,
+      discountAmountMinor: q.discountAmountMinor,
+      netItemsTotalMinor: q.netItemsTotalMinor,
+      finalDeliveryChargeMinor: q.finalDeliveryChargeMinor,
+      processingFeeMinor: q.processingFeeMinor,
+      grandTotalMinor: q.grandTotalMinor,
+      processingFee: q.processingFee,
+    });
+    const html = renderToStaticMarkup(
+      createElement(OrderDetailScreen, {
+        state: state({ detail: order }),
+        controller,
+      } as never),
+    );
+    expect(html).toContain(
+      name.startsWith("small-")
+        ? "Small order processing fee"
+        : "Processing fee",
+    );
+    if (name.startsWith("small-"))
+      expect(html).not.toContain("<dt>Processing fee</dt>");
+    expect(html.includes("No small order fee for this order.")).toBe(
+      name === "small-zero-tier",
+    );
+  });
+});
 
 const progressStep = (html: string, label: string) => {
   const step = [...html.matchAll(/<li([^>]*)>([\s\S]*?)<\/li>/g)].find(

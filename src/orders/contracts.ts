@@ -1,3 +1,5 @@
+import { parseProcessingFee, type ProcessingFee } from "../checkout/contracts";
+
 export const customerOrderStages = [
   "ORDER_RECEIVED",
   "PICK_AND_PACK",
@@ -71,6 +73,7 @@ export type OrderDetail = {
     netItemsTotalMinor: number;
     finalDeliveryChargeMinor: number;
     processingFeeMinor: number;
+    processingFee?: ProcessingFee;
     grandTotalMinor: number;
     currency: "MYR";
   };
@@ -344,7 +347,7 @@ export const parseOrderDetail = (value: unknown): OrderDetail => {
     !nullableDate(fulfilment.confirmedAt)
   )
     invalid();
-  const money = exact(item.money, [
+  const moneyKeys = [
     "itemsSubtotalMinor",
     "discountAmountMinor",
     "netItemsTotalMinor",
@@ -352,6 +355,11 @@ export const parseOrderDetail = (value: unknown): OrderDetail => {
     "processingFeeMinor",
     "grandTotalMinor",
     "currency",
+  ];
+  const hasFeeEvidence = Object.hasOwn(record(item.money), "processingFee");
+  const money = exact(item.money, [
+    ...moneyKeys,
+    ...(hasFeeEvidence ? ["processingFee"] : []),
   ]);
   if (
     ![
@@ -365,6 +373,29 @@ export const parseOrderDetail = (value: unknown): OrderDetail => {
     money.currency !== "MYR"
   )
     invalid();
+  if (hasFeeEvidence) {
+    try {
+      money.processingFee = parseProcessingFee(
+        money.processingFee,
+        money.netItemsTotalMinor as number,
+        money.processingFeeMinor as number,
+      );
+      if (
+        (money.processingFee as ProcessingFee).feeType ===
+          "SMALL_ORDER_TIERS" &&
+        ((money.itemsSubtotalMinor as number) -
+          (money.discountAmountMinor as number) !==
+          money.netItemsTotalMinor ||
+          (money.netItemsTotalMinor as number) +
+            (money.finalDeliveryChargeMinor as number) +
+            (money.processingFeeMinor as number) !==
+            money.grandTotalMinor)
+      )
+        invalid();
+    } catch {
+      invalid();
+    }
+  }
   const destination = exact(item.destination, [
     "recipientName",
     "recipientPhoneE164",

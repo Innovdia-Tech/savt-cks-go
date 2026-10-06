@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import {
   parseCancellation,
   parseOrderDetail,
@@ -111,6 +112,58 @@ const detail = (): OrderDetail => ({
     metadataPath: null,
     downloadPath: null,
   },
+});
+
+describe("frozen order fee evidence", () => {
+  it.each([
+    "legacy-percentage",
+    "legacy-percentage-minimum",
+    "legacy-fixed",
+    "small-charged",
+    "small-no-match",
+    "small-zero-tier",
+    "small-disabled",
+  ])("accepts %s in the capability order projection", (name) => {
+    const q = JSON.parse(
+      readFileSync(
+        new URL(
+          `../checkout/fixtures/small-order-fee01/${name}.json`,
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    ).data;
+    const order = detail();
+    Object.assign(order.money, {
+      itemsSubtotalMinor: q.itemsSubtotalMinor,
+      discountAmountMinor: q.discountAmountMinor,
+      netItemsTotalMinor: q.netItemsTotalMinor,
+      finalDeliveryChargeMinor: q.finalDeliveryChargeMinor,
+      processingFeeMinor: q.processingFeeMinor,
+      grandTotalMinor: q.grandTotalMinor,
+      processingFee: q.processingFee,
+    });
+    expect(parseOrderDetail({ data: order }).money).toEqual(order.money);
+  });
+  it("rejects inconsistent or unknown order evidence without weakening legacy exact shape", () => {
+    for (const processingFee of [
+      null,
+      { feeType: "UNKNOWN" },
+      {
+        feeType: "SMALL_ORDER_TIERS",
+        policyKind: "SMALL_ORDER_TIERS",
+        enabled: true,
+        qualifyingAmountMinor: 3500,
+        matchedTier: null,
+        outcome: "NO_MATCH",
+        feeFreeFromMinor: 2000,
+      },
+    ]) {
+      const order = detail();
+      Object.assign(order.money, { processingFee });
+      expect(() => parseOrderDetail({ data: order })).toThrow();
+    }
+  });
 });
 
 describe("customer order contracts", () => {

@@ -17,6 +17,29 @@ export type QuoteLine = {
 
 type RuleReference = { ruleId: string; version: number };
 
+export const FEE_CONTRACT = "small-order-fee-v1";
+export type ProcessingFee =
+  | {
+      enabled: boolean;
+      feeType: "PERCENTAGE" | "FIXED";
+      rate: string | null;
+      fixedAmountMinor: number | null;
+      minimumAmountMinor?: number | null;
+    }
+  | {
+      feeType: "SMALL_ORDER_TIERS";
+      policyKind: "SMALL_ORDER_TIERS";
+      enabled: boolean;
+      qualifyingAmountMinor: number;
+      matchedTier: {
+        fromMinor: number;
+        belowMinor: number;
+        chargeMinor: number;
+      } | null;
+      outcome: "CHARGED" | "ZERO_TIER" | "NO_MATCH" | "DISABLED";
+      feeFreeFromMinor: number | null;
+    };
+
 export type CheckoutQuote = {
   quoteId: string;
   quoteToken: string;
@@ -42,13 +65,7 @@ export type CheckoutQuote = {
   deliveryDiscountMinor: number;
   finalDeliveryChargeMinor: number;
   processingFeeBasisMinor: number;
-  processingFee: {
-    enabled: boolean;
-    feeType: "PERCENTAGE" | "FIXED";
-    rate: string | null;
-    fixedAmountMinor: number | null;
-    minimumAmountMinor?: number | null;
-  };
+  processingFee: ProcessingFee;
   processingFeeMinor: number;
   grandTotalMinor: number;
   ruleReferences: {
@@ -127,8 +144,70 @@ const line = (value: unknown): QuoteLine => {
   return { ...value } as QuoteLine;
 };
 
-const processing = (value: unknown): CheckoutQuote["processingFee"] => {
+export function parseProcessingFee(
+  value: unknown,
+  netItems: number,
+  charged: number,
+): ProcessingFee {
   if (!record(value)) return fail();
+  if (value.feeType === "SMALL_ORDER_TIERS") {
+    const bound = (amount: unknown, min = 0): amount is number =>
+      integer(amount, min, 2_147_483_647);
+    if (
+      !exact(value, [
+        "feeType",
+        "policyKind",
+        "enabled",
+        "qualifyingAmountMinor",
+        "matchedTier",
+        "outcome",
+        "feeFreeFromMinor",
+      ]) ||
+      value.policyKind !== "SMALL_ORDER_TIERS" ||
+      typeof value.enabled !== "boolean" ||
+      !money(value.qualifyingAmountMinor) ||
+      value.qualifyingAmountMinor !== netItems ||
+      !money(charged)
+    )
+      return fail();
+    if (!value.enabled) {
+      if (
+        value.outcome !== "DISABLED" ||
+        value.matchedTier !== null ||
+        value.feeFreeFromMinor !== null ||
+        charged !== 0
+      )
+        return fail();
+    } else {
+      if (!bound(value.feeFreeFromMinor)) return fail();
+      const tier = value.matchedTier;
+      if (value.outcome === "NO_MATCH") {
+        if (tier !== null || charged !== 0 || netItems < value.feeFreeFromMinor)
+          return fail();
+      } else {
+        if (
+          !record(tier) ||
+          !exact(tier, ["fromMinor", "belowMinor", "chargeMinor"]) ||
+          !bound(tier.fromMinor) ||
+          !bound(tier.belowMinor, 1) ||
+          !bound(tier.chargeMinor) ||
+          tier.fromMinor >= tier.belowMinor ||
+          netItems < tier.fromMinor ||
+          netItems >= tier.belowMinor ||
+          tier.chargeMinor !== charged
+        )
+          return fail();
+        if (value.outcome === "CHARGED") {
+          if (charged === 0 || value.feeFreeFromMinor < tier.belowMinor)
+            return fail();
+        } else if (value.outcome === "ZERO_TIER") {
+          if (charged !== 0 || value.feeFreeFromMinor > tier.fromMinor)
+            return fail();
+        } else return fail();
+      }
+    }
+    return { ...value } as ProcessingFee;
+  }
   const hasMinimum = Object.hasOwn(value, "minimumAmountMinor");
   if (
     !exact(value, [
@@ -164,7 +243,7 @@ const processing = (value: unknown): CheckoutQuote["processingFee"] => {
   )
     return fail();
   return { ...value } as CheckoutQuote["processingFee"];
-};
+}
 
 const promotion = (value: unknown): Record<string, unknown> | null => {
   if (value === null) return null;
@@ -302,7 +381,11 @@ export function parseQuote(value: unknown): CheckoutQuote {
     ])
   )
     return fail();
-  const processingFee = processing(data.processingFee);
+  const processingFee = parseProcessingFee(
+    data.processingFee,
+    data.netItemsTotalMinor as number,
+    data.processingFeeMinor as number,
+  );
   if (
     !uuid(data.quoteId) ||
     !text(data.quoteToken, 4096) ||

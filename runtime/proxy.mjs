@@ -7,6 +7,7 @@ const requestHeaders = [
   "cookie",
   "origin",
   "x-cks-csrf",
+  "x-cks-fee-contract",
   "x-cks-assignment-context",
   "idempotency-key",
   "if-match",

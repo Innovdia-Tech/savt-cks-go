@@ -1,0 +1,76 @@
+{
+  "data": {
+    "quoteId": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+    "currency": "MYR",
+    "items": [
+      {
+        "outletProductId": "33333333-3333-4333-8333-333333333333",
+        "productId": "44444444-4444-4444-8444-444444444444",
+        "skuCode": "SKU-001",
+        "productNameSnapshot": "Frozen product",
+        "uomCodeSnapshot": "EA",
+        "uomNameSnapshot": "Each",
+        "quantity": 2,
+        "unitPriceMinor": 500,
+        "lineSubtotalMinor": 1000
+      }
+    ],
+    "itemsSubtotalMinor": 1000,
+    "discountAmountMinor": 0,
+    "baseDeliveryFeeMinor": 500,
+    "deliveryDiscountMinor": 0,
+    "processingFeeMinor": 45,
+    "netItemsTotalMinor": 1000,
+    "finalDeliveryChargeMinor": 500,
+    "processingFeeBasisMinor": 1500,
+    "grandTotalMinor": 1545,
+    "routeDistanceMeters": 3500,
+    "distanceKm": 3.5,
+    "routeDurationSeconds": 840,
+    "distanceProvider": "GOOGLE_ROUTES",
+    "deliveryBandId": "66666666-6666-4666-8666-666666666666",
+    "deliverySlaMinutes": 25,
+    "preparationTargetMinutes": 30,
+    "minimumTravelSlaMinutes": 20,
+    "operationalAllowanceMinutes": 10,
+    "roundingIntervalMinutes": 5,
+    "googleEstimatedTravelMinutes": 14,
+    "committedTravelSlaMinutes": 25,
+    "estimatedTotalOrderMinutes": 55,
+    "processingFee": {
+      "enabled": true,
+      "feeType": "PERCENTAGE",
+      "rate": "0.0300",
+      "fixedAmountMinor": null,
+      "minimumAmountMinor": null
+    },
+    "ruleReferences": {
+      "scheduling": {
+        "ruleId": "77777777-7777-4777-8777-777777777777",
+        "version": 3
+      },
+      "deliveryPricing": {
+        "ruleId": "55555555-5555-4555-8555-555555555555",
+        "version": 2
+      },
+      "deliveryTiming": {
+        "ruleId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "version": 6
+      },
+      "freeDelivery": null,
+      "processingFee": {
+        "ruleId": "88888888-8888-4888-8888-888888888888",
+        "version": 4
+      },
+      "refundPolicy": {
+        "ruleId": "99999999-9999-4999-8999-999999999999",
+        "version": 5
+      }
+    },
+    "deliveryPromotion": null,
+    "savtVoucher": null,
+    "quoteIssuedAt": "2026-09-03T06:00:00.000Z",
+    "quoteExpiresAt": "2026-09-03T06:10:00.000Z",
+    "quoteToken": "SYNTHETIC-NONFUNCTIONAL-QUOTE-TOKEN"
+  }
+}

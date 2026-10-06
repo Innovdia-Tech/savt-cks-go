@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import type { Address } from "../addresses/contracts";
 import type { Assignment, Product } from "../catalogue/contracts";
 import { QuoteError, type QuoteRequest } from "./api";
@@ -82,6 +83,147 @@ function fixture(
   controller.syncAssignment(addressA, assignmentA);
   return { controller, create, assign };
 }
+
+const smallQuote = (name = "small-charged") => {
+  const body = JSON.parse(
+    readFileSync(
+      new URL(`./fixtures/small-order-fee01/${name}.json`, import.meta.url),
+      "utf8",
+    ),
+  );
+  Object.assign(body.data.items[0], {
+    outletProductId: id("2"),
+    productId: id("3"),
+  });
+  Object.assign(body.data, {
+    quoteIssuedAt: "2026-09-20T04:00:00.000Z",
+    quoteExpiresAt: "2026-09-20T04:10:00.000Z",
+  });
+  return body;
+};
+describe("small-order evidence through existing checkout safeguards", () => {
+  it.each([
+    "small-charged",
+    "small-zero-tier",
+    "small-no-match",
+    "small-disabled",
+  ])(
+    "invalidates %s on cart changes without calculating a replacement fee",
+    async (name) => {
+      const q = parseQuote(smallQuote(name));
+      const { controller, create } = fixture({ quote: () => q });
+      controller.add(
+        product(id("2"), id("3"), q.items[0].unitPriceMinor),
+        assignmentA,
+      );
+      controller.setQuantity(id("2"), 2);
+      await controller.requestQuote();
+      expect(controller.getSnapshot()).toMatchObject({
+        quotePhase: "ready",
+        quote: q,
+      });
+      controller.setQuantity(id("2"), 3);
+      expect(controller.getSnapshot()).toMatchObject({
+        quotePhase: "idle",
+        quote: null,
+      });
+      expect(create).toHaveBeenCalledTimes(1);
+      controller.dispose();
+    },
+  );
+
+  it("requires acceptance of a changed server fee after payment freeze recovery", async () => {
+    const next = smallQuote();
+    next.data.processingFee.matchedTier.chargeMinor = 100;
+    next.data.processingFeeMinor = 100;
+    next.data.grandTotalMinor = 1600;
+    const create = vi
+      .fn()
+      .mockResolvedValueOnce(parseQuote(smallQuote()))
+      .mockResolvedValueOnce(parseQuote(next));
+    const controller = new CartController({ create }, { assign: vi.fn() }, () =>
+      Date.parse("2026-09-20T04:00:00.000Z"),
+    );
+    controller.syncAssignment(addressA, assignmentA);
+    controller.add(product(id("2"), id("3"), 500), assignmentA);
+    controller.setQuantity(id("2"), 2);
+    await controller.requestQuote();
+    expect(
+      controller.freezeForPayment(controller.getSnapshot().quote!.quoteId),
+    ).toBe(true);
+    controller.recoverBasketAfterPayment();
+    await controller.requestQuote();
+    expect(controller.getSnapshot()).toMatchObject({
+      quotePhase: "price-review",
+      payableTotalChanged: true,
+      previousPayableTotalMinor: 1800,
+      quote: { grandTotalMinor: 1600 },
+    });
+    expect(
+      controller.freezeForPayment(controller.getSnapshot().quote!.quoteId),
+    ).toBe(false);
+    controller.acceptPriceChanges();
+    expect(controller.getSnapshot().quotePhase).toBe("ready");
+    controller.dispose();
+  });
+
+  it("fences a late new-policy response after quantity invalidation", async () => {
+    let resolve!: (value: ReturnType<typeof parseQuote>) => void;
+    const create = () =>
+      new Promise<ReturnType<typeof parseQuote>>((r) => {
+        resolve = r;
+      });
+    const controller = new CartController({ create }, { assign: vi.fn() }, () =>
+      Date.parse("2026-09-20T04:00:00.000Z"),
+    );
+    controller.syncAssignment(addressA, assignmentA);
+    controller.add(product(id("2"), id("3"), 500), assignmentA);
+    controller.setQuantity(id("2"), 2);
+    const pending = controller.requestQuote();
+    controller.setQuantity(id("2"), 3);
+    resolve(parseQuote(smallQuote()));
+    await pending;
+    expect(controller.getSnapshot()).toMatchObject({
+      quote: null,
+      quotePhase: "idle",
+    });
+    controller.dispose();
+  });
+
+  it("expires new-policy quotes and preserves the frozen one during payment", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-20T04:00:00.000Z"));
+    try {
+      for (const frozen of [false, true]) {
+        const create = vi.fn(async () => parseQuote(smallQuote()));
+        const controller = new CartController(
+          { create },
+          { assign: vi.fn() },
+          Date.now,
+        );
+        controller.syncAssignment(addressA, assignmentA);
+        controller.add(product(id("2"), id("3"), 500), assignmentA);
+        controller.setQuantity(id("2"), 2);
+        await controller.requestQuote();
+        if (frozen)
+          expect(
+            controller.freezeForPayment(
+              controller.getSnapshot().quote!.quoteId,
+            ),
+          ).toBe(true);
+        await vi.advanceTimersByTimeAsync(600000);
+        expect(controller.getSnapshot().quotePhase).toBe(
+          frozen ? "ready" : "expired",
+        );
+        expect(create).toHaveBeenCalledTimes(1);
+        controller.dispose();
+        vi.setSystemTime(new Date("2026-09-20T04:00:00.000Z"));
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
 
 describe("real cart invariants", () => {
   it("merges only identical outletProductId lines and preserves display snapshots", () => {

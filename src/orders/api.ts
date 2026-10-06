@@ -1,6 +1,7 @@
 import { ApiClientError } from "../api/client";
 import { parseApiErrorEnvelope } from "../api/contracts";
 import { uuid } from "../customer/contracts";
+import { FEE_CONTRACT } from "../checkout/contracts";
 import type { CustomerSessionController } from "../session/controller";
 import {
   parseOrderDetail,
@@ -13,6 +14,7 @@ import {
 
 const safeCodes = new Set([
   "VALIDATION_FAILED",
+  "CHECKOUT_FEE_CONTRACT_UPGRADE_REQUIRED",
   "CUSTOMER_SESSION_INVALID",
   "CUSTOMER_CSRF_INVALID",
   "SAVT_IDENTITY_REQUIRED",
@@ -72,7 +74,7 @@ export class OrdersApi {
       return Promise.reject(new OrdersError("VALIDATION_FAILED"));
     return this.json(
       `/api/v1/customer/orders/${orderId}`,
-      { method: "GET" },
+      { method: "GET", headers: { "X-CKS-Fee-Contract": FEE_CONTRACT } },
       parseOrderDetail,
       external,
     );

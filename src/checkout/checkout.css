@@ -676,6 +676,25 @@
   padding-top: 0;
   font-size: var(--text-body);
 }
+.quote-totals > dd:not(.processing-fee-notes),
+.order-money > dd:not(.processing-fee-notes) {
+  white-space: nowrap;
+}
+.quote-totals .processing-fee-notes,
+.order-money .processing-fee-notes {
+  grid-column: 1 / -1;
+  text-align: left;
+  color: var(--color-text-muted);
+  font-size: var(--text-supporting);
+  font-weight: 400;
+  line-height: 1.5;
+}
+.processing-fee-notes p + p {
+  margin-top: 4px;
+}
+.processing-fee-notes .quote-evidence-details {
+  margin-top: 0;
+}
 .cart-stack--shopping .quote-grand {
   border-top: 1px solid var(--color-border);
   padding-top: 12px;

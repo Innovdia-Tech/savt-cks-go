@@ -36,8 +36,11 @@ describe("OrdersApi", () => {
 
   it("gets detail from the exact UUID route without query parameters", async () => {
     let url = "";
-    const api = new OrdersApi("", session, async (input) => {
+    const api = new OrdersApi("", session, async (input, init) => {
       url = String(input);
+      expect(new Headers(init?.headers).get("X-CKS-Fee-Contract")).toBe(
+        "small-order-fee-v1",
+      );
       return Response.json({ data: { invalid: true } });
     });
     await expect(api.detail(orderId)).rejects.toMatchObject({

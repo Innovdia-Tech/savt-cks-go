@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ComponentProps } from "react";
 import { PaymentPanel } from "../payment/components";
 import { MAX_LINE_QUANTITY } from "./contracts";
+import { ProcessingFeeDetails } from "./ProcessingFeeDetails";
 import {
   cartMerchandiseSummary,
   type CartController,
@@ -28,6 +29,18 @@ const malaysiaTime = (value: string) =>
   });
 
 const quoteErrors: Record<string, [string, string]> = {
+  CHECKOUT_FEE_CONTRACT_UPGRADE_REQUIRED: [
+    "Checkout needs updating",
+    "Return to Savt and reopen CKS Go, then check your basket again.",
+  ],
+  CHECKOUT_PROCESSING_FEE_UNCONFIGURED: [
+    "Fees temporarily unavailable",
+    "We couldn’t confirm your fees. Your basket was kept. Try again later.",
+  ],
+  CHECKOUT_PROCESSING_FEE_INVALID: [
+    "Fees temporarily unavailable",
+    "We couldn’t confirm your fees. Your basket was kept. Try again later.",
+  ],
   CHECKOUT_OUTLET_PRODUCT_NOT_FOUND: [
     "Product unavailable",
     "One item is no longer available. Remove it to continue.",
@@ -196,10 +209,27 @@ function QuoteSummary({
       <dl className="quote-totals">
         <dt>Items subtotal</dt>
         <dd>{money(quote.itemsSubtotalMinor)}</dd>
+        {quote.discountAmountMinor > 0 && (
+          <>
+            <dt>Discounts</dt>
+            <dd>−{money(quote.discountAmountMinor)}</dd>
+            <dt>Items total after discounts</dt>
+            <dd>{money(quote.netItemsTotalMinor)}</dd>
+          </>
+        )}
         <dt>Delivery fee</dt>
         <dd>{money(quote.finalDeliveryChargeMinor)}</dd>
-        <dt>Processing fee</dt>
+        <dt>
+          {quote.processingFee.feeType === "SMALL_ORDER_TIERS"
+            ? "Small order processing fee"
+            : "Processing fee"}
+        </dt>
         <dd>{money(quote.processingFeeMinor)}</dd>
+        {quote.processingFee.feeType === "SMALL_ORDER_TIERS" && (
+          <dd className="processing-fee-notes">
+            <ProcessingFeeDetails fee={quote.processingFee} />
+          </dd>
+        )}
         <dt className="quote-grand">Total</dt>
         <dd className="quote-grand">{money(quote.grandTotalMinor)}</dd>
       </dl>
@@ -403,8 +433,7 @@ export function CartScreen({
             <strong>{money(subtotal)}</strong>
           </div>
           <p className="catalogue-caption">
-            Item prices are estimates. Delivery and processing fees are
-            confirmed at review.
+            Item prices are estimates. Fees are confirmed at checkout.
           </p>
           {!state.assignment && (
             <p className="catalogue-caption" role="status">

@@ -1,0 +1,217 @@
+{
+  "synthetic": true,
+  "physicalAndroid": "pending",
+  "browser": "154.0.8037.98",
+  "results": [
+    {
+      "screen": "Basket/Checkout",
+      "fixture": "legacy-percentage",
+      "width": 390,
+      "fee": 45,
+      "total": 1545,
+      "paymentEnabled": true,
+      "overflow": false
+    },
+    {
+      "screen": "Basket/Checkout",
+      "fixture": "legacy-percentage-minimum",
+      "width": 390,
+      "fee": 200,
+      "total": 1700,
+      "paymentEnabled": true,
+      "overflow": false
+    },
+    {
+      "screen": "Basket/Checkout",
+      "fixture": "legacy-fixed",
+      "width": 390,
+      "fee": 125,
+      "total": 1625,
+      "paymentEnabled": true,
+      "overflow": false
+    },
+    {
+      "screen": "Basket/Checkout",
+      "fixture": "small-charged",
+      "width": 390,
+      "fee": 300,
+      "total": 1800,
+      "paymentEnabled": true,
+      "overflow": false
+    },
+    {
+      "screen": "Basket/Checkout",
+      "fixture": "small-no-match",
+      "width": 390,
+      "fee": 0,
+      "total": 2500,
+      "paymentEnabled": true,
+      "overflow": false
+    },
+    {
+      "screen": "Basket/Checkout",
+      "fixture": "small-zero-tier",
+      "width": 390,
+      "fee": 0,
+      "total": 1500,
+      "paymentEnabled": true,
+      "overflow": false
+    },
+    {
+      "screen": "Basket/Checkout",
+      "fixture": "small-disabled",
+      "width": 390,
+      "fee": 0,
+      "total": 1500,
+      "paymentEnabled": true,
+      "overflow": false
+    },
+    {
+      "screen": "Order detail",
+      "fixture": "legacy-percentage",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "screen": "Order detail",
+      "fixture": "small-charged",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "screen": "Order detail",
+      "fixture": "small-zero-tier",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "screen": "Order detail",
+      "fixture": "small-disabled",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "screen": "Basket/Checkout",
+      "fixture": "legacy-percentage",
+      "width": 320,
+      "fee": 45,
+      "total": 1545,
+      "paymentEnabled": true,
+      "overflow": false
+    },
+    {
+      "screen": "Basket/Checkout",
+      "fixture": "legacy-percentage-minimum",
+      "width": 320,
+      "fee": 200,
+      "total": 1700,
+      "paymentEnabled": true,
+      "overflow": false
+    },
+    {
+      "screen": "Basket/Checkout",
+      "fixture": "legacy-fixed",
+      "width": 320,
+      "fee": 125,
+      "total": 1625,
+      "paymentEnabled": true,
+      "overflow": false
+    },
+    {
+      "screen": "Basket/Checkout",
+      "fixture": "small-charged",
+      "width": 320,
+      "fee": 300,
+      "total": 1800,
+      "paymentEnabled": true,
+      "overflow": false
+    },
+    {
+      "screen": "Basket/Checkout",
+      "fixture": "small-no-match",
+      "width": 320,
+      "fee": 0,
+      "total": 2500,
+      "paymentEnabled": true,
+      "overflow": false
+    },
+    {
+      "screen": "Basket/Checkout",
+      "fixture": "small-zero-tier",
+      "width": 320,
+      "fee": 0,
+      "total": 1500,
+      "paymentEnabled": true,
+      "overflow": false
+    },
+    {
+      "screen": "Basket/Checkout",
+      "fixture": "small-disabled",
+      "width": 320,
+      "fee": 0,
+      "total": 1500,
+      "paymentEnabled": true,
+      "overflow": false
+    },
+    {
+      "screen": "Order detail",
+      "fixture": "legacy-percentage",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "screen": "Order detail",
+      "fixture": "small-charged",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "screen": "Order detail",
+      "fixture": "small-zero-tier",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "screen": "Order detail",
+      "fixture": "small-disabled",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "recovery": "same-key network retry, address invalidation, payment freeze",
+      "passed": true
+    },
+    {
+      "scenario": "legacy-absence",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "scenario": "discounted",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "scenario": "invalid-evidence",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "conflict": "CHECKOUT_FEE_CONTRACT_UPGRADE_REQUIRED",
+      "basketRetained": true,
+      "noFinalFeeOrPaymentAction": true
+    },
+    {
+      "conflict": "CHECKOUT_PROCESSING_FEE_UNCONFIGURED",
+      "basketRetained": true,
+      "noFinalFeeOrPaymentAction": true
+    },
+    {
+      "conflict": "CHECKOUT_PROCESSING_FEE_INVALID",
+      "basketRetained": true,
+      "noFinalFeeOrPaymentAction": true
+    }
+  ],
+  "errors": [],
+  "forbiddenRequests": 0
+}

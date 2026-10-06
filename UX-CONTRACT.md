@@ -1,5 +1,39 @@
 # Customer UI contract
 
+## SMALL-ORDER-FEE01 frozen fee presentation
+
+Source: the approved SMALL-ORDER-FEE01 brief and backend handoff
+`docs/handoffs/small-order-fee01/CONTRACT.md` at
+`5f73579305096680febaf5fc4f5c2bd3ba778c3e`. This section supersedes only
+processing-fee presentation for the new policy; legacy quotes and orders keep
+their original Processing fee label and stored amount.
+
+`checkout/contracts.ts` owns the closed fee union and evidence checks, shared
+with optional capability order detail. `QuoteApi` and `OrdersApi.detail` send
+`X-CKS-Fee-Contract: small-order-fee-v1`; the same-origin proxy forwards it.
+No browser field selects a policy or calculates a charge. Missing/corrupt
+configuration and upgrade conflicts preserve the basket without a final total
+or payment action. Existing explicit refresh/reopen recovery remains canonical.
+
+QuoteSummary retains Items subtotal, negative Discounts and Items total after
+discounts when applicable, Delivery fee, one Small order processing fee, then
+Total. The single fee and Pay amount use the accepted server quote. Before that
+quote, fees remain unconfirmed and Checkout remains explicit.
+
+`ProcessingFeeDetails` is the shared checkout/order owner for the persistent
+helper “Based on items total after discounts. Delivery is excluded.”, enabled
+zero copy “No small order fee for this order.” and explicit disabled copy.
+Additional help uses the existing native details/summary disclosure with tap,
+Enter/Space and visible focus. No current HQ settings are fetched or inferred.
+Labels may wrap; amounts stay aligned without shrinking text. The existing
+fonts, controls, shell and payment hierarchy remain unchanged.
+
+Cart/address/voucher invalidation, quote expiry, same-attempt retries, stale
+response fencing, changed-total review, payment freeze, native return and
+receipt saving retain their existing controllers. Parser/render/state tests,
+the dedicated bounded local backend check and synthetic browser acceptance at
+390×844/320×844 own verification. Physical Android acceptance remains separate.
+
 ## FE-FINAL01 native payment return recovery
 
 The FE-FINAL01 brief supersedes PAY06B's lack of recovery after app/WebView

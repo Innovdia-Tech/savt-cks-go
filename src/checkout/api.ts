@@ -5,6 +5,7 @@ import type { CustomerSessionController } from "../session/controller";
 import {
   MAX_CART_LINES,
   MAX_LINE_QUANTITY,
+  FEE_CONTRACT,
   parseQuote,
   type CheckoutQuote,
 } from "./contracts";
@@ -18,6 +19,9 @@ export type QuoteRequest = {
 
 const safeCodes = new Set([
   "VALIDATION_FAILED",
+  "CHECKOUT_FEE_CONTRACT_UPGRADE_REQUIRED",
+  "CHECKOUT_PROCESSING_FEE_UNCONFIGURED",
+  "CHECKOUT_PROCESSING_FEE_INVALID",
   "CUSTOMER_SESSION_INVALID",
   "CUSTOMER_CSRF_INVALID",
   "SAVT_IDENTITY_REQUIRED",
@@ -105,6 +109,7 @@ export class QuoteApi {
                   "Content-Type": "application/json",
                   "Idempotency-Key": idempotencyKey,
                   "x-cks-csrf": csrf,
+                  "X-CKS-Fee-Contract": FEE_CONTRACT,
                 },
                 credentials: "include",
                 cache: "no-store",

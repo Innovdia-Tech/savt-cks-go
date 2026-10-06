@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ProcessingFeeDetails } from "../checkout/ProcessingFeeDetails";
 import type {
   CustomerOrderStage,
   OrderDetail,
@@ -560,12 +561,27 @@ export function OrderDetailScreen({
             <>
               <dt>Discount</dt>
               <dd>−{money(order.money.discountAmountMinor)}</dd>
+              {order.money.processingFee?.feeType === "SMALL_ORDER_TIERS" && (
+                <>
+                  <dt>Items total after discounts</dt>
+                  <dd>{money(order.money.netItemsTotalMinor)}</dd>
+                </>
+              )}
             </>
           )}
           <dt>Delivery</dt>
           <dd>{money(order.money.finalDeliveryChargeMinor)}</dd>
-          <dt>Processing fee</dt>
+          <dt>
+            {order.money.processingFee?.feeType === "SMALL_ORDER_TIERS"
+              ? "Small order processing fee"
+              : "Processing fee"}
+          </dt>
           <dd>{money(order.money.processingFeeMinor)}</dd>
+          {order.money.processingFee?.feeType === "SMALL_ORDER_TIERS" && (
+            <dd className="processing-fee-notes">
+              <ProcessingFeeDetails fee={order.money.processingFee} />
+            </dd>
+          )}
           <dt className="order-grand">Grand total</dt>
           <dd className="order-grand">{money(order.money.grandTotalMinor)}</dd>
         </dl>

@@ -148,6 +148,7 @@ describe("same-origin customer runtime", () => {
           Cookie: "__Host-cksgo_launch=synthetic",
           Origin: origin,
           "x-cks-csrf": "synthetic-csrf",
+          "X-CKS-Fee-Contract": "small-order-fee-v1",
           "Idempotency-Key": "synthetic-key",
           "If-Match": '"3"',
           "X-Forwarded-Host": "attacker.invalid",
@@ -177,6 +178,7 @@ describe("same-origin customer runtime", () => {
       accept: "application/json",
       "content-type": "application/json",
       "idempotency-key": "synthetic-key",
+      "x-cks-fee-contract": "small-order-fee-v1",
       "if-match": '"3"',
     });
     for (const header of [
