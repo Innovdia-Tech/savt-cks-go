@@ -1,4 +1,8 @@
-import { productionAdvertisingSlides } from "./production-advertising";
+import { readFileSync } from "node:fs";
+import {
+  AdvertisingCarousel,
+  AdvertisingSwipeGuard,
+} from "./AdvertisingCarousel";
 import { createElement } from "react";
 import type { ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -49,16 +53,55 @@ const loadCarousel = async () =>
     CarouselExports;
 
 describe("Home advertising carousel", () => {
-  it("ships curated production slides without development-only claims or external destinations", () => {
-    expect(productionAdvertisingSlides.length).toBeGreaterThan(0);
-    expect(
-      productionAdvertisingSlides.every(
-        (slide) => slide.action?.target === "categories",
-      ),
-    ).toBe(true);
-    expect(JSON.stringify(productionAdvertisingSlides)).not.toMatch(
-      /Development preview|https?:\/\//i,
+  it("uses customer backend slides in the production Home path", () => {
+    const source = readFileSync(
+      new URL("./components.tsx", import.meta.url),
+      "utf8",
     );
+    expect(source).not.toContain("productionAdvertisingSlides");
+    expect(source).toContain("state.advertisements");
+  });
+  it("renders HQ artwork without CTA/text overlays and NONE has no button semantics", () => {
+    const ad = {
+      id: "hq",
+      imageUrl: "/api/v1/advertisement-media/ad/asset",
+      altText: "HQ creative",
+      bannerAction: { type: "NONE" as const },
+    };
+    const html = renderToStaticMarkup(
+      createElement(AdvertisingCarousel, {
+        slides: [ad],
+        onNavigate: () => {},
+        onAction: () => {},
+      }),
+    );
+    expect(html).toContain('alt="HQ creative"');
+    expect(html).not.toContain("<button");
+    expect(html).not.toContain("advertising-carousel__content");
+    const actionable = renderToStaticMarkup(
+      createElement(AdvertisingCarousel, {
+        slides: [
+          { ...ad, bannerAction: { type: "CATEGORY", categoryId: "category" } },
+        ],
+        onNavigate: () => {},
+        onAction: () => {},
+      }),
+    );
+    expect(actionable).toContain("advertising-carousel__banner-button");
+    expect(actionable).toContain('aria-label="Browse category: HQ creative"');
+    expect(actionable).not.toContain("Shop categories");
+  });
+  it("suppresses the click after a horizontal swipe, including a single banner", () => {
+    const guard = new AdvertisingSwipeGuard();
+    guard.start(200, 20);
+    expect(guard.end(110, 23)).toBe(-1);
+    expect(guard.allowClick()).toBe(false);
+    guard.start(100, 20);
+    expect(guard.end(101, 21)).toBe(0);
+    expect(guard.allowClick()).toBe(true);
+    guard.start(100, 20);
+    expect(guard.end(104, 100)).toBe(0);
+    expect(guard.allowClick()).toBe(false);
   });
 
   it("renders multiple slides with accessible manual and autoplay controls", async () => {

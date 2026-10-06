@@ -1,0 +1,65 @@
+[
+  {
+    "viewport": {
+      "width": 320,
+      "height": 844
+    },
+    "reveal": [6, 12, 18, 24],
+    "overflow": false,
+    "browseTotal": 30,
+    "requestContext": "validated"
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "reveal": [6, 12, 18, 24],
+    "overflow": false,
+    "browseTotal": 30,
+    "requestContext": "validated"
+  },
+  {
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "reveal": [6, 12, 18, 24],
+    "overflow": false,
+    "browseTotal": 30,
+    "requestContext": "validated"
+  },
+  {
+    "browseSearch": true,
+    "basketRetainsOutletProduct": true
+  },
+  {
+    "delayedAdvertisementCannotHijackBasket": true
+  },
+  {
+    "action": "CATEGORY",
+    "unavailable": false,
+    "safe": true
+  },
+  {
+    "action": "PRODUCT",
+    "unavailable": false,
+    "safe": true
+  },
+  {
+    "action": "PRODUCT",
+    "unavailable": true,
+    "safe": true
+  },
+  {
+    "action": "EXTERNAL_URL",
+    "unavailable": false,
+    "safe": true
+  },
+  {
+    "embeddedExternal": true,
+    "swipeDoesNotActivate": true,
+    "emptySectionsHidden": true,
+    "advertisementFailureSoft": true
+  }
+]

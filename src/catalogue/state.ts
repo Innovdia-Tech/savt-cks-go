@@ -1,5 +1,6 @@
 import type { Address } from "../addresses/contracts";
 import { CatalogueError, type CataloguePort } from "./api";
+import type { Advertisement, AdvertisementAction } from "./advertisements";
 import type {
   Assignment,
   CustomerCategory,
@@ -33,6 +34,8 @@ export type CatalogueState = {
   categoryPage: number;
   categoryHasNext: boolean;
   products: Page<Product> | null;
+  featured: Product[];
+  advertisements: Advertisement[];
   detail: DetailEnvelope | null;
   detailId?: string;
   q: string;
@@ -49,6 +52,8 @@ const empty = (): CatalogueState => ({
   categoryPage: 1,
   categoryHasNext: false,
   products: null,
+  featured: [],
+  advertisements: [],
   detail: null,
   q: "",
   page: 1,
@@ -130,9 +135,14 @@ export class CatalogueController {
     this.update({ q, page: 1, detail: null, detailId: undefined });
     return this.load();
   }
-  category(categoryId?: string, categoryPage = this.state.categoryPage) {
+  category(
+    categoryId?: string,
+    categoryPage = this.state.categoryPage,
+    q = this.state.q,
+  ) {
     this.update({
       categoryId,
+      q,
       categoryPage,
       page: 1,
       detail: null,
@@ -170,6 +180,98 @@ export class CatalogueController {
   retry() {
     return this.load();
   }
+  async resolveAdvertisement(
+    action: AdvertisementAction,
+  ): Promise<{ outletProductId: string } | { categoryId: string } | null> {
+    const a = this.state.assignment,
+      generation = this.generation;
+    if (
+      !a ||
+      this.state.phase !== "ready" ||
+      Date.parse(a.expiresAt) <= this.now()
+    )
+      return null;
+    const signal = this.abort?.signal;
+    const current = () =>
+      generation === this.generation &&
+      this.state.assignment?.assignmentContextId === a.assignmentContextId;
+    try {
+      if (action.type === "PRODUCT") {
+        const result = await this.api.products(
+          a,
+          { page: 1, productId: action.productId },
+          signal,
+        );
+        this.validateMeta(result.meta, a);
+        if (!current() || result.data.length !== 1) return null;
+        const product = result.data[0];
+        if (
+          product.productId !== action.productId ||
+          product.availability !== "AVAILABLE"
+        )
+          return null;
+        const detail = await this.api.detail(
+          a,
+          product.outletProductId,
+          signal,
+        );
+        this.validateMeta(detail.meta, a);
+        if (
+          !current() ||
+          detail.data.productId !== action.productId ||
+          detail.data.outletProductId !== product.outletProductId ||
+          detail.data.availability !== "AVAILABLE"
+        )
+          return null;
+        return { outletProductId: product.outletProductId };
+      }
+      if (action.type === "CATEGORY") {
+        for (let page = 1; page <= 1000; page++) {
+          const result = await this.api.categories(a, { page }, signal);
+          this.validateMeta(result.meta, a);
+          if (!current() || result.meta.page !== page) return null;
+          if (result.data.some((c) => c.id === action.categoryId))
+            return { categoryId: action.categoryId };
+          if (!result.meta.hasNextPage) return null;
+        }
+      }
+    } catch {
+      /* Stay in CKS Go for missing, stale or invalid targets. */
+    }
+    return null;
+  }
+  private async loadHome(
+    a: Assignment,
+    signal: AbortSignal,
+    current: () => boolean,
+  ) {
+    if (!this.api.advertisements) return;
+    await Promise.all([
+      this.api
+        .advertisements(signal)
+        .catch(() => [])
+        .then((advertisements) => {
+          if (current()) this.update({ advertisements });
+        }),
+      this.api
+        .products(a, { page: 1, featured: true }, signal)
+        .then((result) => {
+          this.validateMeta(result.meta, a);
+          if (
+            result.meta.page !== 1 ||
+            result.data.length > 24 ||
+            result.meta.pageSize > 24 ||
+            result.data.some((p) => p.availability !== "AVAILABLE")
+          )
+            throw new CatalogueError("INVALID_RESPONSE");
+          return result.data;
+        })
+        .catch(() => [])
+        .then((featured) => {
+          if (current()) this.update({ featured });
+        }),
+    ]);
+  }
   async refresh(binding: Binding): Promise<boolean> {
     const generation = this.generation;
     const rebound = this.bind(binding);
@@ -189,6 +291,8 @@ export class CatalogueController {
           phase: "expired",
           assignment: null,
           products: null,
+          featured: [],
+          advertisements: [],
           detail: null,
           categories: [],
           homeCategories: [],
@@ -328,6 +432,7 @@ export class CatalogueController {
             ? { detail: result as DetailEnvelope }
             : { products: result as Page<Product> }),
         });
+        void this.loadHome(a, signal, current);
         this.armExpiry(a);
         return true;
       } catch (error) {
@@ -352,6 +457,8 @@ export class CatalogueController {
             categories: [],
             homeCategories: [],
             products: null,
+            featured: [],
+            advertisements: [],
             detail: null,
             page: 1,
             categoryPage: 1,
@@ -380,6 +487,8 @@ export class CatalogueController {
                 : "error",
           error: code,
           products: null,
+          featured: [],
+          advertisements: [],
           detail: null,
           categories: [],
           homeCategories: [],

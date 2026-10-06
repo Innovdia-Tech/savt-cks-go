@@ -96,6 +96,29 @@
   height: 100%;
   object-fit: cover;
 }
+.advertising-carousel__banner-button {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.advertising-carousel__banner-button:focus-visible {
+  outline: 3px solid var(--color-cks-primary);
+  outline-offset: -5px;
+  box-shadow: inset 0 0 0 7px white;
+}
+.advertising-carousel__slide--hq .advertising-carousel__artwork {
+  object-fit: contain;
+}
+.catalogue-featured-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
 .advertising-carousel__content {
   position: relative;
   z-index: 1;

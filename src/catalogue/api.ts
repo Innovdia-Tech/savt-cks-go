@@ -2,6 +2,7 @@ import { ApiClientError } from "../api/client";
 import { parseApiErrorEnvelope } from "../api/contracts";
 import { record, exact, uuid } from "../customer/contracts";
 import type { CustomerSessionController } from "../session/controller";
+import { parseAdvertisements } from "./advertisements";
 import {
   parseAssignment,
   parseCategories,
@@ -15,7 +16,13 @@ export class CatalogueError extends Error {
   }
 }
 export type AddressBinding = { id: string; rowVersion: number };
-export type Filter = { page: number; q?: string; categoryId?: string };
+export type Filter = {
+  page: number;
+  q?: string;
+  categoryId?: string;
+  featured?: boolean;
+  productId?: string;
+};
 export const safeCodes = [
   "VALIDATION_FAILED",
   "CUSTOMER_SESSION_INVALID",
@@ -79,7 +86,16 @@ export class CatalogueApi {
       signal,
     );
   }
-  products(a: Assignment, filter: Filter, signal?: AbortSignal) {
+  advertisements(signal?: AbortSignal) {
+    return this.request(
+      "/api/v1/customer/advertisements?placement=HOME_HERO",
+      parseAdvertisements,
+      undefined,
+      undefined,
+      signal,
+    );
+  }
+  async products(a: Assignment, filter: Filter, signal?: AbortSignal) {
     return this.request(
       this.path(a) + "/products?" + this.query(filter),
       parseProducts,
@@ -109,7 +125,9 @@ export class CatalogueApi {
       f.page < 1 ||
       f.page > 1000 ||
       (f.q !== undefined && f.q.length > 200) ||
-      (f.categoryId !== undefined && !uuid(f.categoryId))
+      (f.categoryId !== undefined && !uuid(f.categoryId)) ||
+      (f.productId !== undefined && !uuid(f.productId)) ||
+      (f.featured !== undefined && typeof f.featured !== "boolean")
     )
       throw new CatalogueError("VALIDATION_FAILED");
     const q = new URLSearchParams({
@@ -119,6 +137,8 @@ export class CatalogueApi {
     if (!categories) {
       if (f.q?.trim()) q.set("q", f.q.trim());
       if (f.categoryId) q.set("categoryId", f.categoryId);
+      if (f.featured !== undefined) q.set("featured", String(f.featured));
+      if (f.productId) q.set("productId", f.productId);
     }
     return q.toString();
   }
@@ -216,4 +236,5 @@ export class CatalogueApi {
 export type CataloguePort = Pick<
   CatalogueApi,
   "assign" | "categories" | "products" | "detail"
->;
+> &
+  Partial<Pick<CatalogueApi, "advertisements">>;
