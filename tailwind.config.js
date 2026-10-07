@@ -5,6 +5,8 @@ export default {
     extend: {
       colors: {
         cks: {
+          light: "var(--color-cks-light)",
+          "on-light": "var(--color-on-cks-light)",
           primary: "var(--color-cks-primary)",
           hover: "var(--color-cks-primary-hover)",
           pressed: "var(--color-cks-primary-pressed)",

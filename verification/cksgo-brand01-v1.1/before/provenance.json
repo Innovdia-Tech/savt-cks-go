@@ -1,0 +1,38 @@
+{
+  "evidence": "Reused v1 baseline evidence",
+  "source": "verification/cksgo-brand01/after",
+  "copiedFor": "CKSGO-BRAND01 v1.1 local comparison",
+  "captures": [
+    "320-standalone-home.png",
+    "390-standalone-home.png",
+    "430-standalone-home.png",
+    "390-store-loading.png"
+  ],
+  "baselineHead": "dbe097ca8cb21015e19e60a52f7c8a5684adf281",
+  "hashes": {
+    "320-standalone-home.png": {
+      "source": "verification/cksgo-brand01/after/320-standalone-home.png",
+      "sourceSha256": "a382e245e8484e41dadfe682a577d80bb1e19bbbb86e5bc277e87f519ac7b46c",
+      "copySha256": "a382e245e8484e41dadfe682a577d80bb1e19bbbb86e5bc277e87f519ac7b46c",
+      "matches": true
+    },
+    "390-standalone-home.png": {
+      "source": "verification/cksgo-brand01/after/390-standalone-home.png",
+      "sourceSha256": "c0ea645dc9dc32933924dec084d2ac96b927bfdf93598d7b4c14f318fd73b72e",
+      "copySha256": "c0ea645dc9dc32933924dec084d2ac96b927bfdf93598d7b4c14f318fd73b72e",
+      "matches": true
+    },
+    "430-standalone-home.png": {
+      "source": "verification/cksgo-brand01/after/430-standalone-home.png",
+      "sourceSha256": "83eba2b84e9621e6571973c4c462e54b521baa35c06d7bbfa014607471ab6122",
+      "copySha256": "83eba2b84e9621e6571973c4c462e54b521baa35c06d7bbfa014607471ab6122",
+      "matches": true
+    },
+    "390-store-loading.png": {
+      "source": "verification/cksgo-brand01/after/390-store-loading.png",
+      "sourceSha256": "69d4a25aa71255839feecd51a9edb385392412783b71eba5c93735162f98f2aa",
+      "copySha256": "69d4a25aa71255839feecd51a9edb385392412783b71eba5c93735162f98f2aa",
+      "matches": true
+    }
+  }
+}

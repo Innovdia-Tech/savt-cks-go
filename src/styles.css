@@ -189,21 +189,26 @@
 :root {
   color-scheme: light;
 
-  --color-cks-primary: #e52329;
-  --color-cks-primary-hover: #c91d23;
-  --color-cks-primary-pressed: #ab171c;
-  --color-cks-primary-soft: #ffe8ea;
+  /* CKSGO-BRAND01-tokens-v1; approved master assets CKSGO-BRAND01-v1.1.
+     Artwork colors stay in the approved master SVGs.
+     Action blue is a working digital value; supporting shades match operations. */
+  --color-cks-light: #8ecbe2;
+  --color-on-cks-light: #123d56;
+  --color-cks-primary: #0c74b6;
+  --color-cks-primary-hover: #09639c;
+  --color-cks-primary-pressed: #084f7c;
+  --color-cks-primary-soft: #e8f5fa;
   --color-on-primary: #ffffff;
 
   --color-savt-reward: #4caf50;
   --color-savt-reward-dark: #3f8e1e;
   --color-savt-reward-soft: #eef8e8;
 
-  --color-background: #ebf3e3;
+  --color-background: #f3f8fb;
   --color-surface: #ffffff;
-  --color-surface-muted: #f5f5f5;
-  --color-border: #e9e9e9;
-  --color-border-strong: #d4d4d4;
+  --color-surface-muted: #eaf2f6;
+  --color-border: #d9e6ed;
+  --color-border-strong: #b7cbd6;
   --color-text: #231f20;
   --color-text-muted: #666666;
   --color-icon-muted: #878787;
@@ -256,7 +261,7 @@
   --app-reference-width: 390px;
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-  --focus-ring: #e52329;
+  --focus-ring: var(--color-cks-primary);
 
   --z-sticky: 100;
   --z-dropdown: 200;
@@ -379,7 +384,7 @@ a[href] {
     height: 100dvh;
     overflow: hidden;
     color: var(--color-text);
-    background: #e9eeea;
+    background: var(--color-surface-muted);
   }
 
   .app-shell {
@@ -512,6 +517,14 @@ a[href] {
     font-weight: 700;
     letter-spacing: 0;
     line-height: 1.2;
+  }
+
+  .cks-go-logo {
+    display: block;
+    width: auto;
+    height: 44px;
+    max-width: 100%;
+    object-fit: contain;
   }
 
   .app-header__exit {
@@ -855,8 +868,8 @@ a[href] {
   }
 
   .ui-system-state--loading .ui-system-state__mark {
-    color: var(--color-info);
-    background: var(--color-info-soft);
+    color: var(--color-cks-primary);
+    background: var(--color-cks-primary-soft);
   }
 
   .ui-system-state h2,
@@ -880,7 +893,12 @@ a[href] {
     min-height: 1rem;
     overflow: hidden;
     border-radius: var(--radius-button);
-    background: linear-gradient(90deg, #e8ece8 25%, #f7f9f7 50%, #e8ece8 75%);
+    background: linear-gradient(
+      90deg,
+      var(--color-surface-muted) 25%,
+      var(--color-background) 50%,
+      var(--color-surface-muted) 75%
+    );
     background-size: 200% 100%;
     animation: ui-shimmer 1.2s ease-in-out infinite;
   }

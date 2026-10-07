@@ -47,15 +47,15 @@
   box-shadow: var(--shadow-card);
 }
 .customer-card--selected {
-  border-color: #b9dcb0;
+  border-color: var(--color-cks-primary);
 }
 .customer-selected-address {
   display: inline-flex;
   width: max-content;
   margin-bottom: var(--space-2);
   border-radius: var(--radius-chip);
-  color: var(--color-success);
-  background: var(--color-success-soft);
+  color: var(--color-on-cks-light);
+  background: var(--color-cks-light);
   padding: 0.25rem 0.625rem;
   font-size: var(--text-meta);
   font-weight: 500;
@@ -346,8 +346,8 @@
 }
 .address-save-as button[aria-pressed="true"] {
   border-color: var(--color-cks-primary);
-  color: var(--color-cks-primary);
-  background: var(--color-cks-primary-soft);
+  color: var(--color-on-cks-light);
+  background: var(--color-cks-light);
 }
 
 .delivery-setup {
