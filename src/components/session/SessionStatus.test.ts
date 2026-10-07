@@ -5,7 +5,11 @@ import type {
   CustomerSessionController,
   CustomerSessionState,
 } from "../../session/controller";
-import { sessionPresentation, WebOtpEntry } from "./SessionStatus";
+import {
+  CustomerSessionBoundary,
+  sessionPresentation,
+  WebOtpEntry,
+} from "./SessionStatus";
 
 describe("sessionPresentation", () => {
   it.each([
@@ -84,5 +88,40 @@ describe("standalone OTP entry", () => {
     expect(html).toContain("max-w-[390px]");
     expect(html).toContain('type="submit"');
     expect(html).toContain('noValidate=""');
+  });
+});
+
+describe("embedded session boundary", () => {
+  const render = (state: CustomerSessionState, embeddedHost = true) =>
+    renderToStaticMarkup(
+      createElement(CustomerSessionBoundary, {
+        controller: {
+          getSnapshot: () => state,
+          subscribe: () => () => {},
+        } as unknown as CustomerSessionController,
+        embeddedHost,
+        children: createElement("section", null, "Authenticated Home"),
+      }),
+    );
+
+  it("leaves embedded startup presentation to native without exposing Home", () => {
+    expect(render({ phase: "loading" })).toBe("");
+    expect(render({ phase: "loading" }, false)).toContain(
+      "Getting CKS Go ready…",
+    );
+  });
+
+  it("allows Home only after authentication", () => {
+    expect(
+      render({ phase: "authenticated", expiresAt: "2099-01-01T00:00:00Z" }),
+    ).toContain("Authenticated Home");
+    expect(render({ phase: "expired" })).not.toContain("Authenticated Home");
+  });
+
+  it("retains genuine embedded error and retry presentation", () => {
+    const html = render({ phase: "offline" });
+    expect(html).toContain("You’re offline");
+    expect(html).toContain("Try again");
+    expect(html).not.toContain("Authenticated Home");
   });
 });

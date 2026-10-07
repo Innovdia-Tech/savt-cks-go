@@ -51,6 +51,35 @@ const bridgeFixture = (): NativeBridgePort => ({
 });
 
 describe("CustomerSessionController", () => {
+  it("acknowledges native loading only after the authenticated exchange resolves", async () => {
+    const api = apiFixture();
+    let resolveExchange!: (value: typeof session) => void;
+    vi.mocked(api.exchange).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveExchange = resolve;
+        }),
+    );
+    const bridge = bridgeFixture();
+    const controller = new CustomerSessionController(api, bridge, {
+      entryMode: "embedded",
+    });
+    const launch = controller.start();
+    await vi.waitFor(() => expect(api.exchange).toHaveBeenCalledOnce());
+    expect(controller.getSnapshot().phase).toBe("loading");
+    expect(bridge.notifyLoaded).not.toHaveBeenCalled();
+    await expect(
+      controller.withCredentials(async () => true),
+    ).rejects.toMatchObject({
+      code: "CUSTOMER_SESSION_INVALID",
+    });
+    resolveExchange(session);
+    await launch;
+    expect(controller.getSnapshot().phase).toBe("authenticated");
+    expect(bridge.notifyLoaded).toHaveBeenCalledOnce();
+    expect(bridge.notifyError).not.toHaveBeenCalled();
+  });
+
   it("restores an existing session before requesting a new launch", async () => {
     const api = apiFixture();
     vi.mocked(api.status).mockResolvedValue(session);

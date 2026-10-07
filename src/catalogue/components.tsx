@@ -856,8 +856,13 @@ export function CatalogueApp({
     state.homeCategories.find((category) => category.id === state.categoryId)
       ?.name;
   const selectedAddress = customer.controller.selectedAddress();
+  const embeddedDeliveryDetailsLoading =
+    embeddedHost &&
+    (customer.state.profilePhase === "loading" ||
+      customer.state.listPhase === "loading");
   const needsDeliverySetup =
     (route === "home" || route === "categories" || Boolean(detailId)) &&
+    !embeddedDeliveryDetailsLoading &&
     !hasDeliveryCoordinates(selectedAddress);
   const cartDeliveryAddress = selectedAddress
     ? [
