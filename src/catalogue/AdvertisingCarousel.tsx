@@ -12,13 +12,16 @@ import {
   ChevronRightIcon,
   PlaybackIcon,
 } from "../components/Icons";
+import type { AdvertisementAction } from "./advertisements";
 
 export type AdvertisingTarget = "categories";
 
 export type AdvertisingSlide = {
   id: string;
   eyebrow?: string;
-  title: string;
+  title?: string;
+  altText?: string;
+  bannerAction?: AdvertisementAction;
   description?: string;
   imageUrl?: string;
   theme?: "berry" | "forest" | "sunrise" | "reference";
@@ -59,19 +62,60 @@ export const shouldAutoAdvance = (state: AutoAdvanceState) =>
 const nextIndex = (current: number, direction: number, length: number) =>
   (current + direction + length) % length;
 
+export class AdvertisingSwipeGuard {
+  private origin: { x: number; y: number } | null = null;
+  private suppressed = false;
+  start(x: number, y: number) {
+    this.origin = { x, y };
+    this.suppressed = false;
+  }
+  end(x: number, y: number): -1 | 0 | 1 {
+    const start = this.origin;
+    this.origin = null;
+    if (!start) return 0;
+    const dx = x - start.x,
+      dy = y - start.y;
+    this.suppressed = Math.max(Math.abs(dx), Math.abs(dy)) > 10;
+    return Math.abs(dx) >= 40 && Math.abs(dx) > Math.abs(dy)
+      ? dx < 0
+        ? -1
+        : 1
+      : 0;
+  }
+  cancel() {
+    this.origin = null;
+    this.suppressed = true;
+  }
+  allowClick() {
+    return !this.suppressed;
+  }
+}
+
+const bannerLabel = (action: AdvertisementAction, text: string) => {
+  const label =
+    action.type === "PRODUCT"
+      ? "View product"
+      : action.type === "CATEGORY"
+        ? "Browse category"
+        : "Open external website";
+  return text ? `${label}: ${text}` : label;
+};
+
 export function AdvertisingCarousel({
   slides,
   onNavigate,
   label = "Featured shopping",
   embeddedHost = false,
+  onAction,
 }: {
   slides: readonly AdvertisingSlide[];
   onNavigate: (target: AdvertisingTarget) => void;
   label?: string;
   embeddedHost?: boolean;
+  onAction?: (action: AdvertisementAction) => void;
 }) {
   const root = useRef<HTMLElement>(null);
-  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+  const swipe = useRef(new AdvertisingSwipeGuard());
   const [failedIds, setFailedIds] = useState<ReadonlySet<string>>(new Set());
   const [current, setCurrent] = useState(0);
   const [manuallyPaused, setManuallyPaused] = useState(false);
@@ -92,6 +136,11 @@ export function AdvertisingCarousel({
     [slides, failedIds],
   );
   const multiple = renderableSlides.length > 1;
+
+  useEffect(() => {
+    // A refreshed backend response may have repaired or replaced the artwork.
+    setFailedIds(new Set());
+  }, [slides]);
 
   useEffect(() => {
     if (current >= renderableSlides.length) setCurrent(0);
@@ -172,17 +221,11 @@ export function AdvertisingCarousel({
     move(event.key === "ArrowLeft" ? -1 : 1);
   };
   const handlePointerDown = (event: PointerEvent<HTMLElement>) => {
-    if (event.pointerType === "mouse") return;
-    pointerStart.current = { x: event.clientX, y: event.clientY };
+    swipe.current.start(event.clientX, event.clientY);
   };
   const handlePointerUp = (event: PointerEvent<HTMLElement>) => {
-    const start = pointerStart.current;
-    pointerStart.current = null;
-    if (!start || !multiple) return;
-    const deltaX = event.clientX - start.x;
-    const deltaY = event.clientY - start.y;
-    if (Math.abs(deltaX) < 40 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
-    move(deltaX < 0 ? 1 : -1);
+    const direction = swipe.current.end(event.clientX, event.clientY);
+    if (direction && multiple) move(direction);
   };
 
   return (
@@ -198,9 +241,7 @@ export function AdvertisingCarousel({
       onKeyDown={handleKeyDown}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
-      onPointerCancel={() => {
-        pointerStart.current = null;
-      }}
+      onPointerCancel={() => swipe.current.cancel()}
     >
       <div
         className={`advertising-carousel__track ${reducedMotion ? "is-reduced" : ""}`}
@@ -218,39 +259,82 @@ export function AdvertisingCarousel({
           return (
             <article
               key={slide.id}
-              className={`advertising-carousel__slide advertising-carousel__slide--${slide.theme ?? "berry"}`}
+              className={`advertising-carousel__slide advertising-carousel__slide--${slide.bannerAction ? "hq" : (slide.theme ?? "berry")}`}
               aria-roledescription="slide"
               aria-label={`${index + 1} of ${renderableSlides.length}`}
               aria-hidden={!active}
               inert={!active ? true : undefined}
             >
-              {slide.imageUrl && (
-                <img
-                  className="advertising-carousel__artwork"
-                  src={slide.imageUrl}
-                  alt=""
-                  aria-hidden="true"
-                  onError={() =>
-                    setFailedIds((ids) => new Set(ids).add(slide.id))
-                  }
-                />
-              )}
-              <div className="advertising-carousel__content">
-                {slide.eyebrow && <span>{slide.eyebrow}</span>}
-                <h2>{slide.title}</h2>
-                {slide.description && <p>{slide.description}</p>}
-                {action && (
+              {slide.bannerAction ? (
+                active && slide.bannerAction.type !== "NONE" ? (
                   <button
                     type="button"
-                    onClick={() => {
+                    className="advertising-carousel__banner-button"
+                    aria-label={bannerLabel(
+                      slide.bannerAction,
+                      slide.altText ?? "",
+                    )}
+                    onClick={(event) => {
+                      if (event.detail !== 0 && !swipe.current.allowClick())
+                        return;
                       setManuallyPaused(true);
-                      onNavigate(action.target);
+                      onAction?.(slide.bannerAction!);
                     }}
                   >
-                    {action.label}
+                    <img
+                      className="advertising-carousel__artwork"
+                      src={slide.imageUrl}
+                      alt={slide.altText ?? ""}
+                      referrerPolicy="no-referrer"
+                      draggable={false}
+                      onError={() =>
+                        setFailedIds((ids) => new Set(ids).add(slide.id))
+                      }
+                    />
                   </button>
-                )}
-              </div>
+                ) : (
+                  <img
+                    className="advertising-carousel__artwork"
+                    src={slide.imageUrl}
+                    alt={slide.altText ?? ""}
+                    referrerPolicy="no-referrer"
+                    draggable={false}
+                    onError={() =>
+                      setFailedIds((ids) => new Set(ids).add(slide.id))
+                    }
+                  />
+                )
+              ) : (
+                <>
+                  {slide.imageUrl && (
+                    <img
+                      className="advertising-carousel__artwork"
+                      src={slide.imageUrl}
+                      alt=""
+                      aria-hidden="true"
+                      onError={() =>
+                        setFailedIds((ids) => new Set(ids).add(slide.id))
+                      }
+                    />
+                  )}
+                  <div className="advertising-carousel__content">
+                    {slide.eyebrow && <span>{slide.eyebrow}</span>}
+                    <h2>{slide.title}</h2>
+                    {slide.description && <p>{slide.description}</p>}
+                    {action && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setManuallyPaused(true);
+                          onNavigate(action.target);
+                        }}
+                      >
+                        {action.label}
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
             </article>
           );
         })}

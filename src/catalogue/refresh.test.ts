@@ -60,6 +60,14 @@ async function setup(scenario = "shopping-success") {
   });
   const count = (route: string) =>
     requests.mock.calls.filter(([url]) => String(url).includes(route)).length;
+  const productReads = (featured: boolean) =>
+    requests.mock.calls.filter(([url]) => {
+      const request = new URL(String(url), "https://fixture.invalid");
+      return (
+        request.pathname.endsWith("/products") &&
+        (request.searchParams.get("featured") === "true") === featured
+      );
+    }).length;
   return {
     session,
     data,
@@ -71,6 +79,7 @@ async function setup(scenario = "shopping-success") {
     catalogue,
     coordinator,
     count,
+    productReads,
     setHold: (p: Promise<void> | null) => {
       hold = p;
     },
@@ -97,7 +106,9 @@ it("refreshes customer and the full catalogue once while preserving a valid assi
   );
   expect(s.count("/outlet-assignment")).toBe(1);
   expect(s.count("/categories?")).toBe(2);
-  expect(s.count("/products?")).toBe(2);
+  expect(s.productReads(false)).toBe(2);
+  expect(s.productReads(true)).toBe(2);
+  expect(s.count("/advertisements?")).toBe(2);
   expect(s.reads).toHaveBeenCalledTimes(4);
 });
 it("coalesces repeated refresh requests while customer data is in flight", async () => {
@@ -114,7 +125,9 @@ it("coalesces repeated refresh requests while customer data is in flight", async
   release();
   await Promise.all([first, second]);
   expect(s.count("/categories?")).toBe(2);
-  expect(s.count("/products?")).toBe(2);
+  expect(s.productReads(false)).toBe(2);
+  expect(s.productReads(true)).toBe(2);
+  expect(s.count("/advertisements?")).toBe(2);
 });
 it("rechecks authoritative assignment from no-service and can become Home", async () => {
   const s = await setup("no-service");

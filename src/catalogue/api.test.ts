@@ -47,6 +47,37 @@ async function setup(fetcher: typeof fetch, timeout = 100) {
   return { session, api: new CatalogueApi("", session, fetcher, timeout) };
 }
 describe("catalogue HTTP boundary", () => {
+  it("requests real customer advertisements with credentials", async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(Response.json({ data: [] }));
+    const { api } = await setup(fetcher);
+    expect(await api.advertisements()).toEqual([]);
+    expect(fetcher.mock.calls[0][0]).toBe(
+      "/api/v1/customer/advertisements?placement=HOME_HERO",
+    );
+    expect(fetcher.mock.calls[0][1]?.credentials).toBe("include");
+  });
+  it("extends the same scoped product query for featured and exact master IDs", async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async () => Response.json(empty));
+    const { api } = await setup(fetcher);
+    await api.products(assignment.data as never, { page: 1, featured: true });
+    expect(String(fetcher.mock.calls[0][0])).toContain(
+      "page=1&pageSize=24&featured=true",
+    );
+    await api.products(assignment.data as never, { page: 1, productId: id });
+    expect(String(fetcher.mock.calls[1][0])).toContain(`productId=${id}`);
+    expect(
+      new Headers(fetcher.mock.calls[1][1]?.headers).get(
+        "X-CKS-Assignment-Context",
+      ),
+    ).toBe(handle);
+    await expect(
+      api.products(assignment.data as never, { page: 1, productId: "invalid" }),
+    ).rejects.toThrow();
+  });
   it("returns the closed category directory with stable codes from the customer endpoint", async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
       Response.json({

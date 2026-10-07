@@ -2,7 +2,13 @@ import { describe, it, expect, vi } from "vitest";
 import { CatalogueController } from "./state";
 import { CatalogueError, type CataloguePort } from "./api";
 import { syntheticAddress } from "../customer/fixtures";
-import type { Assignment, Page, Product, CustomerCategory } from "./contracts";
+import type {
+  Assignment,
+  Page,
+  Product,
+  Detail,
+  CustomerCategory,
+} from "./contracts";
 import { homeCategories } from "./shopping";
 const now = Date.parse("2026-09-19T00:00:00.000Z");
 const address = { ...syntheticAddress, latitude: 5, longitude: 116 };
@@ -56,6 +62,162 @@ const bind = (c: CatalogueController, patch: Record<string, unknown> = {}) =>
     readOnly: false,
     ...patch,
   } as never);
+it("loads featured products separately, hides failing advertisements and retries normally", async () => {
+  const featured = {
+    productId: "master",
+    outletProductId: "featured",
+    availability: "AVAILABLE",
+  } as Product;
+  const browse = { ...featured, outletProductId: "browse" };
+  const advertisements = vi
+    .fn()
+    .mockRejectedValueOnce(new CatalogueError("NETWORK_ERROR"))
+    .mockResolvedValue([]);
+  const products = vi.fn(async (_a, f) =>
+    page(f.featured ? [featured] : [browse]),
+  );
+  const { c } = setup({ advertisements, products });
+  await bind(c);
+  await settle();
+  expect(c.getSnapshot().products?.data).toEqual([browse]);
+  expect(c.getSnapshot().featured).toEqual([featured]);
+  expect(c.getSnapshot().advertisements).toEqual([]);
+  expect(c.getSnapshot().phase).toBe("ready");
+  await c.retry();
+  await settle();
+  expect(advertisements).toHaveBeenCalledTimes(2);
+  c.bind({ session: null, phase: "ready", readOnly: false });
+  expect(c.getSnapshot().featured).toEqual([]);
+  c.dispose();
+});
+it("does not delay featured products behind a pending advertisement request", async () => {
+  const featured = {
+    outletProductId: "featured",
+    availability: "AVAILABLE",
+  } as Product;
+  const { c } = setup({
+    advertisements: () => new Promise(() => {}),
+    products: async (_a, filter) => page(filter.featured ? [featured] : []),
+  });
+  await bind(c);
+  await settle();
+  expect(c.getSnapshot().phase).toBe("ready");
+  expect(c.getSnapshot().featured).toEqual([featured]);
+  c.dispose();
+});
+it("does not delay advertisements behind a pending featured request", async () => {
+  const ad = { id: "ad" } as import("./advertisements").Advertisement;
+  const { c } = setup({
+    advertisements: async () => [ad],
+    products: async (_a, filter) =>
+      filter.featured ? new Promise(() => {}) : page([]),
+  });
+  await bind(c);
+  await settle();
+  expect(c.getSnapshot().advertisements).toEqual([ad]);
+  expect(c.getSnapshot().featured).toEqual([]);
+  c.dispose();
+});
+it("resolves exact advertised master products in the assigned outlet before navigation", async () => {
+  const featured = {
+    productId: "master",
+    outletProductId: "outlet-product",
+    availability: "AVAILABLE",
+  } as Product;
+  const products = vi.fn(async (_a, f) =>
+    page(f.productId === "master" ? [featured] : []),
+  );
+  const detail = vi.fn(async () => ({
+    data: { ...featured, description: null, storageType: "AMBIENT" } as Detail,
+    meta: page([]).meta,
+  }));
+  const { c } = setup({ products, detail });
+  await bind(c);
+  expect(
+    await c.resolveAdvertisement({ type: "PRODUCT", productId: "master" }),
+  ).toEqual({ outletProductId: "outlet-product" });
+  expect(products).toHaveBeenLastCalledWith(
+    assignment,
+    { page: 1, productId: "master" },
+    expect.any(AbortSignal),
+  );
+  expect(
+    await c.resolveAdvertisement({ type: "PRODUCT", productId: "missing" }),
+  ).toBeNull();
+  detail.mockResolvedValueOnce({
+    data: {
+      ...featured,
+      description: null,
+      storageType: "AMBIENT",
+      availability: "UNAVAILABLE",
+    } as Detail,
+    meta: page([]).meta,
+  });
+  expect(
+    await c.resolveAdvertisement({ type: "PRODUCT", productId: "master" }),
+  ).toBeNull();
+  c.dispose();
+});
+it("validates exact category actions against the fresh active directory", async () => {
+  const categories = vi.fn(async () =>
+    page([{ id: "category", code: "001", name: "Fresh" }]),
+  );
+  const { c } = setup({ categories });
+  await bind(c);
+  expect(
+    await c.resolveAdvertisement({ type: "CATEGORY", categoryId: "category" }),
+  ).toEqual({ categoryId: "category" });
+  categories.mockResolvedValueOnce(page([]));
+  expect(
+    await c.resolveAdvertisement({ type: "CATEGORY", categoryId: "category" }),
+  ).toBeNull();
+  c.dispose();
+});
+it("starts an advertised category with no unrelated search filter", async () => {
+  const { c } = setup();
+  await bind(c);
+  await c.search("rice");
+  await c.category("category", 1, "");
+  expect(c.getSnapshot()).toMatchObject({
+    categoryId: "category",
+    q: "",
+    page: 1,
+  });
+  c.dispose();
+});
+it("ignores late Home responses from a replaced address and fails closed on a wrong-outlet resolver", async () => {
+  let finish!: (value: unknown[]) => void;
+  const advertisements = vi.fn(
+    () =>
+      new Promise<unknown[]>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const { c } = setup({ advertisements: advertisements as never });
+  await bind(c);
+  c.bind({ session: null, phase: "ready", readOnly: false });
+  finish([{ id: "old-ad" }]);
+  await settle();
+  expect(c.getSnapshot().advertisements).toEqual([]);
+  expect(c.getSnapshot().featured).toEqual([]);
+  c.dispose();
+  const { c: other } = setup({
+    products: async (_a, filter) => ({
+      ...page([]),
+      meta: {
+        ...page([]).meta,
+        outlet: filter.productId
+          ? { ...assignment.outlet, id: "other-outlet" }
+          : assignment.outlet,
+      },
+    }),
+  });
+  await bind(other);
+  expect(
+    await other.resolveAdvertisement({ type: "PRODUCT", productId: "master" }),
+  ).toBeNull();
+  other.dispose();
+});
 it("keeps the authoritative initial category page for Home after Browse pagination", async () => {
   const first = page([{ id: "fresh", code: "001", name: "Fresh Produce" }]);
   const second = page([{ id: "other", code: "OTHER_CATEGORY", name: "Other" }]);

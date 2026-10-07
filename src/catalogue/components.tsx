@@ -65,7 +65,9 @@ import {
   type AdvertisingSlide,
 } from "./AdvertisingCarousel";
 import type { DevelopmentAdvertisingScenario } from "./development-advertising";
-import { productionAdvertisingSlides } from "./production-advertising";
+import { HomeFeaturedProducts } from "./HomeFeaturedProducts";
+import { openExternalWebsite } from "../webview/external-link";
+import type { AdvertisementAction } from "./advertisements";
 type ReferenceSample =
   typeof import("./reference-match/content").referenceSample;
 
@@ -571,7 +573,12 @@ export function CatalogueApp({
     useState<ReferenceSample | null>(null);
   const [advertisingSlides, setAdvertisingSlides] = useState<
     AdvertisingSlide[]
-  >([...productionAdvertisingSlides]);
+  >([]);
+  const [advertisementNotice, setAdvertisementNotice] = useState<string | null>(
+    null,
+  );
+  const advertisementOpening = useRef(false);
+  const advertisementEpoch = useRef(0);
   const heading = useRef<HTMLHeadingElement>(null),
     search = useRef<HTMLInputElement>(null);
   const productOrigin = useRef<"home" | "categories">("home");
@@ -621,9 +628,12 @@ export function CatalogueApp({
   }, [route]);
   useEffect(() => {
     if (composing || query === state.q) return;
-    const timer = setTimeout(() => void controller.search(query), 300);
+    const timer = setTimeout(() => {
+      if (route === "home" && query.trim()) window.location.hash = "categories";
+      void controller.search(query);
+    }, 300);
     return () => clearTimeout(timer);
-  }, [query, composing, state.q, controller]);
+  }, [query, composing, state.q, controller, route]);
   useEffect(() => {
     setQuery(state.q);
   }, [
@@ -708,7 +718,14 @@ export function CatalogueApp({
       !controls ||
       advertisingScenario === "production"
     ) {
-      setAdvertisingSlides([...productionAdvertisingSlides]);
+      setAdvertisingSlides(
+        state.advertisements.map((ad) => ({
+          id: ad.id,
+          imageUrl: ad.imageUrl,
+          altText: ad.altText,
+          bannerAction: ad.action,
+        })),
+      );
       return;
     }
     void import("./development-advertising").then((development) => {
@@ -720,8 +737,17 @@ export function CatalogueApp({
     return () => {
       current = false;
     };
-  }, [advertisingScenario, controls]);
+  }, [advertisingScenario, controls, state.advertisements]);
   const detailId = route.startsWith("detail/") ? route.slice(7) : undefined;
+  useEffect(() => {
+    advertisementEpoch.current++;
+    advertisementOpening.current = false;
+    setAdvertisementNotice(null);
+    return () => {
+      advertisementEpoch.current++;
+      advertisementOpening.current = false;
+    };
+  }, [route, state.assignment?.assignmentContextId]);
   const orderDetailId = route.startsWith("order/") ? route.slice(6) : undefined;
   useEffect(() => {
     if (detailId && state.assignment && state.detailId !== detailId)
@@ -749,6 +775,38 @@ export function CatalogueApp({
     productOrigin.current = origin;
     browseOrigin.current = origin;
     navigate(`detail/${productId}`);
+  };
+  const activateAdvertisement = async (action: AdvertisementAction) => {
+    if (action.type === "NONE" || advertisementOpening.current) return;
+    setAdvertisementNotice(null);
+    if (action.type === "EXTERNAL_URL") {
+      if (!openExternalWebsite(action.url, embeddedHost))
+        setAdvertisementNotice("We couldn't open this website.");
+      return;
+    }
+    advertisementOpening.current = true;
+    const epoch = advertisementEpoch.current;
+    const hash = window.location.hash;
+    const current = () =>
+      epoch === advertisementEpoch.current && hash === window.location.hash;
+    try {
+      const target = await controller.resolveAdvertisement(action);
+      if (!current()) return;
+      if (target && "outletProductId" in target)
+        openProduct(target.outletProductId);
+      else if (target && "categoryId" in target) {
+        setQuery("");
+        navigate("categories");
+        void controller.category(target.categoryId, 1, "");
+      } else
+        setAdvertisementNotice(
+          action.type === "PRODUCT"
+            ? "This product isn't available from your delivery store."
+            : "This category isn't available right now.",
+        );
+    } finally {
+      if (current()) advertisementOpening.current = false;
+    }
   };
   const nav = (screen: Screen) =>
     (() => {
@@ -1087,7 +1145,13 @@ export function CatalogueApp({
                     embeddedHost={embeddedHost}
                     slides={advertisingSlides}
                     onNavigate={(target) => navigate(target)}
+                    onAction={(action) => void activateAdvertisement(action)}
                   />
+                )}
+                {route === "home" && advertisementNotice && (
+                  <p className="catalogue-notice" role="status">
+                    {advertisementNotice}
+                  </p>
                 )}
                 {route === "home" && homePreview.length > 0 && (
                   <section
@@ -1213,6 +1277,47 @@ export function CatalogueApp({
                       </section>
                     </article>
                   )
+                ) : route === "home" ? (
+                  <HomeFeaturedProducts
+                    key={state.assignment?.assignmentContextId}
+                    products={state.featured}
+                    onBrowse={() => {
+                      setQuery("");
+                      navigate("categories");
+                      void controller.resetFilters();
+                    }}
+                    renderProduct={(product) => (
+                      <ProductTile
+                        key={product.outletProductId}
+                        product={product}
+                        quantity={
+                          checkout.state.lines.find(
+                            (line) =>
+                              line.outletProductId === product.outletProductId,
+                          )?.quantity ?? null
+                        }
+                        paymentFrozen={checkout.state.paymentFrozen}
+                        onSetQuantity={(quantity) =>
+                          checkout.controller.setQuantity(
+                            product.outletProductId,
+                            quantity,
+                          )
+                        }
+                        onOpen={() => openProduct(product.outletProductId)}
+                        orderingDisabled={
+                          state.readOnly ||
+                          checkout.state.paymentFrozen ||
+                          !state.assignment ||
+                          checkout.state.assignment?.outletId !==
+                            state.assignment.outlet.id
+                        }
+                        onAdd={() => {
+                          if (state.assignment)
+                            checkout.controller.add(product, state.assignment);
+                        }}
+                      />
+                    )}
+                  />
                 ) : (
                   <>
                     {state.categories.length === 0 && (
@@ -1222,11 +1327,7 @@ export function CatalogueApp({
                     )}
                     <div className="catalogue-section-heading catalogue-products-heading">
                       <div>
-                        <h2>
-                          {route === "home"
-                            ? "Featured products"
-                            : selectedCategoryName || "All products"}
-                        </h2>
+                        <h2>{selectedCategoryName || "All products"}</h2>
                         {route === "categories" && (
                           <p className="catalogue-caption">
                             {state.products?.meta.total ?? 0} product
@@ -1237,10 +1338,7 @@ export function CatalogueApp({
                     </div>
                     {visibleProducts.length ? (
                       <div className={"catalogue-grid"}>
-                        {(route === "home"
-                          ? visibleProducts.slice(0, 6)
-                          : visibleProducts
-                        ).map((product) => (
+                        {visibleProducts.map((product) => (
                           <ProductTile
                             key={product.outletProductId}
                             product={product}

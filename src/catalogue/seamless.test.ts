@@ -25,6 +25,8 @@ const fixture = vi.hoisted(() => ({
     categoryPage: 1,
     categoryHasNext: true,
     products: { data: [], meta: { total: 0 } },
+    featured: [] as import("./contracts").Product[],
+    advertisements: [],
     detail: null as { data: import("./contracts").Detail } | null,
     assignment: null,
     readOnly: false,
@@ -72,6 +74,7 @@ vi.mock("../customer/context", () => ({
 beforeEach(() => {
   fixture.catalogue.categoryId = undefined;
   fixture.catalogue.detail = null;
+  fixture.catalogue.featured = [];
   vi.stubGlobal("window", {
     location: { hash: "#home", search: "" },
     matchMedia: () => ({ matches: true }),
@@ -148,6 +151,22 @@ it("preserves authoritative product detail content and its purchase action", () 
 });
 
 it("describes featured products without claiming personalization or duplicating native chrome", () => {
+  fixture.catalogue.featured = [
+    {
+      productId: "00000000-0000-4000-8000-000000000100",
+      outletProductId: "00000000-0000-4000-8000-000000000200",
+      name: "Configured Home product",
+      imageUrl: null,
+      category: { id: "pantry", name: "Pantry" },
+      subcategory: null,
+      brand: null,
+      uom: { code: "PACK", name: "Pack" },
+      packSize: "1 kg",
+      sellingPriceMinor: 1234,
+      currency: "MYR",
+      availability: "AVAILABLE",
+    },
+  ];
   const html = render();
   expect(html).toContain("Featured products");
   expect(html).toContain('placeholder="Search products"');
