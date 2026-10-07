@@ -32,18 +32,32 @@ describe("OrdersApi", () => {
       credentials: "include",
       cache: "no-store",
     });
+    expect(request?.init?.body).toBeUndefined();
+    expect([...new Headers(request?.init?.headers).entries()]).toEqual([
+      ["accept", "application/json"],
+    ]);
   });
 
-  it("gets detail from the exact UUID route without query parameters", async () => {
-    let url = "";
-    const api = new OrdersApi("", session, async (input) => {
-      url = String(input);
+  it("gets detail with the fee contract from the exact UUID route without query parameters", async () => {
+    let request: { url: string; init?: RequestInit } | undefined;
+    const api = new OrdersApi("", session, async (input, init) => {
+      request = { url: String(input), init };
       return Response.json({ data: { invalid: true } });
     });
     await expect(api.detail(orderId)).rejects.toMatchObject({
       code: "INVALID_RESPONSE",
     });
-    expect(url).toBe(`/api/v1/customer/orders/${orderId}`);
+    expect(request?.url).toBe(`/api/v1/customer/orders/${orderId}`);
+    expect(request?.init).toMatchObject({
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    });
+    expect(request?.init?.body).toBeUndefined();
+    expect([...new Headers(request?.init?.headers).entries()]).toEqual([
+      ["accept", "application/json"],
+      ["x-cks-fee-contract", "small-order-fee-v1"],
+    ]);
   });
 
   it("does not expose an order cancellation mutation", () => {
@@ -51,17 +65,20 @@ describe("OrdersApi", () => {
   });
 
   it("downloads only the exact owned receipt PDF path", async () => {
-    let url = "";
+    let request: { url: string; init?: RequestInit } | undefined;
     const path = `/api/v1/orders/${orderId}/receipt/download`;
-    const api = new OrdersApi("", session, async (input) => {
-      url = String(input);
+    const api = new OrdersApi("", session, async (input, init) => {
+      request = { url: String(input), init };
       return new Response(new Uint8Array([37, 80, 68, 70]), {
         headers: { "content-type": "application/pdf" },
       });
     });
     const result = await api.downloadReceipt(orderId, path);
     expect(result.type).toBe("application/pdf");
-    expect(url).toBe(path);
+    expect(request?.url).toBe(path);
+    expect([...new Headers(request?.init?.headers).entries()]).toEqual([
+      ["accept", "application/pdf"],
+    ]);
     await expect(
       api.downloadReceipt(orderId, "https://evil.example/receipt.pdf"),
     ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
@@ -178,6 +195,9 @@ describe("payment receipt client", () => {
       cache: "no-store",
     });
     expect(request?.init?.body).toBeUndefined();
+    expect([...new Headers(request?.init?.headers).entries()]).toEqual([
+      ["accept", "application/json"],
+    ]);
     expect(JSON.stringify(request)).not.toContain("C".repeat(43));
   });
 
@@ -200,6 +220,9 @@ describe("payment receipt client", () => {
         headers: { Accept: "application/pdf" },
       },
     });
+    expect([...new Headers(request?.init?.headers).entries()]).toEqual([
+      ["accept", "application/pdf"],
+    ]);
     for (const unsafe of [
       path + "?token=secret",
       "https://evil.example/file",

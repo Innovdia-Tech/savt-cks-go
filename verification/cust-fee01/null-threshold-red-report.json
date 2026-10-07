@@ -1,0 +1,26 @@
+{
+  "task": "CUST-FEE01",
+  "phase": "RED",
+  "startedAt": "2026-10-07T14:25:34.610Z",
+  "scope": "Real CartScreen with synthetic quoteEnvelope; Chrome browser emulation only",
+  "physicalWebView": "PENDING: Android/iOS WebView, VoiceOver/TalkBack and actual device text scaling",
+  "fixtureParsing": "parseQuote applied to all fixture scenarios",
+  "checks": [
+    {
+      "name": "Null fee-free threshold is not described as present",
+      "status": "FAIL",
+      "error": "A null fee-free threshold must not be described as present"
+    }
+  ],
+  "screenshots": ["null-threshold-before-fix.png"],
+  "errors": [],
+  "externalRequests": [],
+  "browserVersion": "154.0.8037.98",
+  "serverCleanedUp": true,
+  "finishedAt": "2026-10-07T14:25:37.786Z",
+  "summary": {
+    "passed": 0,
+    "failed": 1,
+    "runtimeErrors": 0
+  }
+}

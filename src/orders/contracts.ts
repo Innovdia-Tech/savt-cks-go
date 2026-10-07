@@ -1,3 +1,5 @@
+import { parseProcessingFee, type ProcessingFee } from "../checkout/contracts";
+
 export const customerOrderStages = [
   "ORDER_RECEIVED",
   "PICK_AND_PACK",
@@ -71,6 +73,7 @@ export type OrderDetail = {
     netItemsTotalMinor: number;
     finalDeliveryChargeMinor: number;
     processingFeeMinor: number;
+    processingFee?: ProcessingFee;
     grandTotalMinor: number;
     currency: "MYR";
   };
@@ -344,7 +347,9 @@ export const parseOrderDetail = (value: unknown): OrderDetail => {
     !nullableDate(fulfilment.confirmedAt)
   )
     invalid();
-  const money = exact(item.money, [
+  const rawMoney = record(item.money);
+  const hasProcessingFee = Object.hasOwn(rawMoney, "processingFee");
+  const money = exact(rawMoney, [
     "itemsSubtotalMinor",
     "discountAmountMinor",
     "netItemsTotalMinor",
@@ -352,6 +357,7 @@ export const parseOrderDetail = (value: unknown): OrderDetail => {
     "processingFeeMinor",
     "grandTotalMinor",
     "currency",
+    ...(hasProcessingFee ? ["processingFee"] : []),
   ]);
   if (
     ![
@@ -365,6 +371,9 @@ export const parseOrderDetail = (value: unknown): OrderDetail => {
     money.currency !== "MYR"
   )
     invalid();
+  const processingFee = hasProcessingFee
+    ? parseProcessingFee(money.processingFee, invalid)
+    : undefined;
   const destination = exact(item.destination, [
     "recipientName",
     "recipientPhoneE164",
@@ -436,7 +445,9 @@ export const parseOrderDetail = (value: unknown): OrderDetail => {
     receipt.downloadPath !== null
   )
     invalid();
-  return item as OrderDetail;
+  return hasProcessingFee
+    ? ({ ...item, money: { ...money, processingFee } } as OrderDetail)
+    : (item as OrderDetail);
 };
 
 export const parseCancellation = (value: unknown): CancellationResult => {

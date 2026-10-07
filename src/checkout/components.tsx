@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type ComponentProps } from "react";
+import { useEffect, useId, useRef, useState, type ComponentProps } from "react";
 import { PaymentPanel } from "../payment/components";
-import { MAX_LINE_QUANTITY } from "./contracts";
+import { MAX_LINE_QUANTITY, type ProcessingFee } from "./contracts";
+import { syncDialog } from "../components/ui";
 import {
   cartMerchandiseSummary,
   type CartController,
@@ -28,6 +29,18 @@ const malaysiaTime = (value: string) =>
   });
 
 const quoteErrors: Record<string, [string, string]> = {
+  CHECKOUT_FEE_CONTRACT_UPGRADE_REQUIRED: [
+    "We couldn't confirm the checkout fee.",
+    "Your basket is still here. Refresh your total and try again.",
+  ],
+  CHECKOUT_PROCESSING_FEE_UNCONFIGURED: [
+    "We couldn't confirm the checkout fee.",
+    "Your basket is still here. Refresh your total and try again.",
+  ],
+  CHECKOUT_PROCESSING_FEE_INVALID: [
+    "We couldn't confirm the checkout fee.",
+    "Your basket is still here. Refresh your total and try again.",
+  ],
   CHECKOUT_OUTLET_PRODUCT_NOT_FOUND: [
     "Product unavailable",
     "One item is no longer available. Remove it to continue.",
@@ -123,6 +136,140 @@ export function AddressTransitionError({ error }: { error: string | null }) {
   );
 }
 
+function SmallOrderFee({
+  fee,
+  chargedMinor,
+}: {
+  fee: Extract<ProcessingFee, { feeType: "SMALL_ORDER_TIERS" }>;
+  chargedMinor: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
+  const helperId = useId();
+  const difference =
+    fee.outcome === "CHARGED" &&
+    fee.feeFreeFromMinor !== null &&
+    fee.feeFreeFromMinor > fee.qualifyingAmountMinor
+      ? fee.feeFreeFromMinor - fee.qualifyingAmountMinor
+      : null;
+  const helper =
+    fee.outcome === "DISABLED"
+      ? "Small order fee is currently not applied."
+      : fee.outcome === "ZERO_TIER" || fee.outcome === "NO_MATCH"
+        ? "No small order fee for this order."
+        : difference !== null
+          ? `${money(difference)} to go for no small order fee`
+          : null;
+  const close = () => setOpen(false);
+
+  useEffect(() => {
+    const element = dialog.current;
+    if (!open || !element) return;
+    // Reuse the app's native modal foundation and bottom-sheet geometry.
+    syncDialog(element, true);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const returnFocus = trigger.current;
+    return () => {
+      syncDialog(element, false);
+      document.body.style.overflow = previousOverflow;
+      if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+    };
+  }, [open]);
+
+  return (
+    <>
+      <dt className="small-order-fee-label">
+        Small order fee
+        <button
+          ref={trigger}
+          type="button"
+          className="small-order-fee-info"
+          aria-label="About small order fee"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-describedby={helperId}
+          onClick={() => setOpen(true)}
+        >
+          <span aria-hidden="true">ⓘ</span>
+        </button>
+      </dt>
+      <dd className="small-order-fee-amount">{money(chargedMinor)}</dd>
+      <dd className="small-order-fee-helper" id={helperId}>
+        {helper && (
+          <p
+            className={
+              difference !== null ? "small-order-fee-progress" : undefined
+            }
+          >
+            {helper}
+          </p>
+        )}
+        {fee.outcome === "CHARGED" && (
+          <p>Based on items total after discounts. Delivery is excluded.</p>
+        )}
+        {open && (
+          <dialog
+            ref={dialog}
+            className="ui-bottom-sheet small-order-fee-sheet"
+            aria-labelledby={titleId}
+            aria-describedby={descriptionId}
+            onClose={close}
+            onCancel={(event) => {
+              event.preventDefault();
+              close();
+            }}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) close();
+            }}
+          >
+            <div className="ui-bottom-sheet__panel">
+              <header>
+                <h2 id={titleId}>Small order fee</h2>
+                <strong>{money(chargedMinor)}</strong>
+              </header>
+              <p id={descriptionId}>
+                {fee.outcome === "CHARGED"
+                  ? "A small order fee applies based on your items total after discounts."
+                  : helper}
+              </p>
+              <dl className="small-order-fee-details">
+                <dt>Current items total after discounts</dt>
+                <dd>{money(fee.qualifyingAmountMinor)}</dd>
+                {fee.feeFreeFromMinor !== null && (
+                  <>
+                    <dt>No-fee threshold</dt>
+                    <dd>{money(fee.feeFreeFromMinor)}</dd>
+                  </>
+                )}
+              </dl>
+              {difference !== null && (
+                <p className="small-order-fee-progress">{helper}.</p>
+              )}
+              <p>
+                {fee.feeFreeFromMinor === null
+                  ? "Delivery charges are excluded from the items total after discounts."
+                  : "Delivery charges do not count toward this threshold."}
+              </p>
+              <button
+                type="button"
+                className="customer-button customer-primary"
+                autoFocus
+                onClick={close}
+              >
+                Got it
+              </button>
+            </div>
+          </dialog>
+        )}
+      </dd>
+    </>
+  );
+}
+
 function QuoteSummary({
   state,
   controller,
@@ -198,8 +345,18 @@ function QuoteSummary({
         <dd>{money(quote.itemsSubtotalMinor)}</dd>
         <dt>Delivery fee</dt>
         <dd>{money(quote.finalDeliveryChargeMinor)}</dd>
-        <dt>Processing fee</dt>
-        <dd>{money(quote.processingFeeMinor)}</dd>
+        {quote.processingFee.feeType === "SMALL_ORDER_TIERS" ? (
+          <SmallOrderFee
+            key={quote.quoteId}
+            fee={quote.processingFee}
+            chargedMinor={quote.processingFeeMinor}
+          />
+        ) : (
+          <>
+            <dt>Processing fee</dt>
+            <dd>{money(quote.processingFeeMinor)}</dd>
+          </>
+        )}
         <dt className="quote-grand">Total</dt>
         <dd className="quote-grand">{money(quote.grandTotalMinor)}</dd>
       </dl>

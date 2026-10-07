@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  acceptedProcessingFees,
+  rejectedProcessingFees,
+  smallOrderFee,
+} from "../checkout/processing-fee.test-fixtures";
+import {
   parseCancellation,
   parseOrderDetail,
   parseOrderList,
@@ -229,5 +234,57 @@ describe("customer order contracts", () => {
     expect(() => parseOrderDetail({ data: value })).toThrow(
       "Invalid customer order response",
     );
+  });
+});
+
+describe("order processing fee snapshots", () => {
+  it("keeps historical orders without processing fee metadata readable", () => {
+    const parsed = parseOrderDetail({ data: detail() });
+    expect(Object.hasOwn(parsed.money, "processingFee")).toBe(false);
+    expect(parsed.money.processingFeeMinor).toBe(100);
+  });
+
+  it.each(acceptedProcessingFees)("accepts %s", (_name, processingFee) => {
+    const value = detail();
+    const parsed = parseOrderDetail({
+      data: { ...value, money: { ...value.money, processingFee } },
+    });
+    expect(parsed.money.processingFee).toEqual(processingFee);
+    expect(parsed.money.processingFeeMinor).toBe(100);
+    expect(parsed.money.grandTotalMinor).toBe(4590);
+  });
+
+  it.each(rejectedProcessingFees)("rejects %s", (_name, processingFee) => {
+    const value = detail();
+    expect(() =>
+      parseOrderDetail({
+        data: { ...value, money: { ...value.money, processingFee } },
+      }),
+    ).toThrow("Invalid customer order response");
+  });
+
+  it("rejects explicitly undefined fee metadata", () => {
+    const value = detail();
+    expect(() =>
+      parseOrderDetail({
+        data: { ...value, money: { ...value.money, processingFee: undefined } },
+      }),
+    ).toThrow("Invalid customer order response");
+  });
+
+  it("keeps unrelated order money fields closed", () => {
+    const value = detail();
+    expect(() =>
+      parseOrderDetail({
+        data: {
+          ...value,
+          money: {
+            ...value.money,
+            processingFee: smallOrderFee(),
+            clientCharge: 1,
+          },
+        },
+      }),
+    ).toThrow("Invalid customer order response");
   });
 });
