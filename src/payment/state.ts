@@ -4,6 +4,7 @@ import { BridgeError } from "../webview/bridge";
 import { PaymentError } from "./api";
 import {
   parsePaymentRetry,
+  parsePaymentResult,
   type PaymentCreate,
   type PaymentOrder,
   type PaymentResult,
@@ -21,7 +22,11 @@ type PaymentApiPort = {
 };
 
 type PaymentBridgePort = {
-  requestPaymentHandoff(checkoutUrl: string): Promise<void>;
+  requestPaymentHandoff(
+    checkoutUrl: string,
+    paymentIntentId: string,
+  ): Promise<void>;
+  clearPaymentRecovery?(paymentIntentId: string): void;
 };
 
 type SessionPort = {
@@ -188,6 +193,19 @@ export class PaymentController {
     await this.openCheckout();
   }
 
+  async restore(paymentIntentId: string): Promise<void> {
+    if (!uuid(paymentIntentId)) throw new PaymentError("VALIDATION_FAILED");
+    if (this.session.getSnapshot().phase !== "authenticated") return;
+    if (this.state.paymentIntentId) {
+      if (this.state.paymentIntentId === paymentIntentId)
+        await this.handleReturn();
+      return;
+    }
+    this.clearPayment();
+    this.update({ ...empty("pending"), paymentIntentId });
+    await this.handleReturn();
+  }
+
   checkStatus(): Promise<void> {
     if (
       this.returnedToCheckout &&
@@ -202,8 +220,7 @@ export class PaymentController {
   private checkCurrentStatus(): Promise<void> {
     if (this.state.phase === "paid" || this.state.phase === "retrying")
       return Promise.resolve();
-    if (!this.state.paymentIntentId || !this.checkoutReference)
-      return Promise.resolve();
+    if (!this.state.paymentIntentId) return Promise.resolve();
     if (this.statusCheck) return this.statusCheck;
     const check = this.executeStatus().finally(() => {
       if (this.statusCheck === check) this.statusCheck = null;
@@ -426,7 +443,10 @@ export class PaymentController {
       paymentIntentId,
     });
     try {
-      await this.bridge.requestPaymentHandoff(this.checkoutUrl);
+      await this.bridge.requestPaymentHandoff(
+        this.checkoutUrl,
+        paymentIntentId,
+      );
       if (
         generation !== this.generation ||
         this.state.phase !== "opening" ||
@@ -452,18 +472,24 @@ export class PaymentController {
   private async executeStatus(): Promise<void> {
     const paymentIntentId = this.state.paymentIntentId;
     const checkoutReference = this.checkoutReference;
-    if (!paymentIntentId || !checkoutReference) return;
+    if (!paymentIntentId) return;
     const generation = this.generation;
     this.update({ ...empty("checking"), paymentIntentId });
     try {
-      const result = await this.api.result(paymentIntentId);
+      const result = parsePaymentResult({
+        data: await this.api.result(paymentIntentId),
+      });
       if (generation !== this.generation) return;
-      if (result.checkoutReference !== checkoutReference)
+      if (
+        checkoutReference !== null &&
+        result.checkoutReference !== checkoutReference
+      )
         throw new PaymentError("INVALID_RESPONSE");
       if (result.status === "PAID" && !validOrder(result.order))
         throw new PaymentError("INVALID_RESPONSE");
       if (result.status !== "PAID" && result.order !== null)
         throw new PaymentError("INVALID_RESPONSE");
+      this.checkoutReference = result.checkoutReference;
       this.applyResult(result, paymentIntentId);
     } catch (error) {
       if (generation !== this.generation) return;
@@ -503,6 +529,9 @@ export class PaymentController {
               : this.returnedToCheckout && this.returnChecksComplete
                 ? "retryable-pending"
                 : "pending";
+    if (phase === "paid" || phase === "failed") {
+      this.bridge.clearPaymentRecovery?.(paymentIntentId);
+    }
     if (this.paymentReceived) {
       this.retryAttempt = null;
       this.retryUnavailable = false;

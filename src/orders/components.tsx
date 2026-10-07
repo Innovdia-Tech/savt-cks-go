@@ -8,6 +8,10 @@ import type { OrdersController, OrdersState } from "./state";
 import { SupportAction } from "../support/SupportAction";
 import { IconButton, StatusBadge, SystemState } from "../components/ui";
 import { ReceiptIcon, RefreshIcon } from "../components/Icons";
+import {
+  hasDocumentSaveBridge,
+  requestDocumentSave,
+} from "../webview/document-save";
 
 type Actions = Pick<
   OrdersController,
@@ -311,13 +315,19 @@ const progressTimes = (detail: OrderDetail) => [
 ];
 
 export async function saveReceipt(controller: Actions, paymentReceipt = false) {
+  const embedded = hasDocumentSaveBridge();
   const result = await (paymentReceipt
-    ? controller.downloadPaymentReceipt()
-    : controller.downloadReceipt());
+    ? controller.downloadPaymentReceipt(embedded)
+    : controller.downloadReceipt(embedded));
   if (!result) return;
   let url: string | undefined;
   let link: HTMLAnchorElement | undefined;
   try {
+    if (embedded) {
+      await requestDocumentSave(result.blob, result.filename);
+      result.completeSave?.(true);
+      return;
+    }
     url = URL.createObjectURL(result.blob);
     link = document.createElement("a");
     link.href = url;
@@ -326,7 +336,8 @@ export async function saveReceipt(controller: Actions, paymentReceipt = false) {
     document.body.appendChild(link);
     link.click();
   } catch {
-    controller.reportReceiptSaveFailure(paymentReceipt);
+    if (result.completeSave) result.completeSave(false);
+    else controller.reportReceiptSaveFailure(paymentReceipt);
   } finally {
     link?.remove();
     // Give the browser/WebView time to consume the attachment before releasing it.
@@ -395,6 +406,9 @@ function OrderDocumentsSection({
                 We couldn’t download your receipt. Please try again.
               </p>
             )}
+            {state.paymentReceiptPhase === "saved" && (
+              <p role="status">Receipt saved</p>
+            )}
           </div>
         )}
       </section>
@@ -425,6 +439,7 @@ function OrderDocumentsSection({
               We couldn’t download your Final Sales Receipt. Please try again.
             </p>
           )}
+          {state.receiptPhase === "saved" && <p role="status">Receipt saved</p>}
         </section>
       )}
     </>

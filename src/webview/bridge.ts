@@ -1,4 +1,5 @@
 import type { BootstrapData } from "../api/contracts";
+import { uuid } from "../customer/contracts";
 import { isSafeCheckoutUrl } from "../payment/contracts";
 import { isLocalPaymentSimulatorCheckoutUrl } from "../payment/local-simulator";
 
@@ -29,7 +30,11 @@ export class BridgeError extends Error {
 
 export interface NativeBridgePort {
   requestLaunchCode(bootstrap: BootstrapMessage): Promise<HandoffDetail>;
-  requestPaymentHandoff(checkoutUrl: string): Promise<void>;
+  requestPaymentHandoff(
+    checkoutUrl: string,
+    paymentIntentId: string,
+  ): Promise<void>;
+  clearPaymentRecovery?(paymentIntentId: string): void;
   notifyLoaded(): void;
   notifyError(code: string): void;
 }
@@ -147,14 +152,18 @@ export class FlutterBridgeAdapter implements NativeBridgePort {
     });
   }
 
-  async requestPaymentHandoff(checkoutUrl: string): Promise<void> {
-    if (!isSafeCheckoutUrl(checkoutUrl)) throw new BridgeError("invalid");
+  async requestPaymentHandoff(
+    checkoutUrl: string,
+    paymentIntentId: string,
+  ): Promise<void> {
+    if (!isSafeCheckoutUrl(checkoutUrl) || !uuid(paymentIntentId))
+      throw new BridgeError("invalid");
     if (!this.environment.channel) throw new BridgeError("unavailable");
     try {
       this.environment.channel.postMessage(
         JSON.stringify({
           type: "payment-handoff",
-          payload: { checkoutUrl },
+          payload: { checkoutUrl, paymentIntentId },
         }),
       );
     } catch {
@@ -164,6 +173,20 @@ export class FlutterBridgeAdapter implements NativeBridgePort {
 
   notifyLoaded(): void {
     this.post({ type: "loaded" });
+  }
+
+  clearPaymentRecovery(paymentIntentId: string): void {
+    if (!uuid(paymentIntentId)) return;
+    try {
+      this.environment.channel?.postMessage(
+        JSON.stringify({
+          type: "payment-recovery-clear",
+          payload: { paymentIntentId },
+        }),
+      );
+    } catch {
+      /* Recovery remains available if the native host is unavailable. */
+    }
   }
 
   notifyError(code: string): void {
@@ -196,8 +219,12 @@ export class BrowserBridgeAdapter implements NativeBridgePort {
     return Promise.reject(new BridgeError("unavailable"));
   }
 
-  async requestPaymentHandoff(checkoutUrl: string): Promise<void> {
-    if (!isSafeCheckoutUrl(checkoutUrl)) throw new BridgeError("invalid");
+  async requestPaymentHandoff(
+    checkoutUrl: string,
+    paymentIntentId: string,
+  ): Promise<void> {
+    if (!isSafeCheckoutUrl(checkoutUrl) || !uuid(paymentIntentId))
+      throw new BridgeError("invalid");
     try {
       if (isLocalPaymentSimulatorCheckoutUrl(checkoutUrl)) {
         // noopener returns null even for an opened tab; only a thrown error is actionable.
@@ -211,6 +238,7 @@ export class BrowserBridgeAdapter implements NativeBridgePort {
   }
 
   notifyLoaded(): void {}
+  clearPaymentRecovery(): void {}
   notifyError(): void {}
 }
 
@@ -237,8 +265,12 @@ export class DevelopmentBridgeAdapter implements NativeBridgePort {
     };
   }
 
-  async requestPaymentHandoff(checkoutUrl: string): Promise<void> {
-    if (!isSafeCheckoutUrl(checkoutUrl)) throw new BridgeError("invalid");
+  async requestPaymentHandoff(
+    checkoutUrl: string,
+    paymentIntentId: string,
+  ): Promise<void> {
+    if (!isSafeCheckoutUrl(checkoutUrl) || !uuid(paymentIntentId))
+      throw new BridgeError("invalid");
     if (!this.enabled || this.production) throw new BridgeError("unavailable");
     if (this.failNextPayment) {
       this.failNextPayment = false;
@@ -256,6 +288,7 @@ export class DevelopmentBridgeAdapter implements NativeBridgePort {
   }
 
   notifyLoaded(): void {}
+  clearPaymentRecovery(): void {}
 
   notifyError(): void {}
 }

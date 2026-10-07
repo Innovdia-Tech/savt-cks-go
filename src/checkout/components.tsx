@@ -284,6 +284,13 @@ export function CartScreen({
   deliveryAddress?: string;
   onChangeAddress?: () => void;
 }) {
+  if (!state.lines.length && payment?.state.paymentIntentId) {
+    return (
+      <div className="cart-stack cart-stack--shopping">
+        <PaymentPanel {...payment} />
+      </div>
+    );
+  }
   if (!state.lines.length)
     return (
       <section className="catalogue-state cart-empty" role="status">

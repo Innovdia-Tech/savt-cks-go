@@ -8,6 +8,9 @@ import {
   CartScreen,
 } from "./components";
 import { id, quoteEnvelope } from "./test-fixtures";
+import { PaymentController } from "../payment/state";
+import { PaymentError } from "../payment/api";
+import type { PaymentResult } from "../payment/contracts";
 
 const line = {
   outletId: id("a"),
@@ -54,6 +57,84 @@ const controller = {
 };
 
 describe("real cart and trusted quote presentation", () => {
+  it.each([
+    "PENDING",
+    "FAILED",
+    "PAID_PROCESSING",
+    "PAID",
+    "NETWORK_ERROR",
+  ] as const)(
+    "shows recovered backend %s payment without persisted basket lines",
+    async (status) => {
+      const paymentId = "20000000-0000-4000-8000-000000000002";
+      const paymentController = new PaymentController(
+        {
+          create: async () => {
+            throw new Error("No payment creation during recovery");
+          },
+          retry: async () => {
+            throw new Error("No automatic retry during recovery");
+          },
+          result: async (): Promise<PaymentResult> => {
+            if (status === "NETWORK_ERROR")
+              throw new PaymentError("NETWORK_ERROR");
+            return {
+              checkoutReference: "10000000-0000-4000-8000-000000000001",
+              status,
+              order:
+                status === "PAID"
+                  ? {
+                      orderId: "40000000-0000-4000-8000-000000000004",
+                      orderNumber: "CKS-123",
+                      status: "NEW",
+                    }
+                  : null,
+            };
+          },
+        },
+        {
+          requestPaymentHandoff: async () => {
+            throw new Error("No checkout launch during recovery");
+          },
+        },
+        {
+          getSnapshot: () => ({ phase: "authenticated" }),
+          subscribe: () => () => {},
+        },
+        () => false,
+        () => {},
+        Date.now,
+        () => paymentId,
+        async () => {},
+      );
+      await paymentController.restore(paymentId);
+      const html = renderToStaticMarkup(
+        createElement(CartScreen, {
+          state: { ...base, lines: [], assignment: null },
+          controller,
+          payment: {
+            state: paymentController.getSnapshot(),
+            controller: paymentController,
+            onViewOrder: () => {},
+          },
+          onBrowse: () => {},
+        } as never),
+      );
+      expect(html).not.toContain("Your basket is empty");
+      expect(html).not.toContain(paymentId);
+      if (status === "PAID") {
+        expect(html).toContain("Order confirmed");
+        expect(html).toContain("Track order");
+      } else {
+        expect(html).not.toContain("Order confirmed");
+        expect(html).not.toContain("Track order");
+      }
+      if (status === "FAILED") expect(html).toContain("Payment failed");
+      if (status === "NETWORK_ERROR")
+        expect(html).toContain("Check payment status");
+      paymentController.dispose();
+    },
+  );
   it("uses Basket copy for the empty customer state", () => {
     const html = renderToStaticMarkup(
       createElement(CartScreen, {

@@ -26,6 +26,7 @@ import { CheckoutProvider } from "./checkout/context";
 import { PaymentApi } from "./payment/api";
 import { PaymentProvider } from "./payment/context";
 import { PaymentController } from "./payment/state";
+import { consumePaymentRecoveryFragment } from "./payment/recovery";
 import "./checkout/checkout.css";
 import { OrdersApi } from "./orders/api";
 import { OrdersController } from "./orders/state";
@@ -45,6 +46,11 @@ async function start() {
       ? new DevelopmentCustomerApi(production)
       : new CustomerApiClient(config.apiOrigin);
     const embeddedHost = Boolean(window.SavtCksGoBridge);
+    const initialPaymentIntentId = consumePaymentRecoveryFragment(
+      embeddedHost,
+      window.location,
+      window.history,
+    );
     const bridge = selectCustomerBridge(
       embeddedHost,
       config.developmentBridge,
@@ -169,7 +175,10 @@ async function start() {
               }
             >
               <CheckoutProvider controller={checkout} customer={customer}>
-                <PaymentProvider controller={payment}>
+                <PaymentProvider
+                  controller={payment}
+                  initialPaymentIntentId={initialPaymentIntentId}
+                >
                   <OrdersProvider controller={orders}>
                     <SupportProvider
                       origin={config.apiOrigin}

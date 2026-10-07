@@ -1,5 +1,16 @@
 # Customer UI contract
 
+## FE-FINAL01 native payment return recovery
+
+The FE-FINAL01 brief supersedes PAY06B's lack of recovery after app/WebView
+destruction. Flutter persists only a CKS UUID before external checkout. Cold
+return supplies that UUID to the authenticated CKS payment status GET. `CartScreen`
+renders the canonical `PaymentPanel` even when basket lines were lost on cold
+start. It displays backend status and existing status/retry/order-detail actions;
+it does not invent basket lines, amounts or successful payment evidence.
+Warm return retains the host and its existing payment observation. Existing
+payment finality, styles and redaction rules remain authoritative.
+
 ## CUST-UX06 Android pilot polish
 
 The approved CUST-UX06 brief supersedes the earlier general Home-help placement. `CatalogueApp` keeps Categories → Browse all → all authoritative Browse categories/products, and omits the Featured products CTA and general Home help. `OrdersScreen` reuses `SupportAction` through the `orders` variant immediately below the web Orders header. The fixed general enquiry, backend support config, fail-closed behavior and external handoff remain unchanged. Delivery, genuine payment-error and order-detail support keep their established owners.
@@ -164,7 +175,7 @@ The canonical runtime tokens remain in `src/styles.css`. CUST-UX04R follows the 
 
 The protected backend document projection at `a37f46d45ccc42082affd0c063c68e843a85ea95` independently owns Payment Receipt and Final Sales Receipt availability. The accepted customer receipt simplification brief supersedes the earlier document presentation: Order Detail names payment proof **Receipt**, shows **Payment received** and the existing authoritative paid Order grand total, and offers **Download Receipt** as the primary document action. Availability is checked when a PAID order opens through the existing controller; completion is never a prerequisite for payment proof.
 
-`orders/contracts.ts` accepts only matching order-bound relative paths; `orders/api.ts` uses credentialed, no-store PDF fetches and rejects non-PDF or empty responses; `orders/state.ts` owns loading/retry and aborts stale work on navigation or session loss. `saveReceipt` performs the browser-owned Blob/object-URL file save with a safe filename and delayed URL revocation. No credentials are placed in download links. Payment/finality, original paid totals, refund evidence and backend document rules remain unchanged.
+`orders/contracts.ts` accepts only matching order-bound relative paths; `orders/api.ts` uses credentialed, no-store PDF fetches and rejects non-PDF or empty responses; `orders/state.ts` owns loading/retry and aborts stale work on navigation or session loss. `saveReceipt` preserves the standalone browser Blob/object-URL file save with a safe filename and delayed URL revocation. In the embedded Savt host, FE-RECEIPT01 uses `webview/document-save.ts` to send only the already-authorized PDF bytes and exact safe file metadata through SavtCksGoBridge. The 2 MiB PDF limit, signature and filename are checked before transmission; the native result retains downloading state until completion. Success shows an inline `role=status` Receipt saved acknowledgement. Failure retains the owning document's retry state and readable order page. Duplicate and late results cannot change a replacement order. No credentials or backend URLs enter either save boundary. Payment/finality, original paid totals, refund evidence and backend document rules remain unchanged.
 
 Only the authoritative `milestones.completedAt` enables the secondary **Final Sales Receipt** section, with **Final fulfilled-order record** and **Download Final Sales Receipt** when its existing detail capability is available. It appears separately after the normal Receipt and cannot replace its action. Receipt availability errors show **Receipt temporarily unavailable**, **We couldn’t load your receipt. Please try again.**, and **Try again** through `refreshDocuments`; no final-document card is rendered during that error. Tracking, order detail and payment summary remain readable. Focused receipt presentation, API, controller and browser-save tests own this behavior.
 
