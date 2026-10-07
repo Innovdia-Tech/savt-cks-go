@@ -1,0 +1,77 @@
+{
+  "task": "CUST-UX-BATCH01",
+  "startingHead": "094a78e96851462b7c02cf147081a4642b16b2eb",
+  "startedAt": "2026-10-07T16:17:37.831Z",
+  "scope": "Combined focused regression only; no full suite, build or broad typecheck gate",
+  "physicalWebView": "PENDING",
+  "testFiles": [
+    "src/checkout/contracts.test.ts",
+    "src/checkout/api.test.ts",
+    "src/checkout/components.test.ts",
+    "src/orders/contracts.test.ts",
+    "src/orders/api.test.ts",
+    "runtime/server.test.mjs",
+    "src/components/Layout.test.ts",
+    "src/customer/DeliveryAddressPicker.test.tsx",
+    "src/customer/DeliveryLocationSetup.test.tsx",
+    "src/location/bridge.test.ts",
+    "src/location/api.test.ts",
+    "src/catalogue/startup.test.tsx",
+    "src/components/session/SessionStatus.test.ts",
+    "src/session/controller.test.ts",
+    "src/webview/bridge.test.ts",
+    "src/catalogue/components.test.ts",
+    "src/catalogue/advertisements.test.ts",
+    "src/catalogue/api.test.ts",
+    "src/catalogue/state.test.ts",
+    "src/catalogue/AdvertisingCarousel.test.tsx",
+    "src/catalogue/refresh.test.ts",
+    "src/catalogue/home-advertisements.test.ts",
+    "src/webview/external-link.test.ts"
+  ],
+  "results": [
+    {
+      "name": "focused-unit",
+      "exitCode": 0,
+      "status": "PASS",
+      "tests": 574,
+      "files": 23
+    },
+    {
+      "name": "scroll-browser",
+      "exitCode": 0,
+      "status": "PASS",
+      "browserSummary": {
+        "passed": 18,
+        "failed": 0,
+        "runtimeErrors": 0
+      }
+    },
+    {
+      "name": "address-browser",
+      "exitCode": 0,
+      "status": "PASS",
+      "browserSummary": {
+        "pass": 13,
+        "fail": 0,
+        "errors": 0
+      }
+    },
+    {
+      "name": "startup-browser",
+      "exitCode": 0,
+      "status": "PASS",
+      "browserSummary": {
+        "passed": 18,
+        "failed": 0,
+        "fatal": false
+      }
+    },
+    {
+      "name": "format",
+      "exitCode": 0,
+      "status": "PASS"
+    }
+  ],
+  "finishedAt": "2026-10-07T16:18:15.870Z"
+}

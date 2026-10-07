@@ -3,7 +3,7 @@
   "phase": "GREEN",
   "scope": "Actual src/main.tsx, production React, real web session/data/catalogue controllers; loopback native/API shims",
   "physicalWebView": "PENDING",
-  "startedAt": "2026-10-07T16:01:55.903Z",
+  "startedAt": "2026-10-07T16:18:07.646Z",
   "checks": [
     {
       "name": "320: no authenticated UI or loaded acknowledgement before exchange",
@@ -152,94 +152,94 @@
           "method": "GET",
           "path": "/api/v1/customer/session",
           "status": 401,
-          "at": "2026-10-07T16:01:58.937Z",
-          "completedAt": "2026-10-07T16:01:58.937Z",
+          "at": "2026-10-07T16:18:10.201Z",
+          "completedAt": "2026-10-07T16:18:10.201Z",
           "bodyKeys": []
         },
         {
           "method": "POST",
           "path": "/api/v1/customer/session/bootstrap",
           "status": 200,
-          "at": "2026-10-07T16:01:58.941Z",
-          "completedAt": "2026-10-07T16:01:58.941Z",
+          "at": "2026-10-07T16:18:10.205Z",
+          "completedAt": "2026-10-07T16:18:10.205Z",
           "bodyKeys": []
         },
         {
           "method": "POST",
           "path": "/api/v1/customer/session/exchange",
           "status": 200,
-          "at": "2026-10-07T16:01:58.955Z",
-          "completedAt": "2026-10-07T16:01:59.027Z",
+          "at": "2026-10-07T16:18:10.222Z",
+          "completedAt": "2026-10-07T16:18:10.305Z",
           "bodyKeys": ["protocolVersion", "launchRequestId", "state", "code"]
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/support",
           "status": 200,
-          "at": "2026-10-07T16:01:59.073Z",
-          "completedAt": "2026-10-07T16:01:59.073Z",
+          "at": "2026-10-07T16:18:10.357Z",
+          "completedAt": "2026-10-07T16:18:10.357Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/me",
           "status": 200,
-          "at": "2026-10-07T16:01:59.074Z",
-          "completedAt": "2026-10-07T16:01:59.244Z",
+          "at": "2026-10-07T16:18:10.358Z",
+          "completedAt": "2026-10-07T16:18:10.533Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/me/addresses",
           "status": 200,
-          "at": "2026-10-07T16:01:59.248Z",
-          "completedAt": "2026-10-07T16:01:59.375Z",
+          "at": "2026-10-07T16:18:10.536Z",
+          "completedAt": "2026-10-07T16:18:10.681Z",
           "bodyKeys": []
         },
         {
           "method": "POST",
           "path": "/api/v1/customer/outlet-assignment",
           "status": 200,
-          "at": "2026-10-07T16:01:59.380Z",
-          "completedAt": "2026-10-07T16:01:59.437Z",
+          "at": "2026-10-07T16:18:10.688Z",
+          "completedAt": "2026-10-07T16:18:10.737Z",
           "bodyKeys": ["customerAddressId", "addressRowVersion"]
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
           "status": 200,
-          "at": "2026-10-07T16:01:59.443Z",
-          "completedAt": "2026-10-07T16:01:59.444Z",
+          "at": "2026-10-07T16:18:10.743Z",
+          "completedAt": "2026-10-07T16:18:10.743Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
           "status": 200,
-          "at": "2026-10-07T16:01:59.444Z",
-          "completedAt": "2026-10-07T16:01:59.444Z",
+          "at": "2026-10-07T16:18:10.743Z",
+          "completedAt": "2026-10-07T16:18:10.743Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
           "status": 200,
-          "at": "2026-10-07T16:01:59.450Z",
-          "completedAt": "2026-10-07T16:01:59.450Z",
+          "at": "2026-10-07T16:18:10.749Z",
+          "completedAt": "2026-10-07T16:18:10.749Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
           "status": 200,
-          "at": "2026-10-07T16:01:59.451Z",
-          "completedAt": "2026-10-07T16:01:59.451Z",
+          "at": "2026-10-07T16:18:10.750Z",
+          "completedAt": "2026-10-07T16:18:10.750Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/advertisement-media/33333333-3333-4333-8333-333333333333/44444444-4444-4444-8444-444444444444",
-          "at": "2026-10-07T16:01:59.472Z",
+          "at": "2026-10-07T16:18:10.767Z",
           "bodyKeys": []
         }
       ],
@@ -248,7 +248,7 @@
       "native": [
         {
           "type": "bootstrap",
-          "at": 930.5999999940395,
+          "at": 750.1000000089407,
           "keys": ["type", "payload"],
           "payloadKeys": [
             "protocolVersion",
@@ -260,7 +260,7 @@
         },
         {
           "type": "loaded",
-          "at": 1015.2999999970198,
+          "at": 850.9000000059605,
           "keys": ["type"]
         }
       ]
@@ -273,72 +273,72 @@
           "method": "GET",
           "path": "/api/v1/customer/session",
           "status": 200,
-          "at": "2026-10-07T16:01:59.920Z",
-          "completedAt": "2026-10-07T16:01:59.920Z",
+          "at": "2026-10-07T16:18:11.220Z",
+          "completedAt": "2026-10-07T16:18:11.220Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/support",
           "status": 200,
-          "at": "2026-10-07T16:01:59.976Z",
-          "completedAt": "2026-10-07T16:01:59.976Z",
+          "at": "2026-10-07T16:18:11.269Z",
+          "completedAt": "2026-10-07T16:18:11.269Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/me",
           "status": 200,
-          "at": "2026-10-07T16:01:59.977Z",
-          "completedAt": "2026-10-07T16:01:59.977Z",
+          "at": "2026-10-07T16:18:11.269Z",
+          "completedAt": "2026-10-07T16:18:11.269Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/me/addresses",
           "status": 200,
-          "at": "2026-10-07T16:01:59.988Z",
-          "completedAt": "2026-10-07T16:01:59.988Z",
+          "at": "2026-10-07T16:18:11.277Z",
+          "completedAt": "2026-10-07T16:18:11.277Z",
           "bodyKeys": []
         },
         {
           "method": "POST",
           "path": "/api/v1/customer/outlet-assignment",
           "status": 200,
-          "at": "2026-10-07T16:01:59.992Z",
-          "completedAt": "2026-10-07T16:01:59.992Z",
+          "at": "2026-10-07T16:18:11.281Z",
+          "completedAt": "2026-10-07T16:18:11.281Z",
           "bodyKeys": ["customerAddressId", "addressRowVersion"]
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
           "status": 200,
-          "at": "2026-10-07T16:01:59.998Z",
-          "completedAt": "2026-10-07T16:01:59.998Z",
+          "at": "2026-10-07T16:18:11.291Z",
+          "completedAt": "2026-10-07T16:18:11.291Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
           "status": 200,
-          "at": "2026-10-07T16:01:59.999Z",
-          "completedAt": "2026-10-07T16:01:59.999Z",
+          "at": "2026-10-07T16:18:11.292Z",
+          "completedAt": "2026-10-07T16:18:11.292Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
           "status": 200,
-          "at": "2026-10-07T16:02:00.013Z",
-          "completedAt": "2026-10-07T16:02:00.013Z",
+          "at": "2026-10-07T16:18:11.300Z",
+          "completedAt": "2026-10-07T16:18:11.300Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
           "status": 200,
-          "at": "2026-10-07T16:02:00.013Z",
-          "completedAt": "2026-10-07T16:02:00.013Z",
+          "at": "2026-10-07T16:18:11.300Z",
+          "completedAt": "2026-10-07T16:18:11.300Z",
           "bodyKeys": []
         }
       ],
@@ -347,7 +347,7 @@
       "native": [
         {
           "type": "loaded",
-          "at": 212,
+          "at": 172.5,
           "keys": ["type"]
         }
       ]
@@ -360,94 +360,94 @@
           "method": "GET",
           "path": "/api/v1/customer/session",
           "status": 401,
-          "at": "2026-10-07T16:02:00.506Z",
-          "completedAt": "2026-10-07T16:02:00.506Z",
+          "at": "2026-10-07T16:18:11.715Z",
+          "completedAt": "2026-10-07T16:18:11.715Z",
           "bodyKeys": []
         },
         {
           "method": "POST",
           "path": "/api/v1/customer/session/bootstrap",
           "status": 200,
-          "at": "2026-10-07T16:02:00.509Z",
-          "completedAt": "2026-10-07T16:02:00.509Z",
+          "at": "2026-10-07T16:18:11.719Z",
+          "completedAt": "2026-10-07T16:18:11.719Z",
           "bodyKeys": []
         },
         {
           "method": "POST",
           "path": "/api/v1/customer/session/exchange",
           "status": 200,
-          "at": "2026-10-07T16:02:00.523Z",
-          "completedAt": "2026-10-07T16:02:00.590Z",
+          "at": "2026-10-07T16:18:11.732Z",
+          "completedAt": "2026-10-07T16:18:11.802Z",
           "bodyKeys": ["protocolVersion", "launchRequestId", "state", "code"]
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/support",
           "status": 200,
-          "at": "2026-10-07T16:02:00.640Z",
-          "completedAt": "2026-10-07T16:02:00.640Z",
+          "at": "2026-10-07T16:18:11.845Z",
+          "completedAt": "2026-10-07T16:18:11.845Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/me",
           "status": 200,
-          "at": "2026-10-07T16:02:00.642Z",
-          "completedAt": "2026-10-07T16:02:00.793Z",
+          "at": "2026-10-07T16:18:11.845Z",
+          "completedAt": "2026-10-07T16:18:11.942Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/me/addresses",
           "status": 200,
-          "at": "2026-10-07T16:02:00.796Z",
-          "completedAt": "2026-10-07T16:02:00.926Z",
+          "at": "2026-10-07T16:18:11.945Z",
+          "completedAt": "2026-10-07T16:18:12.060Z",
           "bodyKeys": []
         },
         {
           "method": "POST",
           "path": "/api/v1/customer/outlet-assignment",
           "status": 200,
-          "at": "2026-10-07T16:02:00.931Z",
-          "completedAt": "2026-10-07T16:02:00.987Z",
+          "at": "2026-10-07T16:18:12.064Z",
+          "completedAt": "2026-10-07T16:18:12.119Z",
           "bodyKeys": ["customerAddressId", "addressRowVersion"]
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
           "status": 200,
-          "at": "2026-10-07T16:02:00.992Z",
-          "completedAt": "2026-10-07T16:02:00.992Z",
+          "at": "2026-10-07T16:18:12.124Z",
+          "completedAt": "2026-10-07T16:18:12.124Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
           "status": 200,
-          "at": "2026-10-07T16:02:00.993Z",
-          "completedAt": "2026-10-07T16:02:00.993Z",
+          "at": "2026-10-07T16:18:12.125Z",
+          "completedAt": "2026-10-07T16:18:12.125Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
           "status": 200,
-          "at": "2026-10-07T16:02:00.997Z",
-          "completedAt": "2026-10-07T16:02:00.998Z",
+          "at": "2026-10-07T16:18:12.130Z",
+          "completedAt": "2026-10-07T16:18:12.130Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
           "status": 200,
-          "at": "2026-10-07T16:02:00.998Z",
-          "completedAt": "2026-10-07T16:02:00.998Z",
+          "at": "2026-10-07T16:18:12.130Z",
+          "completedAt": "2026-10-07T16:18:12.130Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/advertisement-media/33333333-3333-4333-8333-333333333333/44444444-4444-4444-8444-444444444444",
-          "at": "2026-10-07T16:02:01.003Z",
+          "at": "2026-10-07T16:18:12.137Z",
           "bodyKeys": []
         }
       ],
@@ -456,7 +456,7 @@
       "native": [
         {
           "type": "bootstrap",
-          "at": 227.1000000089407,
+          "at": 192.20000000298023,
           "keys": ["type", "payload"],
           "payloadKeys": [
             "protocolVersion",
@@ -468,7 +468,7 @@
         },
         {
           "type": "loaded",
-          "at": 307.40000000596046,
+          "at": 275.29999999701977,
           "keys": ["type"]
         }
       ]
@@ -481,72 +481,72 @@
           "method": "GET",
           "path": "/api/v1/customer/session",
           "status": 200,
-          "at": "2026-10-07T16:02:01.471Z",
-          "completedAt": "2026-10-07T16:02:01.471Z",
+          "at": "2026-10-07T16:18:12.551Z",
+          "completedAt": "2026-10-07T16:18:12.551Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/support",
           "status": 200,
-          "at": "2026-10-07T16:02:01.530Z",
-          "completedAt": "2026-10-07T16:02:01.530Z",
+          "at": "2026-10-07T16:18:12.600Z",
+          "completedAt": "2026-10-07T16:18:12.600Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/me",
           "status": 200,
-          "at": "2026-10-07T16:02:01.530Z",
-          "completedAt": "2026-10-07T16:02:01.530Z",
+          "at": "2026-10-07T16:18:12.601Z",
+          "completedAt": "2026-10-07T16:18:12.601Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/me/addresses",
           "status": 200,
-          "at": "2026-10-07T16:02:01.540Z",
-          "completedAt": "2026-10-07T16:02:01.540Z",
+          "at": "2026-10-07T16:18:12.609Z",
+          "completedAt": "2026-10-07T16:18:12.609Z",
           "bodyKeys": []
         },
         {
           "method": "POST",
           "path": "/api/v1/customer/outlet-assignment",
           "status": 200,
-          "at": "2026-10-07T16:02:01.544Z",
-          "completedAt": "2026-10-07T16:02:01.544Z",
+          "at": "2026-10-07T16:18:12.613Z",
+          "completedAt": "2026-10-07T16:18:12.613Z",
           "bodyKeys": ["customerAddressId", "addressRowVersion"]
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
           "status": 200,
-          "at": "2026-10-07T16:02:01.552Z",
-          "completedAt": "2026-10-07T16:02:01.552Z",
+          "at": "2026-10-07T16:18:12.619Z",
+          "completedAt": "2026-10-07T16:18:12.619Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
           "status": 200,
-          "at": "2026-10-07T16:02:01.553Z",
-          "completedAt": "2026-10-07T16:02:01.553Z",
+          "at": "2026-10-07T16:18:12.619Z",
+          "completedAt": "2026-10-07T16:18:12.619Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
           "status": 200,
-          "at": "2026-10-07T16:02:01.563Z",
-          "completedAt": "2026-10-07T16:02:01.563Z",
+          "at": "2026-10-07T16:18:12.634Z",
+          "completedAt": "2026-10-07T16:18:12.634Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
           "status": 200,
-          "at": "2026-10-07T16:02:01.564Z",
-          "completedAt": "2026-10-07T16:02:01.564Z",
+          "at": "2026-10-07T16:18:12.634Z",
+          "completedAt": "2026-10-07T16:18:12.634Z",
           "bodyKeys": []
         }
       ],
@@ -555,7 +555,7 @@
       "native": [
         {
           "type": "loaded",
-          "at": 202.40000000596046,
+          "at": 179.79999999701977,
           "keys": ["type"]
         }
       ]
@@ -568,94 +568,94 @@
           "method": "GET",
           "path": "/api/v1/customer/session",
           "status": 401,
-          "at": "2026-10-07T16:02:02.107Z",
-          "completedAt": "2026-10-07T16:02:02.107Z",
+          "at": "2026-10-07T16:18:13.111Z",
+          "completedAt": "2026-10-07T16:18:13.111Z",
           "bodyKeys": []
         },
         {
           "method": "POST",
           "path": "/api/v1/customer/session/bootstrap",
           "status": 200,
-          "at": "2026-10-07T16:02:02.112Z",
-          "completedAt": "2026-10-07T16:02:02.112Z",
+          "at": "2026-10-07T16:18:13.114Z",
+          "completedAt": "2026-10-07T16:18:13.114Z",
           "bodyKeys": []
         },
         {
           "method": "POST",
           "path": "/api/v1/customer/session/exchange",
           "status": 200,
-          "at": "2026-10-07T16:02:02.128Z",
-          "completedAt": "2026-10-07T16:02:02.195Z",
+          "at": "2026-10-07T16:18:13.127Z",
+          "completedAt": "2026-10-07T16:18:13.201Z",
           "bodyKeys": ["protocolVersion", "launchRequestId", "state", "code"]
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/support",
           "status": 200,
-          "at": "2026-10-07T16:02:02.263Z",
-          "completedAt": "2026-10-07T16:02:02.263Z",
+          "at": "2026-10-07T16:18:13.245Z",
+          "completedAt": "2026-10-07T16:18:13.245Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/me",
           "status": 200,
-          "at": "2026-10-07T16:02:02.265Z",
-          "completedAt": "2026-10-07T16:02:02.413Z",
+          "at": "2026-10-07T16:18:13.245Z",
+          "completedAt": "2026-10-07T16:18:13.360Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/me/addresses",
           "status": 200,
-          "at": "2026-10-07T16:02:02.416Z",
-          "completedAt": "2026-10-07T16:02:02.545Z",
+          "at": "2026-10-07T16:18:13.364Z",
+          "completedAt": "2026-10-07T16:18:13.526Z",
           "bodyKeys": []
         },
         {
           "method": "POST",
           "path": "/api/v1/customer/outlet-assignment",
           "status": 200,
-          "at": "2026-10-07T16:02:02.551Z",
-          "completedAt": "2026-10-07T16:02:02.604Z",
+          "at": "2026-10-07T16:18:13.532Z",
+          "completedAt": "2026-10-07T16:18:13.596Z",
           "bodyKeys": ["customerAddressId", "addressRowVersion"]
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
           "status": 200,
-          "at": "2026-10-07T16:02:02.611Z",
-          "completedAt": "2026-10-07T16:02:02.611Z",
+          "at": "2026-10-07T16:18:13.613Z",
+          "completedAt": "2026-10-07T16:18:13.613Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
           "status": 200,
-          "at": "2026-10-07T16:02:02.611Z",
-          "completedAt": "2026-10-07T16:02:02.611Z",
+          "at": "2026-10-07T16:18:13.613Z",
+          "completedAt": "2026-10-07T16:18:13.613Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
           "status": 200,
-          "at": "2026-10-07T16:02:02.619Z",
-          "completedAt": "2026-10-07T16:02:02.619Z",
+          "at": "2026-10-07T16:18:13.627Z",
+          "completedAt": "2026-10-07T16:18:13.627Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
           "status": 200,
-          "at": "2026-10-07T16:02:02.620Z",
-          "completedAt": "2026-10-07T16:02:02.620Z",
+          "at": "2026-10-07T16:18:13.627Z",
+          "completedAt": "2026-10-07T16:18:13.627Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/advertisement-media/33333333-3333-4333-8333-333333333333/44444444-4444-4444-8444-444444444444",
-          "at": "2026-10-07T16:02:02.640Z",
+          "at": "2026-10-07T16:18:13.645Z",
           "bodyKeys": []
         }
       ],
@@ -664,7 +664,7 @@
       "native": [
         {
           "type": "bootstrap",
-          "at": 278.5,
+          "at": 191.8999999910593,
           "keys": ["type", "payload"],
           "payloadKeys": [
             "protocolVersion",
@@ -676,7 +676,7 @@
         },
         {
           "type": "loaded",
-          "at": 360.5,
+          "at": 277.8999999910593,
           "keys": ["type"]
         }
       ]
@@ -689,72 +689,72 @@
           "method": "GET",
           "path": "/api/v1/customer/session",
           "status": 200,
-          "at": "2026-10-07T16:02:03.175Z",
-          "completedAt": "2026-10-07T16:02:03.175Z",
+          "at": "2026-10-07T16:18:14.080Z",
+          "completedAt": "2026-10-07T16:18:14.080Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/support",
           "status": 200,
-          "at": "2026-10-07T16:02:03.241Z",
-          "completedAt": "2026-10-07T16:02:03.241Z",
+          "at": "2026-10-07T16:18:14.132Z",
+          "completedAt": "2026-10-07T16:18:14.132Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/me",
           "status": 200,
-          "at": "2026-10-07T16:02:03.241Z",
-          "completedAt": "2026-10-07T16:02:03.241Z",
+          "at": "2026-10-07T16:18:14.132Z",
+          "completedAt": "2026-10-07T16:18:14.132Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/me/addresses",
           "status": 200,
-          "at": "2026-10-07T16:02:03.253Z",
-          "completedAt": "2026-10-07T16:02:03.253Z",
+          "at": "2026-10-07T16:18:14.142Z",
+          "completedAt": "2026-10-07T16:18:14.142Z",
           "bodyKeys": []
         },
         {
           "method": "POST",
           "path": "/api/v1/customer/outlet-assignment",
           "status": 200,
-          "at": "2026-10-07T16:02:03.259Z",
-          "completedAt": "2026-10-07T16:02:03.259Z",
+          "at": "2026-10-07T16:18:14.146Z",
+          "completedAt": "2026-10-07T16:18:14.146Z",
           "bodyKeys": ["customerAddressId", "addressRowVersion"]
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
           "status": 200,
-          "at": "2026-10-07T16:02:03.267Z",
-          "completedAt": "2026-10-07T16:02:03.267Z",
+          "at": "2026-10-07T16:18:14.152Z",
+          "completedAt": "2026-10-07T16:18:14.152Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
           "status": 200,
-          "at": "2026-10-07T16:02:03.269Z",
-          "completedAt": "2026-10-07T16:02:03.269Z",
+          "at": "2026-10-07T16:18:14.153Z",
+          "completedAt": "2026-10-07T16:18:14.153Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
           "status": 200,
-          "at": "2026-10-07T16:02:03.288Z",
-          "completedAt": "2026-10-07T16:02:03.288Z",
+          "at": "2026-10-07T16:18:14.167Z",
+          "completedAt": "2026-10-07T16:18:14.167Z",
           "bodyKeys": []
         },
         {
           "method": "GET",
           "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
           "status": 200,
-          "at": "2026-10-07T16:02:03.289Z",
-          "completedAt": "2026-10-07T16:02:03.289Z",
+          "at": "2026-10-07T16:18:14.167Z",
+          "completedAt": "2026-10-07T16:18:14.167Z",
           "bodyKeys": []
         }
       ],
@@ -763,14 +763,14 @@
       "native": [
         {
           "type": "loaded",
-          "at": 258.40000000596046,
+          "at": 176.6000000089407,
           "keys": ["type"]
         }
       ]
     }
   ],
   "serverCleanedUp": true,
-  "finishedAt": "2026-10-07T16:02:03.576Z",
+  "finishedAt": "2026-10-07T16:18:14.437Z",
   "summary": {
     "passed": 18,
     "failed": 0,

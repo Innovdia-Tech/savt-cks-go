@@ -6,6 +6,7 @@ import {
   installEmbeddedFixture,
   playwright,
   startFixtureServer,
+  stopFixtureServer,
 } from "./browser-fixtures.mjs";
 
 const red = process.argv.includes("--red");
@@ -370,13 +371,12 @@ try {
   report.fatalError = String(error.stack ?? error);
 } finally {
   await browser?.close();
-  server?.process.kill();
-  report.serverCleanedUp = Boolean(server?.process.killed);
+  report.serverCleanedUp = server ? await stopFixtureServer(server) : true;
   report.finishedAt = new Date().toISOString();
   report.summary = {
     passed: report.checks.filter((entry) => entry.status === "PASS").length,
     failed: report.checks.filter((entry) => entry.status === "FAIL").length,
-    fatal: Boolean(report.fatalError),
+    fatal: Boolean(report.fatalError) || !report.serverCleanedUp,
   };
   await fs.writeFile(
     path.join(

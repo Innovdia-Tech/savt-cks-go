@@ -1,7 +1,7 @@
 {
   "task": "CUST-UX-BATCH01: scrollbar",
   "phase": "GREEN",
-  "startedAt": "2026-10-07T15:59:52.554Z",
+  "startedAt": "2026-10-07T16:17:41.696Z",
   "scope": "Actual AppShell and CartScreen; local Chrome emulation with synthetic data",
   "physicalWebView": "PENDING",
   "checks": [
@@ -31,14 +31,14 @@
       "name": "320: keyboard PageDown scrolls the focused customer content",
       "status": "PASS",
       "evidence": {
-        "scrollTop": 16
+        "scrollTop": 60
       }
     },
     {
       "name": "320: native touch gesture scrolls the customer owner",
       "status": "PASS",
       "evidence": {
-        "scrollTop": 661
+        "scrollTop": 617
       }
     },
     {
@@ -102,14 +102,14 @@
       "name": "390: keyboard PageDown scrolls the focused customer content",
       "status": "PASS",
       "evidence": {
-        "scrollTop": 17
+        "scrollTop": 26
       }
     },
     {
       "name": "390: native touch gesture scrolls the customer owner",
       "status": "PASS",
       "evidence": {
-        "scrollTop": 660
+        "scrollTop": 651
       }
     },
     {
@@ -173,14 +173,14 @@
       "name": "430: keyboard PageDown scrolls the focused customer content",
       "status": "PASS",
       "evidence": {
-        "scrollTop": 18
+        "scrollTop": 35
       }
     },
     {
       "name": "430: native touch gesture scrolls the customer owner",
       "status": "PASS",
       "evidence": {
-        "scrollTop": 659
+        "scrollTop": 642
       }
     },
     {
@@ -222,7 +222,7 @@
   "errors": [],
   "externalRequests": [],
   "serverCleanedUp": true,
-  "finishedAt": "2026-10-07T16:00:01.500Z",
+  "finishedAt": "2026-10-07T16:17:50.307Z",
   "summary": {
     "passed": 18,
     "failed": 0,

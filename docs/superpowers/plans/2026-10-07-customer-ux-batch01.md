@@ -36,11 +36,11 @@
 
 **Interfaces:** Existing `AppShell` owns `.app-shell__scroll`; the existing modal panel independently owns internal scrolling. Do not change these ownership relationships.
 
-- [ ] Mount actual AppShell and a real Small Order Fee summary with long synthetic content.
-- [ ] Run a browser assertion that the owner has `scrollbar-width: none` and no visible WebKit scrollbar; observe failure on starting code.
-- [ ] Add only owner-scoped cross-browser visual scrollbar suppression, preserving `overflow-y: auto`.
-- [ ] At 320/390/430 verify wheel, keyboard and touch deltas, navigation stability, no horizontal overflow, fee dialog scrolling and simulated safe area.
-- [ ] Review and commit locally as `style(customer): hide visible app scrollbar`.
+- [x] Mount actual AppShell and a real Small Order Fee summary with long synthetic content.
+- [x] Run a browser assertion that the owner has `scrollbar-width: none` and no visible WebKit scrollbar; observe failure on starting code.
+- [x] Add only owner-scoped cross-browser visual scrollbar suppression, preserving `overflow-y: auto`.
+- [x] At 320/390/430 verify wheel, keyboard and touch deltas, navigation stability, no horizontal overflow, fee dialog scrolling and simulated safe area.
+- [x] Review and commit locally as `style(customer): hide visible app scrollbar`.
 
 ## Task 2: Address first entry
 
@@ -48,11 +48,11 @@
 
 **Interfaces:** Actual CatalogueApp/Home navigation, customer provider, checkout transition state, current-location port and native location message/reply contract. Coordinate any catalogue integration with Task 3.
 
-- [ ] Reproduce Home→Change Address, one location click, saved-coordinate reuse and missing-coordinate setup in the actual embedded web flow with recorded shim boundaries.
-- [ ] Trace prior transition errors, lifecycle/StrictMode, pending/stale requests and map readiness; distinguish production behavior from development-only replay.
-- [ ] Add a focused regression that fails for each proven web cause, or record the exact native boundary if native repair is proven.
-- [ ] Implement the smallest web fix without retries or blanket error clearing; verify genuine errors and stale-response fences.
-- [ ] Review and commit locally as `fix(address): make first location entry reliable`, or record native follow-up evidence.
+- [x] Reproduce Home→Change Address, one location click, saved-coordinate reuse and missing-coordinate setup in the actual embedded web flow with recorded shim boundaries.
+- [x] Trace prior transition errors, lifecycle/StrictMode, pending/stale requests and map readiness; distinguish production behavior from development-only replay.
+- [x] Add a focused regression that fails for each proven web cause, or record the exact native boundary if native repair is proven.
+- [x] Implement the smallest web fix without retries or blanket error clearing; verify genuine errors and stale-response fences.
+- [x] Review and commit locally as `fix(address): make first location entry reliable`, or record native follow-up evidence.
 
 ## Task 3: Embedded startup ownership
 
@@ -60,11 +60,11 @@
 
 **Interfaces:** Existing authenticated session loaded handshake, customer profile/address phases and CatalogueApp shell/status rendering. The native bridge contract remains unchanged.
 
-- [ ] Trace document→bootstrap→session→loaded→profile/address→assignment/catalogue→Home, including read-only host code if accessible.
-- [ ] Reproduce the second branded loader after the unchanged authenticated loaded message using deferred real-provider reads.
-- [ ] Add a focused failing test for embedded pending reads; pin standalone/setup/error behavior too.
-- [ ] Use existing in-shell loading states when safe; do not advance the loaded handshake or hide genuine failures.
-- [ ] Review and commit locally as `refactor(shell): avoid duplicate embedded loading state`, or record the exact native follow-up requirement.
+- [x] Trace document→bootstrap→session→loaded→profile/address→assignment/catalogue→Home, including read-only host code if accessible.
+- [x] Reproduce the second branded loader after the unchanged authenticated loaded message using deferred real-provider reads.
+- [x] Add a focused failing test for embedded pending reads; pin standalone/setup/error behavior too.
+- [x] Use existing in-shell loading states when safe; do not advance the loaded handshake or hide genuine failures.
+- [x] Review and commit locally as `refactor(shell): avoid duplicate embedded loading state`, or record the exact native follow-up requirement.
 
 ## Task 4: Advertisement current-code regression
 
@@ -72,14 +72,14 @@
 
 **Interfaces:** `CatalogueApi`→`CatalogueController`→strict advertisement parser→CatalogueApp/HomeCarousel. Query remains `placement=HOME_HERO`.
 
-- [ ] Audit existing strict parser, all four actions, valid assignment loading and empty/error behavior.
-- [ ] Strengthen missing real API/controller/render coverage; verify returned HQ artwork and zero results in the shared actual-App browser harness.
-- [ ] Run only affected advertisement tests and preserve absence of a production fallback.
-- [ ] Review and commit locally as `test(home): preserve backend advertisement rendering` if tests are added.
+- [x] Audit existing strict parser, all four actions, valid assignment loading and empty/error behavior.
+- [x] Strengthen missing real API/controller/render coverage; verify returned HQ artwork and zero results in the shared actual-App browser harness.
+- [x] Run only affected advertisement tests and preserve absence of a production fallback.
+- [x] Review and commit locally as `test(home): preserve backend advertisement rendering` if tests are added.
 
 ## Final focused checkpoint
 
-- [ ] Run one combined focused selection covering fee contracts/API/UI/proxy, scrolling, address entry/location bridge, embedded startup and Home advertisements.
-- [ ] Check changed-file formatting and diff scope; obtain a fresh read-only review without another test run.
-- [ ] Commit the batch evidence; verify clean worktree, exact ancestry and local commit list.
-- [ ] Return requested statuses/root causes/counts, physical PENDING and all remote actions NO, then stop.
+- [x] Run one combined focused selection covering fee contracts/API/UI/proxy, scrolling, address entry/location bridge, embedded startup and Home advertisements.
+- [x] Check changed-file formatting and diff scope; obtain a fresh read-only review without another test run.
+- [x] Commit the batch evidence; verify clean worktree, exact ancestry and local commit list.
+- [x] Return requested statuses/root causes/counts, physical PENDING and all remote actions NO, then stop.
