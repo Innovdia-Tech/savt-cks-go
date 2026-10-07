@@ -293,7 +293,7 @@ async function run(width, scenario) {
         true,
       );
       assert(
-        ["rgb(229, 35, 41)", "rgb(201, 29, 35)"].includes(
+        ["rgb(12, 116, 182)", "rgb(9, 99, 156)"].includes(
           await retry().evaluate(
             (element) => getComputedStyle(element).backgroundColor,
           ),

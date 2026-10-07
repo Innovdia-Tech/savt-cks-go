@@ -40,11 +40,11 @@ async function capture(page, width, name) {
   for (const item of navigation) {
     assert.equal(
       item.icon,
-      item.active ? "rgb(229, 35, 41)" : "rgb(135, 135, 135)",
+      item.active ? "rgb(12, 116, 182)" : "rgb(135, 135, 135)",
     );
     assert.equal(
       item.label,
-      item.active ? "rgb(229, 35, 41)" : "rgb(102, 102, 102)",
+      item.active ? "rgb(12, 116, 182)" : "rgb(102, 102, 102)",
     );
   }
   await page

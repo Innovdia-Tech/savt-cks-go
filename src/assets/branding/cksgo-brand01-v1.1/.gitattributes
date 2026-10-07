@@ -1,0 +1,4 @@
+# Coordinated masters must remain byte-identical to their SHA-256 manifest.
+*.svg -text
+manifest.json -text
+SHARED-ASSETS.md -text

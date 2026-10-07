@@ -1,4 +1,6 @@
-# Temporary legacy-format exclusions; no other source path is exempt.
+# Temporary legacy-format exclusions.
 # A dedicated future formatting package should remove these exclusions.
 /src/App.tsx
 /src/components/Layout.tsx
+# Preserve byte-identical approved master assets and their original manifest.
+/src/assets/branding/cksgo-brand01-v1.1/

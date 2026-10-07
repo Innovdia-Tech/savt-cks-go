@@ -13,6 +13,7 @@ import type { Outlet } from "../catalogue/contracts";
 import type { Screen } from "../types";
 import { IconButton } from "./ui";
 import { usePullToRefresh } from "./usePullToRefresh";
+import { CksGoLogo } from "./CksGoLogo";
 
 type AppShellProps = {
   children: ReactNode;
@@ -331,7 +332,7 @@ export function HeaderActions({
   if (context === "home")
     return (
       <div className="app-header__shopping-actions app-header__shopping-actions--shopping">
-        <span className="app-header__brand">CKS Go</span>
+        <CksGoLogo variant="white-blue" className="cks-go-logo--compact" />
         <div className="app-header__shopping-controls">
           {refreshControl}
           <button

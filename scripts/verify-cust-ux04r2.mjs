@@ -77,7 +77,10 @@ async function navigation(page) {
     assert(n.height >= 44);
     assert.equal(n.decoration, "none");
     assert(["none", "normal"].includes(n.underline));
-    assert.equal(n.color, n.active ? "rgb(229, 35, 41)" : "rgb(135, 135, 135)");
+    assert.equal(
+      n.color,
+      n.active ? "rgb(12, 116, 182)" : "rgb(135, 135, 135)",
+    );
   }
   assert(nav.find((n) => n.active).label.startsWith("Basket"));
 }

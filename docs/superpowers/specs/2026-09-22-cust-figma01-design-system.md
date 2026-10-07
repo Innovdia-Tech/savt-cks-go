@@ -17,9 +17,9 @@ Preserve the existing session, address, outlet assignment, catalogue, cart, quot
 
 ## Design decisions
 
-- CKS Red `#E52329` owns commerce CTAs, active customer navigation, cart emphasis, and order actions.
+- CKSGO-BRAND01-v1.1 (7 October 2026) supersedes the earlier decorative CKS red: action `#0C74B6`, hover `#09639C`, pressed `#084F7C`, light brand/header `#8ECBE2` with dark ink `#123D56`. Approved logo fills remain separate: CKS `#94D2E4`, O `#3570BC`, G `#3470BC`.
 - Savt Green `#4CAF50` and dark `#3F8E1E` remain reward/savings/success ecosystem colors.
-- Background `#F8FAF6`, ink `#111827`, info `#3B82F6`, warning `#F59E0B`, error `#EF4444`.
+- CKS canvas `#F3F8FB`, muted surfaces `#EAF2F6`, borders `#D9E6ED` / `#B7CBD6`; retain existing dark body ink and semantic info, warning, error and success values.
 - Inter/system typography: H1 24/32 bold, H2 20/28 semibold, body 14/20 regular.
 - Mobile reference is 390×844; runtime is fluid, safe-area aware, and intentionally contained on wide screens.
 - Supported bottom destinations are Home, Categories, Cart, and Orders. Account is omitted because the repository has no supported route.

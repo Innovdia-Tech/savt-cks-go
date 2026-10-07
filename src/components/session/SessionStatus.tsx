@@ -9,6 +9,7 @@ import {
   type CustomerSessionController,
   type CustomerSessionState,
 } from "../../session/controller";
+import { CksGoLogo } from "../CksGoLogo";
 
 type SessionPhase = CustomerSessionState["phase"];
 type OtpPhase =
@@ -128,12 +129,7 @@ export function WebOtpEntry({
   return (
     <main className="grid min-h-dvh place-items-center bg-app-background px-4 py-8 text-savt-ink">
       <section className="w-full max-w-[390px] rounded-[32px] border border-white/80 bg-white p-6 shadow-lift sm:p-7">
-        <div
-          className="mx-auto grid h-14 w-14 place-items-center rounded-[20px] bg-cks-soft text-lg font-bold text-cks-primary"
-          aria-hidden="true"
-        >
-          CKS
-        </div>
+        <CksGoLogo className="cks-go-logo--entry mx-auto" />
         <p className="mt-4 text-center text-xs font-semibold text-cks-primary">
           CKS Go
         </p>
@@ -331,7 +327,7 @@ export function CustomerSessionBoundary({
           aria-hidden="true"
         >
           {loading ? (
-            <span className="h-7 w-7 animate-spin rounded-full border-[3px] border-red-100 border-t-cks-primary" />
+            <span className="h-7 w-7 animate-spin rounded-full border-[3px] border-cks-soft border-t-cks-primary" />
           ) : (
             <span className="text-2xl">!</span>
           )}
@@ -359,7 +355,7 @@ export function CustomerSessionBoundary({
           <button
             type="button"
             onClick={() => window.history.back()}
-            className="mt-6 min-h-12 w-full rounded-[18px] bg-slate-950 px-5 text-sm font-semibold text-white"
+            className="mt-6 min-h-12 w-full rounded-[18px] bg-cks-primary px-5 text-sm font-semibold text-white"
           >
             Back to Savt
           </button>
@@ -376,7 +372,7 @@ export function StoreLoading() {
       role="status"
       aria-busy="true"
     >
-      <strong className="text-2xl text-cks-primary">CKS Go</strong>
+      <CksGoLogo />
       <div className="delivery-setup__spinner" aria-hidden="true" />
       <h1>Getting CKS Go ready…</h1>
     </main>

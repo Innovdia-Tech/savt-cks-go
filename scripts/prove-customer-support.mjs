@@ -73,7 +73,7 @@ async function checkUtility(page, action) {
   assert.equal(style.font, "14px");
   assert.equal(style.weight, "600");
   assert.equal(style.background, "rgba(0, 0, 0, 0)");
-  assert.equal(style.color, "rgb(229, 35, 41)");
+  assert.equal(style.color, "rgb(12, 116, 182)");
   assert.ok(!["fixed", "sticky", "absolute"].includes(style.position));
   const navigation = page.locator('nav[aria-label="Primary navigation"]');
   const navBox = (await navigation.count())

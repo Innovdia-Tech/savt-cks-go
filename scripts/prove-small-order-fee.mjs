@@ -21,7 +21,9 @@ const load = (name) =>
       "utf8",
     ),
   );
-const output = "docs/verification/small-order-fee01";
+const output =
+  process.env.CKS_GO_VERIFICATION_OUTPUT ??
+  "docs/verification/small-order-fee01";
 mkdirSync(output, { recursive: true });
 const server = await createServer({
   configFile: false,
@@ -119,7 +121,7 @@ try {
         await page
           .getByRole("button", { name: /^Pay/ })
           .evaluate((el) => getComputedStyle(el).backgroundColor),
-        "rgb(229, 35, 41)",
+        "rgb(12, 116, 182)",
       );
       assert.equal(
         (await page.getByRole("button", { name: /^Pay/ }).innerText()).replace(
