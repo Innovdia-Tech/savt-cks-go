@@ -1,0 +1,201 @@
+{
+  "task": "CUST-UX-BATCH01: scrollbar",
+  "phase": "RED",
+  "startedAt": "2026-10-07T15:56:13.090Z",
+  "scope": "Actual AppShell and CartScreen; local Chrome emulation with synthetic data",
+  "physicalWebView": "PENDING",
+  "checks": [
+    {
+      "name": "320: only actual customer owner visually suppresses scrollbar",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'thin' !== 'none'\n"
+    },
+    {
+      "name": "320: mouse wheel scrolling remains functional",
+      "status": "PASS",
+      "evidence": {
+        "scrollTop": 400
+      }
+    },
+    {
+      "name": "320: keyboard PageDown scrolls the focused customer content",
+      "status": "PASS",
+      "evidence": {
+        "scrollTop": 36
+      }
+    },
+    {
+      "name": "320: native touch gesture scrolls the customer owner",
+      "status": "PASS",
+      "evidence": {
+        "scrollTop": 641
+      }
+    },
+    {
+      "name": "320: navigation stays fixed and content has no horizontal overflow",
+      "status": "PASS",
+      "evidence": {
+        "navBefore": {
+          "x": 0,
+          "y": 774,
+          "width": 320,
+          "height": 70
+        },
+        "navAfter": {
+          "x": 0,
+          "y": 774,
+          "width": 320,
+          "height": 70
+        },
+        "page": 320,
+        "viewport": 320,
+        "owner": 320,
+        "client": 320
+      }
+    },
+    {
+      "name": "320: fee sheet preserves internal scrolling, safe area and dismissal",
+      "status": "PASS",
+      "evidence": {
+        "overflow": "auto",
+        "scrollTop": 350,
+        "width": 320,
+        "contentWidth": 320,
+        "paddingBottom": 54,
+        "safeAreaSimulation": "--safe-area-bottom: 34px",
+        "focusReturned": true
+      }
+    },
+    {
+      "name": "390: only actual customer owner visually suppresses scrollbar",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'thin' !== 'none'\n"
+    },
+    {
+      "name": "390: mouse wheel scrolling remains functional",
+      "status": "PASS",
+      "evidence": {
+        "scrollTop": 400
+      }
+    },
+    {
+      "name": "390: keyboard PageDown scrolls the focused customer content",
+      "status": "PASS",
+      "evidence": {
+        "scrollTop": 16
+      }
+    },
+    {
+      "name": "390: native touch gesture scrolls the customer owner",
+      "status": "PASS",
+      "evidence": {
+        "scrollTop": 661
+      }
+    },
+    {
+      "name": "390: navigation stays fixed and content has no horizontal overflow",
+      "status": "PASS",
+      "evidence": {
+        "navBefore": {
+          "x": 0,
+          "y": 774,
+          "width": 390,
+          "height": 70
+        },
+        "navAfter": {
+          "x": 0,
+          "y": 774,
+          "width": 390,
+          "height": 70
+        },
+        "page": 390,
+        "viewport": 390,
+        "owner": 390,
+        "client": 390
+      }
+    },
+    {
+      "name": "390: fee sheet preserves internal scrolling, safe area and dismissal",
+      "status": "PASS",
+      "evidence": {
+        "overflow": "auto",
+        "scrollTop": 350,
+        "width": 390,
+        "contentWidth": 390,
+        "paddingBottom": 54,
+        "safeAreaSimulation": "--safe-area-bottom: 34px",
+        "focusReturned": true
+      }
+    },
+    {
+      "name": "430: only actual customer owner visually suppresses scrollbar",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'thin' !== 'none'\n"
+    },
+    {
+      "name": "430: mouse wheel scrolling remains functional",
+      "status": "PASS",
+      "evidence": {
+        "scrollTop": 400
+      }
+    },
+    {
+      "name": "430: keyboard PageDown scrolls the focused customer content",
+      "status": "PASS",
+      "evidence": {
+        "scrollTop": 36
+      }
+    },
+    {
+      "name": "430: native touch gesture scrolls the customer owner",
+      "status": "PASS",
+      "evidence": {
+        "scrollTop": 574
+      }
+    },
+    {
+      "name": "430: navigation stays fixed and content has no horizontal overflow",
+      "status": "PASS",
+      "evidence": {
+        "navBefore": {
+          "x": 0,
+          "y": 774,
+          "width": 430,
+          "height": 70
+        },
+        "navAfter": {
+          "x": 0,
+          "y": 774,
+          "width": 430,
+          "height": 70
+        },
+        "page": 430,
+        "viewport": 430,
+        "owner": 430,
+        "client": 430
+      }
+    },
+    {
+      "name": "430: fee sheet preserves internal scrolling, safe area and dismissal",
+      "status": "PASS",
+      "evidence": {
+        "overflow": "auto",
+        "scrollTop": 294,
+        "width": 430,
+        "contentWidth": 430,
+        "paddingBottom": 54,
+        "safeAreaSimulation": "--safe-area-bottom: 34px",
+        "focusReturned": true
+      }
+    }
+  ],
+  "errors": [],
+  "externalRequests": [],
+  "serverCleanedUp": false,
+  "finishedAt": "2026-10-07T15:56:21.897Z",
+  "summary": {
+    "passed": 15,
+    "failed": 3,
+    "runtimeErrors": 0
+  }
+}
