@@ -12,6 +12,7 @@ import {
 import type { Outlet } from "../catalogue/contracts";
 import type { Screen } from "../types";
 import { IconButton } from "./ui";
+import { BrandLogo } from "./BrandLogo";
 import { usePullToRefresh } from "./usePullToRefresh";
 
 type AppShellProps = {
@@ -331,7 +332,9 @@ export function HeaderActions({
   if (context === "home")
     return (
       <div className="app-header__shopping-actions app-header__shopping-actions--shopping">
-        <span className="app-header__brand">CKS Go</span>
+        <span className="app-header__brand">
+          <BrandLogo />
+        </span>
         <div className="app-header__shopping-controls">
           {refreshControl}
           <button

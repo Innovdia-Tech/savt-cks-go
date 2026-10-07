@@ -1,0 +1,48 @@
+{
+  "version": "CKSGO-BRAND01-v1.1",
+  "supersedes": "CKSGO-BRAND01-v1",
+  "source": "CKS go_logo and mockup Proposal_18022025.pdf",
+  "sourceSha256": "81541b975a401d0464eec18dad706cd43fd66bf8876f7c88c634b39681012ede",
+  "extraction": "Original PDF m/l/c/v/y/h paths and transforms; nonzero fill; no tracing. Original CMYK/spot fills converted to sRGB by Poppler, not UI token recoloring.",
+  "assets": {
+    "cks-go-logo-colour.svg": {
+      "sha256": "3e9259474a6cd573816b8a61570dc29db1cbd018d02e863ca18b44171da13c2b",
+      "page": 1,
+      "originalPathCount": 5,
+      "originalFills": [
+        "Separation CKSBlue; CMYK 0.42 0.05 0.07 0",
+        "Separation CKSBlue; CMYK 0.42 0.05 0.07 0",
+        "Separation CKSBlue; CMYK 0.42 0.05 0.07 0",
+        "DeviceCMYK 0.867 0.508 0.035 0",
+        "DeviceCMYK 0.871 0.508 0.035 0"
+      ],
+      "svgFills": ["#94d2e4", "#94d2e4", "#94d2e4", "#3570bc", "#3470bc"]
+    },
+    "cks-go-logo-white-blue.svg": {
+      "sha256": "b1cb5424c7462b062074ee7abf5027b9e4eaf48a207cdae94a3194b944bda312",
+      "page": 2,
+      "originalPathCount": 5,
+      "originalFills": [
+        "DeviceCMYK 0 0 0 0",
+        "DeviceCMYK 0 0 0 0",
+        "DeviceCMYK 0 0 0 0",
+        "DeviceCMYK 0.867 0.508 0.035 0",
+        "DeviceCMYK 0.871 0.508 0.035 0"
+      ],
+      "svgFills": ["#ffffff", "#ffffff", "#ffffff", "#3570bc", "#3470bc"]
+    },
+    "cks-go-logo-white.svg": {
+      "sha256": "b3b4c508376ae6623db33ca43172c3d9f21efdce77a1f2f510cd95d5c2f001d7",
+      "page": 2,
+      "originalPathCount": 5,
+      "originalFills": [
+        "DeviceCMYK 0 0 0 0",
+        "DeviceCMYK 0 0 0 0",
+        "DeviceCMYK 0 0 0 0",
+        "DeviceCMYK 0 0 0 0",
+        "DeviceCMYK 0 0 0 0"
+      ],
+      "svgFills": ["#ffffff", "#ffffff", "#ffffff", "#ffffff", "#ffffff"]
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "claimScope": "Rendered sources from synthetic Chrome browser emulation on loopback",
+  "expectedSha256": "3e9259474a6cd573816b8a61570dc29db1cbd018d02e863ca18b44171da13c2b",
+  "home": {
+    "src": "/src/assets/brand/cks-go-logo-colour.svg",
+    "currentSrc": "http://127.0.0.1:43118/src/assets/brand/cks-go-logo-colour.svg",
+    "sha256": "3e9259474a6cd573816b8a61570dc29db1cbd018d02e863ca18b44171da13c2b",
+    "byteLength": 5852,
+    "complete": true,
+    "naturalWidth": 281,
+    "naturalHeight": 150
+  },
+  "storeLoading": {
+    "src": "/src/assets/brand/cks-go-logo-colour.svg",
+    "currentSrc": "http://127.0.0.1:43118/src/assets/brand/cks-go-logo-colour.svg",
+    "sha256": "3e9259474a6cd573816b8a61570dc29db1cbd018d02e863ca18b44171da13c2b",
+    "byteLength": 5852,
+    "complete": true,
+    "naturalWidth": 281,
+    "naturalHeight": 150
+  }
+}

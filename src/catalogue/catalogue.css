@@ -49,7 +49,7 @@
   margin: 0 0 18px;
   overflow: hidden;
   border-radius: var(--radius-card);
-  background: #6f171c;
+  background: var(--color-cks-primary-pressed);
   box-shadow: none;
   touch-action: pan-y;
 }
@@ -72,7 +72,11 @@
   color: var(--color-on-primary);
   background:
     radial-gradient(circle at 88% 18%, rgb(255 255 255 / 22%), transparent 28%),
-    linear-gradient(135deg, #8d1118, var(--color-cks-primary));
+    linear-gradient(
+      135deg,
+      var(--color-cks-primary-pressed),
+      var(--color-cks-primary)
+    );
 }
 .advertising-carousel__slide--forest {
   background:
@@ -87,7 +91,7 @@
 }
 .advertising-carousel__slide:has(.advertising-carousel__artwork) {
   color: var(--color-text);
-  background: #fff1e8;
+  background: var(--color-surface-muted);
 }
 .advertising-carousel__artwork {
   position: absolute;
@@ -313,6 +317,10 @@
   border-radius: 16px;
   overflow: hidden;
 }
+.catalogue-search > div:has(:focus-visible) {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
 .catalogue-search input {
   min-width: 0;
   width: 100%;
@@ -351,8 +359,8 @@
 }
 .catalogue-categories button[aria-pressed="true"] {
   border-color: var(--color-cks-primary);
-  background: var(--color-surface);
-  color: var(--color-cks-primary);
+  background: var(--color-cks-light);
+  color: var(--color-on-cks-light);
 }
 .catalogue-grid {
   display: grid;
@@ -361,7 +369,7 @@
 }
 .catalogue-category-context {
   margin: 2px 0 18px;
-  border: 1px solid #f7c8cb;
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-card);
   background: var(--color-cks-primary-soft);
   padding: 14px 16px;
@@ -1077,8 +1085,8 @@
   font-size: 12px;
 }
 .catalogue-root--shopping .catalogue-categories button[aria-pressed="true"] {
-  color: white;
-  background: var(--color-cks-primary);
+  color: var(--color-on-cks-light);
+  background: var(--color-cks-light);
 }
 .catalogue-root--shopping .catalogue-heading:has(h1.sr-only) {
   height: 0;

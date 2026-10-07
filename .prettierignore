@@ -2,3 +2,6 @@
 # A dedicated future formatting package should remove these exclusions.
 /src/App.tsx
 /src/components/Layout.tsx
+
+# Byte-identical operations-approved master artwork and provenance bundle.
+/src/assets/brand/

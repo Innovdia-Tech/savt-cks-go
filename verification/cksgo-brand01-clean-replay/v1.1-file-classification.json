@@ -1,0 +1,283 @@
+{
+  "base": "dbe097ca8cb21015e19e60a52f7c8a5684adf281",
+  "head": "a43333decbbc150a111c56c0dc41b2f55b395c59",
+  "count": 55,
+  "unrelatedFiles": 0,
+  "files": [
+    {
+      "path": "DESIGN.md",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "Version, provenance or maintained guidance"
+    },
+    {
+      "path": "UX-CONTRACT.md",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "Version, provenance or maintained guidance"
+    },
+    {
+      "path": "docs/verification/CKSGO-BRAND01-CUSTOMER-V1.1-LOCAL.md",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "Version, provenance or maintained guidance"
+    },
+    {
+      "path": "src/assets/brand/SHARED-ASSETS.md",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "Version, provenance or maintained guidance"
+    },
+    {
+      "path": "src/assets/brand/cks-go-logo-colour.svg",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "Corrected master artwork"
+    },
+    {
+      "path": "src/assets/brand/cks-go-logo-white-blue.svg",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "Corrected master artwork"
+    },
+    {
+      "path": "src/assets/brand/manifest.json",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "Version, provenance or maintained guidance"
+    },
+    {
+      "path": "src/styles.css",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "Version, provenance or maintained guidance"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/320-basket.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/320-browse-category.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/320-checkout.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/320-enlarged-text-200pct.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/320-home-search-focus.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/320-order-help.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/320-orders.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/320-payment-result.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/320-product-detail.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/320-receipt-documents.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/320-receipt-help.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/320-standalone-home.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/320-tracking.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/390-basket.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/390-browse-category.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/390-checkout.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/390-home-search-focus.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/390-keyboard-height-480.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/390-order-help.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/390-orders.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/390-payment-result.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/390-product-detail.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/390-receipt-documents.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/390-receipt-help.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/390-standalone-home.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/390-store-loading.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/390-tracking.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/430-basket.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/430-browse-category.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/430-checkout.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/430-home-search-focus.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/430-order-help.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/430-orders.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/430-payment-result.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/430-product-detail.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/430-receipt-documents.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/430-receipt-help.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/430-standalone-home.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/430-tracking.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/rendered-logo-hashes.json",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/after/results.json",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 acceptance evidence"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/before/320-standalone-home.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "Reused v1 baseline evidence for v1.1 comparison"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/before/390-standalone-home.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "Reused v1 baseline evidence for v1.1 comparison"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/before/390-store-loading.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "Reused v1 baseline evidence for v1.1 comparison"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/before/430-standalone-home.png",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "Reused v1 baseline evidence for v1.1 comparison"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/before/provenance.json",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "Reused v1 baseline evidence for v1.1 comparison"
+    },
+    {
+      "path": "verification/cksgo-brand01-v1.1/changed-files.txt",
+      "scope": "CKSGO-BRAND01-v1.1",
+      "classification": "v1.1 changed-file inventory"
+    }
+  ]
+}

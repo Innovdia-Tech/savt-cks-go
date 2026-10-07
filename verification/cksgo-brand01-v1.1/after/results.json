@@ -1,0 +1,191 @@
+{
+  "claimScope": "Synthetic Chrome browser emulation only; no physical-device claim",
+  "origin": "http://127.0.0.1:43118",
+  "expectBlue": true,
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "mode": "synthetic-browser-emulation",
+      "storeLoading": "PASS",
+      "logo": {
+        "width": 82.546875,
+        "height": 44,
+        "ratio": 1.8760653409090908,
+        "objectFit": "contain"
+      }
+    },
+    {
+      "width": 390,
+      "height": 480,
+      "mode": "synthetic-browser-emulation",
+      "keyboardHeight": "Software keyboard condition simulated by viewport resize; no physical keyboard or WebView claim",
+      "focus": {
+        "active": true,
+        "focusVisible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "outlineColor": "rgb(12, 116, 182)",
+        "focusRing": "#0c74b6",
+        "wrapperOutlineStyle": "solid",
+        "wrapperOutlineWidth": "3px",
+        "wrapperOutlineColor": "rgb(12, 116, 182)",
+        "wrapperOutlineOffset": "3px"
+      },
+      "overflow": false,
+      "simulatedSafeArea": {
+        "top": "24px",
+        "bottom": "34px"
+      }
+    },
+    {
+      "width": 320,
+      "height": 844,
+      "mode": "synthetic-browser-emulation",
+      "standaloneChrome": "PASS",
+      "embeddedChrome": "PASS",
+      "journey": [
+        "home-search-focus",
+        "browse-category",
+        "product-detail",
+        "basket",
+        "checkout",
+        "payment-result",
+        "orders",
+        "tracking",
+        "order-help",
+        "receipt-documents",
+        "receipt-help"
+      ],
+      "palette": {
+        "light": "#8ecbe2",
+        "onLight": "#123d56",
+        "action": "#0c74b6",
+        "hover": "#09639c",
+        "pressed": "#084f7c",
+        "soft": "#e8f5fa",
+        "focus": "#0c74b6",
+        "background": "#f3f8fb",
+        "muted": "#eaf2f6",
+        "border": "#d9e6ed",
+        "borderStrong": "#b7cbd6"
+      },
+      "standalonePalette": {
+        "light": "#8ecbe2",
+        "onLight": "#123d56",
+        "action": "#0c74b6",
+        "hover": "#09639c",
+        "pressed": "#084f7c",
+        "soft": "#e8f5fa",
+        "focus": "#0c74b6",
+        "background": "#f3f8fb",
+        "muted": "#eaf2f6",
+        "border": "#d9e6ed",
+        "borderStrong": "#b7cbd6"
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "mode": "synthetic-browser-emulation",
+      "standaloneChrome": "PASS",
+      "embeddedChrome": "PASS",
+      "journey": [
+        "home-search-focus",
+        "browse-category",
+        "product-detail",
+        "basket",
+        "checkout",
+        "payment-result",
+        "orders",
+        "tracking",
+        "order-help",
+        "receipt-documents",
+        "receipt-help"
+      ],
+      "palette": {
+        "light": "#8ecbe2",
+        "onLight": "#123d56",
+        "action": "#0c74b6",
+        "hover": "#09639c",
+        "pressed": "#084f7c",
+        "soft": "#e8f5fa",
+        "focus": "#0c74b6",
+        "background": "#f3f8fb",
+        "muted": "#eaf2f6",
+        "border": "#d9e6ed",
+        "borderStrong": "#b7cbd6"
+      },
+      "standalonePalette": {
+        "light": "#8ecbe2",
+        "onLight": "#123d56",
+        "action": "#0c74b6",
+        "hover": "#09639c",
+        "pressed": "#084f7c",
+        "soft": "#e8f5fa",
+        "focus": "#0c74b6",
+        "background": "#f3f8fb",
+        "muted": "#eaf2f6",
+        "border": "#d9e6ed",
+        "borderStrong": "#b7cbd6"
+      }
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "mode": "synthetic-browser-emulation",
+      "standaloneChrome": "PASS",
+      "embeddedChrome": "PASS",
+      "journey": [
+        "home-search-focus",
+        "browse-category",
+        "product-detail",
+        "basket",
+        "checkout",
+        "payment-result",
+        "orders",
+        "tracking",
+        "order-help",
+        "receipt-documents",
+        "receipt-help"
+      ],
+      "palette": {
+        "light": "#8ecbe2",
+        "onLight": "#123d56",
+        "action": "#0c74b6",
+        "hover": "#09639c",
+        "pressed": "#084f7c",
+        "soft": "#e8f5fa",
+        "focus": "#0c74b6",
+        "background": "#f3f8fb",
+        "muted": "#eaf2f6",
+        "border": "#d9e6ed",
+        "borderStrong": "#b7cbd6"
+      },
+      "standalonePalette": {
+        "light": "#8ecbe2",
+        "onLight": "#123d56",
+        "action": "#0c74b6",
+        "hover": "#09639c",
+        "pressed": "#084f7c",
+        "soft": "#e8f5fa",
+        "focus": "#0c74b6",
+        "background": "#f3f8fb",
+        "muted": "#eaf2f6",
+        "border": "#d9e6ed",
+        "borderStrong": "#b7cbd6"
+      }
+    },
+    {
+      "width": 320,
+      "height": 844,
+      "mode": "synthetic-browser-emulation",
+      "rootTextScale": "200%",
+      "overflow": false,
+      "simulatedSafeArea": {
+        "top": "24px",
+        "bottom": "34px"
+      }
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+# Keep the coordinated operations master assets and provenance byte-identical.
+/src/assets/brand/* -text

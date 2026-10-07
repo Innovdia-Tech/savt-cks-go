@@ -9,6 +9,7 @@ import {
   type CustomerSessionController,
   type CustomerSessionState,
 } from "../../session/controller";
+import { BrandLogo } from "../BrandLogo";
 
 type SessionPhase = CustomerSessionState["phase"];
 type OtpPhase =
@@ -331,7 +332,7 @@ export function CustomerSessionBoundary({
           aria-hidden="true"
         >
           {loading ? (
-            <span className="h-7 w-7 animate-spin rounded-full border-[3px] border-red-100 border-t-cks-primary" />
+            <span className="h-7 w-7 animate-spin rounded-full border-[3px] border-cks-soft border-t-cks-primary" />
           ) : (
             <span className="text-2xl">!</span>
           )}
@@ -376,7 +377,7 @@ export function StoreLoading() {
       role="status"
       aria-busy="true"
     >
-      <strong className="text-2xl text-cks-primary">CKS Go</strong>
+      <BrandLogo />
       <div className="delivery-setup__spinner" aria-hidden="true" />
       <h1>Getting CKS Go ready…</h1>
     </main>

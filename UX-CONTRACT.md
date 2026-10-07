@@ -1,5 +1,11 @@
 # Customer UI contract
 
+## CKSGO-BRAND01 branding override
+
+The approved 7 October 2026 handoff replaces historical CKS-red commerce accents and the soft-green page background with `CKSGO-BRAND01-tokens-v1`: light blue `#8ECBE2`, working action blue `#0C74B6`, white primary-action text, dark ink on light-blue selected surfaces, white cards and restrained pale-blue/blue-grey supporting surfaces. `src/styles.css` remains canonical, with values mirrored in `DESIGN.md`. Semantic success, warning, danger and Savt reward colors keep their existing roles. Historical color references below describe prior checkpoints and do not override this migration.
+
+Preserve approved customer copy, layout hierarchy, routes and all existing session, address/outlet assignment, quote/fee, payment-finality, tracking, receipt and native bridge contracts. Flutter owns the CKS Go native header; embedded mode must not add a second app title, Back or Close control. Standalone controls retain their existing behavior. Existing standalone Home and loading placements use the original color SVG from the operations-approved `CKSGO-BRAND01-v1.1` master bundle, preserving its proportions and artwork fills. The v1.1 correction supersedes v1 for the O/G fill mapping; geometry, UI tokens and customer behavior remain unchanged. Branding does not change backend-generated receipt/PDF content.
+
 ## FE-FINAL01 native payment return recovery
 
 The FE-FINAL01 brief supersedes PAY06B's lack of recovery after app/WebView

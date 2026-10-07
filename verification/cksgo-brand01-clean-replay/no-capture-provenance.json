@@ -1,0 +1,69 @@
+{
+  "scope": "Local-only clean replay verification for CKSGO-BRAND01 v1.1",
+  "claimScope": "Synthetic Chrome browser emulation on loopback; no physical-device or WebView claim",
+  "baseMainCommit": "30c7b0cd88da99e4ae4248d740f40e2e135a0b6e",
+  "replayTree": "a7b2fe2967843acf75ac7efa4dfe73a7e04aa415",
+  "acceptedReplayTree": "a7b2fe2967843acf75ac7efa4dfe73a7e04aa415",
+  "renderChangingConflict": false,
+  "screenshots": {
+    "generated": 0,
+    "reason": "The replay tree exactly matches the accepted v1.1 tree, so the user prohibited regenerating screenshots.",
+    "reusedEvidence": "verification/cksgo-brand01-v1.1",
+    "acceptedLogoSha256": "3e9259474a6cd573816b8a61570dc29db1cbd018d02e863ca18b44171da13c2b"
+  },
+  "disposableRunners": {
+    "location": "C:\\Users\\isaac\\Documents\\ChatGPT\\CKS go frontend\\tmp-cksgo-brand01-clean-replay",
+    "outsideLinkedWorktree": true,
+    "trackedScriptsModified": false,
+    "merchandising": {
+      "source": "scripts/prove-home-merchandising.mjs",
+      "sourceSha256": "430469b1eb4dd12a2d02c5c69d2819c447a9e7e9624062feb21c5044c026690d",
+      "suppressedScreenshotCalls": 3,
+      "remainingScreenshotCalls": 0,
+      "sourceLineEndingsAtExecution": "LF"
+    },
+    "brand": {
+      "source": "scripts/prove-customer-branding.mjs",
+      "sourceSha256": "a9efd55fc54e3020051c851d248fad1e5aa5ad0258d3295ad698545a4e1e9bbb",
+      "suppressedScreenshotCalls": 2,
+      "remainingScreenshotCalls": 0,
+      "sourceLineEndingsAtExecution": "CRLF",
+      "finalLfSourceSha256": "48a7709c63e47d4571b59aae80cf13d3cd5322ae99c6b2e620e75db01ca8fb7a"
+    }
+  },
+  "commands": {
+    "productionPreview": "& 'C:\\Users\\isaac\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe' node_modules\\vite\\bin\\vite.js preview --host 127.0.0.1 --port 43119 --strictPort",
+    "merchandisingAcceptance": "$env:NODE_PATH='C:\\Users\\isaac\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\node_modules'; $env:CHROME_PATH='C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'; $env:MERCH_PREVIEW_ORIGIN='http://127.0.0.1:43119'; $env:MERCH_EVIDENCE_DIR='verification\\cksgo-brand01-clean-replay\\merch'; & 'C:\\Users\\isaac\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe' 'C:\\Users\\isaac\\Documents\\ChatGPT\\CKS go frontend\\tmp-cksgo-brand01-clean-replay\\prove-home-merchandising.mjs'",
+    "developmentServer": "$env:VITE_CKS_GO_DEVELOPMENT_API='true'; $env:VITE_CKS_GO_DEVELOPMENT_BRIDGE='true'; & 'C:\\Users\\isaac\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe' node_modules\\vite\\bin\\vite.js --host 127.0.0.1 --port 43118 --strictPort",
+    "brandAcceptance": "$env:NODE_PATH='C:\\Users\\isaac\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\node_modules'; $env:CHROME_PATH='C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'; $env:BRAND01_ORIGIN='http://127.0.0.1:43118'; $env:BRAND01_EVIDENCE_DIR='verification\\cksgo-brand01-clean-replay\\brand'; $env:BRAND01_EXPECT_BLUE='true'; & 'C:\\Users\\isaac\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe' 'C:\\Users\\isaac\\Documents\\ChatGPT\\CKS go frontend\\tmp-cksgo-brand01-clean-replay\\prove-customer-branding.mjs'",
+    "renderedLogoProbe": "$env:NODE_PATH and $env:CHROME_PATH as above; run a Playwright Chromium inline module against http://127.0.0.1:43118, inspect img.currentSrc for standalone Home and StoreLoading, fetch each rendered URL, SHA-256 the response bytes, assert both equal the accepted logo SHA, and write verification/cksgo-brand01-clean-replay/rendered-logo-checks.json"
+  },
+  "results": {
+    "merchandising": {
+      "status": "PASS",
+      "artifact": "verification/cksgo-brand01-clean-replay/merch/acceptance.json",
+      "records": 11,
+      "viewports": [320, 390, 430]
+    },
+    "brand": {
+      "status": "PASS",
+      "artifact": "verification/cksgo-brand01-clean-replay/brand/results.json",
+      "records": 6,
+      "viewports": [320, 390, 430],
+      "expectBlue": true
+    },
+    "renderedLogo": {
+      "status": "PASS",
+      "artifact": "verification/cksgo-brand01-clean-replay/rendered-logo-checks.json",
+      "homeAndStoreLoadingSha256": "3e9259474a6cd573816b8a61570dc29db1cbd018d02e863ca18b44171da13c2b"
+    },
+    "serversStopped": true
+  },
+  "formatting": {
+    "initialFailure": "18 supported checkout files had CRLF with core.autocrlf=true; accepted Git blobs have LF",
+    "resolution": "Normalize supported working files to LF only; no Git-content change",
+    "supportedFiles": 24,
+    "explicitPrecommitCheck": "PASS",
+    "trackedSourceIdentityWithAcceptedHead": true
+  }
+}

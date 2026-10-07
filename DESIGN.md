@@ -1,14 +1,19 @@
 ---
-version: alpha
+version: CKSGO-BRAND01-tokens-v1
 colors:
-  cks-primary: "#E52329"
-  cks-primary-hover: "#C91D23"
-  cks-primary-pressed: "#AB171C"
+  cks-light: "#8ECBE2"
+  cks-primary: "#0C74B6"
+  cks-primary-hover: "#09639C"
+  cks-primary-pressed: "#084F7C"
+  cks-primary-soft: "#E8F5FA"
+  cks-on-light: "#123D56"
   savt-reward: "#4CAF50"
   savt-reward-dark: "#3F8E1E"
-  background: "#EBF3E3"
+  background: "#F3F8FB"
   surface: "#FFFFFF"
-  border: "#E9E9E9"
+  surface-muted: "#EAF2F6"
+  border: "#D9E6ED"
+  border-strong: "#B7CBD6"
   text: "#231F20"
   text-muted: "#666666"
   icon-muted: "#878787"
@@ -42,7 +47,7 @@ spacing:
   2xl: "24px"
 components:
   primary-button:
-    backgroundColor: "#E52329"
+    backgroundColor: "#0C74B6"
     textColor: "#FFFFFF"
     borderRadius: "14px"
   reward-chip:
@@ -50,35 +55,43 @@ components:
     textColor: "#3F8E1E"
     borderRadius: "999px"
   app-shell:
-    backgroundColor: "#EBF3E3"
+    backgroundColor: "#F3F8FB"
     maxWidth: "430px"
 ---
 
 # CKS GO customer catalogue, checkout and orders
 
+## CKSGO-BRAND01 color authority
+
+The approved 7 October 2026 customer handoff supersedes the historical red commerce and soft-green page palette, while preserving the accepted wording, hierarchy, dimensions, artwork and journeys. Runtime CSS variables remain canonical; Tailwind aliases consume them. Token version is `CKSGO-BRAND01-tokens-v1`.
+
+Use `#8ECBE2` for brand light blue and `#0C74B6` for the working artwork-derived action blue. The action blue is not a separately printed official corporate specification. Primary actions use white text on action blue. Light-blue selected surfaces use shared dark ink `#123D56`; ordinary links and active navigation use action blue on white or pale blue. Supporting hover `#09639C`, pressed `#084F7C`, pale background `#F3F8FB`, soft surface `#E8F5FA`, muted surface `#EAF2F6`, border `#D9E6ED` and strong border `#B7CBD6` match the operations v1 choices, not claimed artwork colors. Existing body ink `#231F20`, success, warning, danger and Savt reward colors retain their roles.
+
+The operations team's approved `CKSGO-BRAND01-v1.1-assets.zip` supplies byte-identical original color, white/blue and white SVG masters in `src/assets/brand/`, with its source/checksum manifest and handoff. It supersedes v1 and corrects the O/G fills to O `#3570BC` and G `#3470BC`; geometry, proportions, all-white artwork and UI tokens are unchanged. The color lockup replaces the existing standalone Home and store-loading text placements through `BrandLogo`; contain-fit rendering preserves its full proportions. Artwork fills intentionally retain the PDF conversion values and differ from the UI tokens. Do not redraw, generate, independently extract a substitute, or recolor the original. Keep the existing standalone web header and Flutter-owned single native header. This checkout has no existing customer favicon, icon pack or manifest; only the existing HTML theme color changes. PDF mockup URLs and promotional claims are references only. Backend-generated receipt/PDF contents stay with their renderer owner.
+
 ## Overview
 
-CUST-FIGMA01 establishes a CKS-first retail foundation for the customer mini-app inside the Savt identity, rewards and payment ecosystem. The north star is the approved 390px Figma customer system: compact grocery utility, quiet warm-neutral surfaces, confident red commerce actions, and green used only when Savt reward or positive ecosystem meaning is earned. The interface must never read as a generic green fintech shell or as a desktop grocery marketplace stretched edge to edge.
+CUST-FIGMA01 establishes a CKS-first retail foundation for the customer mini-app inside the Savt identity, rewards and payment ecosystem. The north star retains the approved 390px Figma composition: compact grocery utility, quiet pale-blue/white surfaces, confident blue commerce actions, and green used only when Savt reward or positive ecosystem meaning is earned. The interface must never read as a generic green fintech shell or as a desktop grocery marketplace stretched edge to edge.
 
-The product register leads: fast scanning, stable state rendering, accessible touch targets and backend-authoritative evidence outrank decorative novelty. The visual signature is the disciplined CKS-red action line running from product Add through checkout, payment, active navigation and order actions; everything around it stays restrained.
+The product register leads: fast scanning, stable state rendering, accessible touch targets and backend-authoritative evidence outrank decorative novelty. The visual signature is the disciplined CKS-blue action line running from product Add through checkout, payment, active navigation and order actions; everything around it stays restrained.
 
 Primary design authority: Figma file `ncty6c6YIPuFnHymP2nqos`. Node `25:55` (`Customer_Design_System_Board`) supplies tokens and component guidance; node `14:5` (`06_CKS_GO_Home__Serviceable_Frame`) supplies the canonical serviceable-home composition; page node `3:3` supplies Phase 1 screen context. The earlier file `UXedi4eBmFntqpwNzIAiXj` is secondary only and was not needed to resolve this foundation.
 
 Runtime ownership uses Model B: CSS custom properties in `src/styles.css` own accepted values; `tailwind.config.js` maps semantic aliases to those properties; this file mirrors values and explains intent. Shared components consume semantic roles, never independent copies.
 
-The CUST-UX04R2 refinement preserves the accepted Savt Home reference and soft green page. Home uses four equal category columns with unchanged approved artwork contained in white rounded 68px tiles (64px at 320px), equal 6px padding and reserved two-line authoritative labels. The label-to-Featured heading gap is 20px. Basket groups delivery, Your items and Order summary on quiet white surfaces with 16px section gaps. Quantity and secondary Remove sit beside the product details, with labeled Item subtotal below. Summary amounts retain their existing sources; Total remains strongest. Delivery details keeps native disclosure semantics with a decorative rotating chevron, and confirmed fees use a compact neutral check row. Existing payment-frozen state places payment status first and visually disables basket mutations. Pending remains a static clock status after bounded observation; confirmation requires the unchanged backend-authoritative finality rules.
+The CUST-UX04R2 refinement preserves the accepted Savt Home composition, with the CKSGO-BRAND01 pale-blue page. Home uses four equal category columns with unchanged approved artwork contained in white rounded 68px tiles (64px at 320px), equal 6px padding and reserved two-line authoritative labels. The label-to-Featured heading gap is 20px. Basket groups delivery, Your items and Order summary on quiet white surfaces with 16px section gaps. Quantity and secondary Remove sit beside the product details, with labeled Item subtotal below. Summary amounts retain their existing sources; Total remains strongest. Delivery details keeps native disclosure semantics with a decorative rotating chevron, and confirmed fees use a compact neutral check row. Existing payment-frozen state places payment status first and visually disables basket mutations. Pending remains a static clock status after bounded observation; confirmation requires the unchanged backend-authoritative finality rules.
 
 CUST-UX04R3 refines only Basket item rows. A single white Your items surface uses neutral dividers, contained 64px images and grouped product details. At 390/430px, a stable 122px quantity control and secondary Remove occupy the right column; ordinary middle rows are 101px and a line subtotal adds 24px. Names retain their authoritative text with a two-line visual clamp. At widths below 360px, quantity and Remove share one compact row beneath the image/details, with the optional subtotal below. The visible order and DOM order are product details, quantity, Remove, then subtotal. The subtotal amount is 14/600, secondary to Order Total. The shared stepper keeps 44px buttons through a Basket-only padding override. All accepted Home, summary, payment, navigation and media behavior remains unchanged.
 
 ## Colors
 
-CUST-HELP01R uses compact support rows with 14px/600 CKS-red text, a small outline help icon, a transparent tertiary action and a minimum 44px target. The muted prompt is “Need help?” on Home/payment errors and “Need help with your delivery address?” after delivery controls. Order detail retains its light section with the heading “Need help with this order?”. Support stays in document flow; address/payment recovery retains visual priority. Missing/invalid config hides the action; launch failures use restrained status text. The four navigation items and accepted commerce styling remain unchanged.
+CUST-HELP01R uses compact support rows with 14px/600 CKS-blue text, a small outline help icon, a transparent tertiary action and a minimum 44px target. The muted prompt is “Need help?” on Home/payment errors and “Need help with your delivery address?” after delivery controls. Order detail retains its light section with the heading “Need help with this order?”. Support stays in document flow; address/payment recovery retains visual priority. Missing/invalid config hides the action; launch failures use restrained status text. The four navigation items and accepted commerce styling remain unchanged.
 
-- CKS Red is the primary commerce/action role: Add to basket, checkout, payment, order actions, active customer navigation and Basket emphasis.
+- CKS Action Blue is the primary commerce/action role: Add to basket, checkout, payment, order actions, active customer navigation and Basket emphasis.
 - Savt Green and Savt Green Dark are reserved for Savt Cash, rewards, savings, earned benefits and positive Savt ecosystem messages. Green is not the universal CTA color.
-- CUST-UX04R uses Savt Home’s soft green page family (#EBF3E3), white fields/cards and neutral ink. Supporting text uses #666666 for normal-text contrast on green and white; #878787 is reserved for neutral icons. Info, warning and error are semantic and always paired with copy/icon/shape, never color alone.
-- Error red and brand red have different roles even when visually related: destructive/error messaging uses the error token; ordinary safe commerce uses CKS primary.
-- Small CKS-red text uses a white surface to retain AA contrast with the exact brand red. Search actions, catalogue links and selected category chips preserve neutral white backing rather than introducing another red.
+- CUST-UX04R retains Savt Home’s composition with the CKSGO-BRAND01 pale-blue page (#F3F8FB), white fields/cards and neutral ink. Supporting text uses #666666 for normal-text contrast on pale blue and white; #878787 is reserved for neutral icons. Info, warning and error are semantic and always paired with copy/icon/shape, never color alone.
+- Error red and action blue have distinct roles: destructive/error messaging uses the error token; ordinary safe commerce uses CKS primary.
+- Small CKS-blue text uses white or pale-blue backing for AA contrast. Selected category chips use light blue with shared dark ink. Search actions and catalogue links retain their existing geometry.
 
 ## Typography
 
@@ -98,27 +111,27 @@ Buttons/fields use 14px radii, cards 16px, chips/badges full pills, and sheets 2
 
 ## Components
 
-CUST-RECEIPT01 uses the existing compact Orders card variant for the Order Detail hero, Orders support row and current/history selector: 12px outer corners, the established #dce5eb Orders border and white surface, without added shadow. The hero has 12px internal padding; support keeps its compact 44px action; the selector clips its button surfaces to the rounded container and retains the CKS-red active underline. `src/orders/orders.css` owns the hero/selector variants; `src/styles.css` owns `.support-action--orders`. Existing order cards, type hierarchy, navigation, support handoff and state behavior remain unchanged. The accepted receipt brief supersedes the earlier Payment Receipt presentation: Receipt is the primary payment-proof action, while Final Sales Receipt remains a separate secondary completed-order document, as recorded in `UX-CONTRACT.md`.
+CUST-RECEIPT01 uses the existing compact Orders card variant for the Order Detail hero, Orders support row and current/history selector: 12px outer corners, the established #dce5eb Orders border and white surface, without added shadow. The hero has 12px internal padding; support keeps its compact 44px action; the selector clips its button surfaces to the rounded container and retains the CKS-blue active underline. `src/orders/orders.css` owns the hero/selector variants; `src/styles.css` owns `.support-action--orders`. Existing order cards, type hierarchy, navigation, support handoff and state behavior remain unchanged. The accepted receipt brief supersedes the earlier Payment Receipt presentation: Receipt is the primary payment-proof action, while Final Sales Receipt remains a separate secondary completed-order document, as recorded in `UX-CONTRACT.md`.
 
-CUST-UX06 keeps one Home Categories action, “Browse all”, and removes the Featured products action and general Home help. General help is a compact white Orders row directly below the header, with the existing outline help icon and CKS-red action. Orders has one neutral 44px refresh icon in the web header; its zero-order state uses the receipt icon and centered Browse products action. Contextual delivery, payment-error and order-detail support retains its existing presentation and behavior.
+CUST-UX06 keeps one Home Categories action, “Browse all”, and removes the Featured products action and general Home help. General help is a compact white Orders row directly below the header, with the existing outline help icon and CKS-blue action. Orders has one neutral 44px refresh icon in the web header; its zero-order state uses the receipt icon and centered Browse products action. Contextual delivery, payment-error and order-detail support retains its existing presentation and behavior.
 
 The shared SearchField owns its single clear control: a neutral small × inside the field, a transparent 44px target, and reserved right padding. Its scoped CSS suppresses WebKit cancel/decoration controls while preserving search input semantics, keyboard submission, focus, composition and debounce. Product detail uses 16px page insets, a white contained-media surface with the existing 20px sheet radius, separate unboxed product information, and one subtle metadata card. The existing 16px price role and sticky purchase owner remain canonical.
 
 CUSTOMER-UX-POLISH01 removes the redundant standalone Home header Basket shortcut. Persistent bottom navigation keeps its quantity badge, and the nonempty merchandise subtotal shortcut remains useful after adding products. Basket leads with Checkout; a paid, backend-projected order leads with Order confirmed, its order number, a short acknowledgement and Track order. Payment Receipt remains a neutral secondary action in Order details below tracking. Product storage uses Room temperature for AMBIENT, with no taxonomy change. This refinement preserves every visual token and the existing brand and layout.
 
-- Primary button: solid CKS Red with white text, stable disabled/loading geometry and a visible CKS focus ring.
+- Primary button: solid CKS Action Blue with white text, stable disabled/loading geometry and a visible CKS focus ring.
 - Secondary button: white/light surface, semantic border and dark text. Tertiary actions are restrained text buttons.
-- Product card: bordered white card, reserved image geometry, 14px name, CKS-red price/action, and only contract-supported availability. Reward chips appear only when reward data exists.
+- Product card: bordered white card, reserved image geometry, 14px name, CKS-blue price/action, and only contract-supported availability. Reward chips appear only when reward data exists.
 - Search: light neutral fill, no prominent border, 16px input text, search icon and app-owned clear action. Inputs/textareas retain labelled controls and visible focus. Textareas do not expose manual resize.
-- Bottom navigation: Home, Browse, Basket and Orders only. Browse shows backend-visible outlet categories; Home previews the preferred available Phase 1 subset with approved local artwork. Active navigation uses CKS-red outline icon and label without a stacked underline or pill. Navigation icons use a 24px canvas, 2px stroke and rounded caps/joins; Orders uses a receipt icon. Account is hidden until a supported route exists.
-- Basket summary: when nonempty, a CKS-red merchandise subtotal control sits immediately above bottom navigation. It uses the current cart lines, omits fees and trusted-quote adjustments, and hides on Basket. Its confirmation motion respects reduced-motion settings.
+- Bottom navigation: Home, Browse, Basket and Orders only. Browse shows backend-visible outlet categories; Home previews the preferred available Phase 1 subset with approved local artwork. Active navigation uses CKS-blue outline icon and label without a stacked underline or pill. Navigation icons use a 24px canvas, 2px stroke and rounded caps/joins; Orders uses a receipt icon. Account is hidden until a supported route exists.
+- Basket summary: when nonempty, a CKS-blue merchandise subtotal control sits immediately above bottom navigation. It uses the current cart lines, omits fees and trusted-quote adjustments, and hides on Basket. Its confirmation motion respects reduced-motion settings.
 - Loading/empty/error: shared stable-footprint components with human-readable copy and safe recovery. Raw backend codes never render.
 - Quantity sheet: native accessible dialog foundation, viewport-bounded with safe-area padding. Quantity controls are pill-shaped with named increment/decrement buttons.
 
 ## Do's and Don'ts
 
 - Do keep session, catalogue, cart, quote, payment, order, receipt and bridge authority in their existing controllers/contracts.
-- Do use CKS red for commerce and Savt green for rewards/success.
+- Do use CKS blue for commerce and Savt green for rewards/success.
 - Do verify at 390×844, 430×932, 768×1024 and 1280×900.
 - Don't add unsupported routes/statuses or infer business state from Figma.
 - Don't paste Figma absolute positioning, hide scrollbars, persist customer context, or invent logo assets.
@@ -127,12 +140,12 @@ CUST01B through CUST03B extend the existing English-language, Malaysia-focused m
 
 ## CUST-UX05 feedback and refresh
 
-Home success feedback uses the shared `CustomerNotice`: a small white status toast with a subtle positive check, polite live announcement and no reserved document-flow space. Its explicit success timer runs for 2.8 seconds after a successful address save and address-list read; actionable recovery remains inline. The shell owns transient announcements on its screens. Pull feedback uses a compact white top indicator with CKS-red arrow/spinner and “Pull to refresh”, “Release to refresh”, or “Refreshing…”. A neutral 44px Refresh icon provides keyboard/click access through the same guarded path. No content translation or decorative motion is added; the spinner is static under reduced motion. Existing CSS variables own surface, border, radius, positive color and toast stacking. The delivery-unavailable state keeps its approved card/CTA/navigation structure with a decorative rounded-stroke 24px unavailable-location icon and neutral pull education only where refreshing is enabled. Category artwork, columns, geometry and authoritative labels remain unchanged.
+Home success feedback uses the shared `CustomerNotice`: a small white status toast with a subtle positive check, polite live announcement and no reserved document-flow space. Its explicit success timer runs for 2.8 seconds after a successful address save and address-list read; actionable recovery remains inline. The shell owns transient announcements on its screens. Pull feedback uses a compact white top indicator with CKS-blue arrow/spinner and “Pull to refresh”, “Release to refresh”, or “Refreshing…”. A neutral 44px Refresh icon provides keyboard/click access through the same guarded path. No content translation or decorative motion is added; the spinner is static under reduced motion. Existing CSS variables own surface, border, radius, positive color and toast stacking. The delivery-unavailable state keeps its approved card/CTA/navigation structure with a decorative rounded-stroke 24px unavailable-location icon and neutral pull education only where refreshing is enabled. Category artwork, columns, geometry and authoritative labels remain unchanged.
 
 ## Runtime owners
 
 - Existing visual tokens: CSS variables in `src/styles.css` are canonical; `tailwind.config.js` is the semantic adapter.
-- Customer feature styles: `src/customer/customer.css`; white/surface cards, semantic borders, CKS-red commerce actions and Savt-green reward/success treatments.
+- Customer feature styles: `src/customer/customer.css`; white/surface cards, semantic borders, CKS-blue commerce actions and Savt-green reward/success treatments.
 - Customer forms: `src/addresses/AddressForm.tsx`; 16px inputs and 44px action targets.
 - Lifecycle and feedback: `src/customer/state.ts`, `errors.ts`, `components.tsx`.
 - Session authority: existing `src/session/controller.ts`; its credential callback is infrastructure-only.
@@ -144,7 +157,7 @@ Profile and address requests follow the CKS integration checkout DTOs and routes
 
 ## CUST02B catalogue binding
 
-The frozen `CUST02A-CP0-R2-assignment-context.md` is authoritative (SHA-256 `d662cca7e63d35fcadc8bd821710d8b769c71ac94408f952abc00822cde767f3`). Its data and lifecycle boundaries remain authoritative, while CUST-FIGMA01 supersedes its historical universal-green and two-column presentation with the CKS-red action hierarchy, Inter/system text, rounded white cards, 430px shell, category tiles and compact serviceable-home product list approved in Figma.
+The frozen `CUST02A-CP0-R2-assignment-context.md` is authoritative (SHA-256 `d662cca7e63d35fcadc8bd821710d8b769c71ac94408f952abc00822cde767f3`). Its data and lifecycle boundaries remain authoritative, while CUST-FIGMA01 supersedes its historical universal-green and two-column presentation with the CKS-blue action hierarchy, Inter/system text, rounded white cards, 430px shell, category tiles and compact serviceable-home product list approved in Figma.
 
 Runtime owners: `src/catalogue/contracts.ts` (closed wire projections), `api.ts` (credentialed requests), `state.ts` (memory and generation boundaries), `context.tsx` (read-only customer/session subscriptions), `components.tsx` and `catalogue.css` (presentation). Existing `CheckoutAddress` has a catalogue copy variant and continues to use the original selection controller. Address mutations, session and bridge protocols are unchanged.
 
@@ -180,7 +193,7 @@ Production WebView navigation is not changed directly. The native bridge receive
 
 ### PAY06B payment recovery
 
-The PAY06B brief and merged PAY06A contract at `7a4811263c2c532f958c9813d9002c0bf1f2237f` supersede the earlier pending-reopen behavior. Immediately after handoff, retain CUST-UX04’s “Payment pending”, “We're checking your payment status.” and “Your order will appear once payment is confirmed.” presentation without a retry action. Visible return performs the existing bounded observations before unpaid pending becomes “Payment not completed”, with CKS-red “Try Payment Again” and secondary “Check Payment Status”. The primary action calls the bodyless credentialed retry endpoint; it never reuses an old URL. Both actions are disabled while “Preparing a new payment” is shown.
+The PAY06B brief and merged PAY06A contract at `7a4811263c2c532f958c9813d9002c0bf1f2237f` supersede the earlier pending-reopen behavior. Immediately after handoff, retain CUST-UX04’s “Payment pending”, “We're checking your payment status.” and “Your order will appear once payment is confirmed.” presentation without a retry action. Visible return performs the existing bounded observations before unpaid pending becomes “Payment not completed”, with CKS-blue “Try Payment Again” and secondary “Check Payment Status”. The primary action calls the bodyless credentialed retry endpoint; it never reuses an old URL. Both actions are disabled while “Preparing a new payment” is shown.
 
 Only a returned initiation-style PENDING with a validated checkout URL opens that returned checkout through the existing bridge. “Continue secure payment” is confined to a failure opening that same newly-created/returned checkout. A retry result may instead be pending, failed, paid-processing or paid with a strict Order; a 200 does not imply a new charge. Receiving payment permanently removes retry eligibility. Uncertain retries retain their exact source intent/key in memory, including when the source subsequently reads FAILED. Voucher rejection keeps customer-friendly basket guidance through unpaid observations.
 
@@ -219,7 +232,7 @@ Reconciled drift: historical CUST02B prose describes the earlier compact product
 
 ## UX02 — Delivery address and location
 
-The Home delivery link opens a dedicated mobile picker with active saved-address cards, a visible selected state, current-location shortcut, search entry and add action. The selected state uses CKS red; Default remains secondary metadata. Inactive addresses belong to Profile management. Saved-address selection runs the existing authoritative assignment check before changing Home context. Text-only addresses enter location repair and retain the same address ID.
+The Home delivery link opens a dedicated mobile picker with active saved-address cards, a visible selected state, current-location shortcut, search entry and add action. The selected state uses CKS blue; Default remains secondary metadata. Inactive addresses belong to Profile management. Saved-address selection runs the existing authoritative assignment check before changing Home context. Text-only addresses enter location repair and retain the same address ID.
 
 Typed search uses the authenticated CKS Go customer location API and bounded Google Places predictions. Search debounces at 300 ms, cancels stale work and keeps its session token only in memory. The customer chooses a prediction, confirms its resolved geographic location, then enters delivery details. Native GPS remains tap-initiated and returns to the same confirmation step. Delivery details prefill bounded text while coordinates remain hidden and attached to the confirmed point. The visual confirmation is textual until an approved browser map provider exists; it never imitates a map. Google Maps text attribution sits with the prediction list using the permitted compact presentation.
 
