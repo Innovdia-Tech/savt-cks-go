@@ -231,7 +231,7 @@ export function DeliveryAddressPicker({
           {error}
         </p>
       )}
-      {checkout.state.transitionPhase === "error" && (
+      {error && checkout.state.transitionPhase === "error" && (
         <AddressTransitionError error={checkout.state.transitionError} />
       )}
       <button
