@@ -1,0 +1,37 @@
+{
+  "results": [
+    {
+      "name": "full-tests",
+      "exitCode": 0,
+      "status": "PASS",
+      "tests": 1290
+    },
+    {
+      "name": "frontend-typecheck",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "name": "runtime-typecheck",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "name": "production-build",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "name": "format",
+      "exitCode": 1,
+      "status": "FAIL"
+    }
+  ],
+  "formatFollowUp": {
+    "status": "PASS",
+    "exitCode": 0,
+    "fixedFile": "verification/cust-fee01/premium-audit.json",
+    "scope": "All changed production, test and verification text files",
+    "note": "Only formatting was rerun; full tests, typechecks and build were not repeated."
+  }
+}

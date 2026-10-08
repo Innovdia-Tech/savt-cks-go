@@ -1,0 +1,32 @@
+{
+  "task": "CUST-FEE01",
+  "phase": "RED",
+  "startedAt": "2026-10-07T14:31:31.280Z",
+  "scope": "Real CartScreen with synthetic quoteEnvelope; Chrome browser emulation only",
+  "physicalWebView": "PENDING: Android/iOS WebView, VoiceOver/TalkBack and actual device text scaling",
+  "fixtureParsing": "raw fixture before contract support",
+  "checks": [
+    {
+      "name": "A small order fee quote exposes its explanation trigger",
+      "status": "FAIL",
+      "error": "Missing About small order fee trigger on SMALL_ORDER_TIERS quote\n\n0 !== 1\n"
+    }
+  ],
+  "screenshots": ["red-charged-390-baseline.png"],
+  "errors": [],
+  "externalRequests": [],
+  "apiRequests": [],
+  "baseline": {
+    "source": "git 5b4d17dd4657a64bf63263d7e02f761dafca8c2b:src/checkout/components.tsx",
+    "revision": "5b4d17dd4657a64bf63263d7e02f761dafca8c2b",
+    "timing": "Regression baseline captured after current UI implementation; original component used without modifying production"
+  },
+  "browserVersion": "154.0.8037.98",
+  "serverCleanedUp": true,
+  "finishedAt": "2026-10-07T14:31:34.339Z",
+  "summary": {
+    "passed": 0,
+    "failed": 1,
+    "runtimeErrors": 0
+  }
+}

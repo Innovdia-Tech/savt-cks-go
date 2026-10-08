@@ -1,0 +1,431 @@
+{
+  "task": "CUST-FEE01",
+  "phase": "RED",
+  "startedAt": "2026-10-07T14:30:06.466Z",
+  "scope": "Real CartScreen with synthetic quoteEnvelope; Chrome browser emulation only",
+  "physicalWebView": "PENDING: Android/iOS WebView, VoiceOver/TalkBack and actual device text scaling",
+  "fixtureParsing": "parseQuote applied to all fixture scenarios",
+  "checks": [
+    {
+      "name": "320x844: sheet stays closed until explicitly opened",
+      "status": "PASS"
+    },
+    {
+      "name": "320x844: trigger has accessible name and 44px target",
+      "status": "PASS",
+      "evidence": {
+        "x": 131.25,
+        "y": 437.1875,
+        "width": 44,
+        "height": 44
+      }
+    },
+    {
+      "name": "320x844: charged sheet uses the actual fee and remaining qualifying amount",
+      "status": "PASS",
+      "evidence": {
+        "sheet": "Small order fee RM 2.00 A small order fee applies based on your items total after discounts. Current items total after discounts RM 22.20 No-fee threshold RM 30.00 RM 7.80 to go for no small order fee. Delivery charges do not count toward this threshold. Got it",
+        "helper": "RM 7.80 to go for no small order fee Based on items total after discounts. Delivery is excluded. Small order fee RM 2.00 A small order fee applies based on your items total after discounts. Current items total after discounts RM 22.20 No-fee threshold RM 30.00 RM 7.80 to go for no small order fee. Delivery charges do not count toward this threshold. Got it",
+        "fixture": {
+          "scenario": "charged",
+          "parsed": true,
+          "source": "real CartScreen; synthetic quoteEnvelope",
+          "cartSubtotalMinor": 7800,
+          "itemsSubtotalMinor": 900,
+          "deliveryMinor": 4990,
+          "qualifyingAmountMinor": 2220,
+          "thresholdMinor": 3000,
+          "authoritativeFeeMinor": 200,
+          "tierChargeMinor": 900
+        }
+      }
+    },
+    {
+      "name": "320x844: sheet is bottom anchored and fits viewport",
+      "status": "PASS",
+      "evidence": {
+        "box": {
+          "x": 0,
+          "y": 417,
+          "width": 320,
+          "height": 427
+        },
+        "dimensions": {
+          "pageScroll": 320,
+          "pageClient": 320,
+          "dialogScroll": 320,
+          "dialogClient": 320,
+          "viewport": 320,
+          "outliers": []
+        }
+      }
+    },
+    {
+      "name": "320x844: Got it receives initial focus, then closes and restores trigger focus",
+      "status": "PASS"
+    },
+    {
+      "name": "320x844: 200% inline fee label, amount and helper have no horizontal overflow",
+      "status": "PASS",
+      "evidence": {
+        "dimensions": {
+          "pageScroll": 320,
+          "pageClient": 320,
+          "viewport": 320,
+          "outliers": []
+        },
+        "bounds": {
+          "x": 124.3125,
+          "y": 467.6875,
+          "width": 44,
+          "height": 44
+        },
+        "requestedFonts": [
+          {
+            "selector": "small-order-fee-label",
+            "expected": 28
+          },
+          {
+            "selector": "small-order-fee-amount",
+            "expected": 28
+          },
+          {
+            "selector": "small-order-fee-progress",
+            "expected": 26
+          },
+          {
+            "selector": "P",
+            "expected": 26
+          }
+        ],
+        "actualFonts": [28, 28, 26, 26],
+        "textScale": "Computed font sizes doubled for fee label, amount and inline helper"
+      }
+    },
+    {
+      "name": "390x844: sheet stays closed until explicitly opened",
+      "status": "PASS"
+    },
+    {
+      "name": "390x844: trigger has accessible name and 44px target",
+      "status": "PASS",
+      "evidence": {
+        "x": 131.25,
+        "y": 415.1875,
+        "width": 44,
+        "height": 44
+      }
+    },
+    {
+      "name": "390x844: charged sheet uses the actual fee and remaining qualifying amount",
+      "status": "PASS",
+      "evidence": {
+        "sheet": "Small order fee RM 2.00 A small order fee applies based on your items total after discounts. Current items total after discounts RM 22.20 No-fee threshold RM 30.00 RM 7.80 to go for no small order fee. Delivery charges do not count toward this threshold. Got it",
+        "helper": "RM 7.80 to go for no small order fee Based on items total after discounts. Delivery is excluded. Small order fee RM 2.00 A small order fee applies based on your items total after discounts. Current items total after discounts RM 22.20 No-fee threshold RM 30.00 RM 7.80 to go for no small order fee. Delivery charges do not count toward this threshold. Got it",
+        "fixture": {
+          "scenario": "charged",
+          "parsed": true,
+          "source": "real CartScreen; synthetic quoteEnvelope",
+          "cartSubtotalMinor": 7800,
+          "itemsSubtotalMinor": 900,
+          "deliveryMinor": 4990,
+          "qualifyingAmountMinor": 2220,
+          "thresholdMinor": 3000,
+          "authoritativeFeeMinor": 200,
+          "tierChargeMinor": 900
+        }
+      }
+    },
+    {
+      "name": "390x844: sheet is bottom anchored and fits viewport",
+      "status": "PASS",
+      "evidence": {
+        "box": {
+          "x": 0,
+          "y": 438,
+          "width": 390,
+          "height": 406
+        },
+        "dimensions": {
+          "pageScroll": 390,
+          "pageClient": 390,
+          "dialogScroll": 390,
+          "dialogClient": 390,
+          "viewport": 390,
+          "outliers": []
+        }
+      }
+    },
+    {
+      "name": "390x844: Got it receives initial focus, then closes and restores trigger focus",
+      "status": "PASS"
+    },
+    {
+      "name": "390x844: 200% inline fee label, amount and helper have no horizontal overflow",
+      "status": "PASS",
+      "evidence": {
+        "dimensions": {
+          "pageScroll": 390,
+          "pageClient": 390,
+          "viewport": 390,
+          "outliers": []
+        },
+        "bounds": {
+          "x": 194.3125,
+          "y": 428.1875,
+          "width": 44,
+          "height": 44
+        },
+        "requestedFonts": [
+          {
+            "selector": "small-order-fee-label",
+            "expected": 28
+          },
+          {
+            "selector": "small-order-fee-amount",
+            "expected": 28
+          },
+          {
+            "selector": "small-order-fee-progress",
+            "expected": 26
+          },
+          {
+            "selector": "P",
+            "expected": 26
+          }
+        ],
+        "actualFonts": [28, 28, 26, 26],
+        "textScale": "Computed font sizes doubled for fee label, amount and inline helper"
+      }
+    },
+    {
+      "name": "430x844: sheet stays closed until explicitly opened",
+      "status": "PASS"
+    },
+    {
+      "name": "430x844: trigger has accessible name and 44px target",
+      "status": "PASS",
+      "evidence": {
+        "x": 131.25,
+        "y": 415.1875,
+        "width": 44,
+        "height": 44
+      }
+    },
+    {
+      "name": "430x844: charged sheet uses the actual fee and remaining qualifying amount",
+      "status": "PASS",
+      "evidence": {
+        "sheet": "Small order fee RM 2.00 A small order fee applies based on your items total after discounts. Current items total after discounts RM 22.20 No-fee threshold RM 30.00 RM 7.80 to go for no small order fee. Delivery charges do not count toward this threshold. Got it",
+        "helper": "RM 7.80 to go for no small order fee Based on items total after discounts. Delivery is excluded. Small order fee RM 2.00 A small order fee applies based on your items total after discounts. Current items total after discounts RM 22.20 No-fee threshold RM 30.00 RM 7.80 to go for no small order fee. Delivery charges do not count toward this threshold. Got it",
+        "fixture": {
+          "scenario": "charged",
+          "parsed": true,
+          "source": "real CartScreen; synthetic quoteEnvelope",
+          "cartSubtotalMinor": 7800,
+          "itemsSubtotalMinor": 900,
+          "deliveryMinor": 4990,
+          "qualifyingAmountMinor": 2220,
+          "thresholdMinor": 3000,
+          "authoritativeFeeMinor": 200,
+          "tierChargeMinor": 900
+        }
+      }
+    },
+    {
+      "name": "430x844: sheet is bottom anchored and fits viewport",
+      "status": "PASS",
+      "evidence": {
+        "box": {
+          "x": 0,
+          "y": 438,
+          "width": 430,
+          "height": 406
+        },
+        "dimensions": {
+          "pageScroll": 430,
+          "pageClient": 430,
+          "dialogScroll": 430,
+          "dialogClient": 430,
+          "viewport": 430,
+          "outliers": []
+        }
+      }
+    },
+    {
+      "name": "430x844: Got it receives initial focus, then closes and restores trigger focus",
+      "status": "PASS"
+    },
+    {
+      "name": "430x844: 200% inline fee label, amount and helper have no horizontal overflow",
+      "status": "PASS",
+      "evidence": {
+        "dimensions": {
+          "pageScroll": 430,
+          "pageClient": 430,
+          "viewport": 430,
+          "outliers": []
+        },
+        "bounds": {
+          "x": 231.5,
+          "y": 415.1875,
+          "width": 44,
+          "height": 44
+        },
+        "requestedFonts": [
+          {
+            "selector": "small-order-fee-label",
+            "expected": 28
+          },
+          {
+            "selector": "small-order-fee-amount",
+            "expected": 28
+          },
+          {
+            "selector": "small-order-fee-progress",
+            "expected": 26
+          },
+          {
+            "selector": "P",
+            "expected": 26
+          }
+        ],
+        "actualFonts": [28, 28, 26, 26],
+        "textScale": "Computed font sizes doubled for fee label, amount and inline helper"
+      }
+    },
+    {
+      "name": "Keyboard activation and native modal keep background page controls inert",
+      "status": "PASS",
+      "evidence": {
+        "sequence": [
+          {
+            "key": "Tab",
+            "withinDialog": false,
+            "body": true,
+            "tag": "BODY",
+            "text": "browser chrome / BODY"
+          },
+          {
+            "key": "Tab",
+            "withinDialog": true,
+            "body": false,
+            "tag": "BUTTON",
+            "text": "Got it"
+          },
+          {
+            "key": "Shift+Tab",
+            "withinDialog": true,
+            "body": false,
+            "tag": "BUTTON",
+            "text": "Got it"
+          },
+          {
+            "key": "Shift+Tab",
+            "withinDialog": false,
+            "body": true,
+            "tag": "BODY",
+            "text": "browser chrome / BODY"
+          }
+        ],
+        "note": "Native dialog allows browser chrome / BODY between tab cycles; background page controls remain inert"
+      }
+    },
+    {
+      "name": "Escape closes and restores explanation trigger focus",
+      "status": "PASS"
+    },
+    {
+      "name": "Backdrop click closes and restores explanation trigger focus",
+      "status": "PASS"
+    },
+    {
+      "name": "zero: explicit small order fee quote keeps RM0.00 explanation available",
+      "status": "PASS",
+      "evidence": "Small order fee RM 0.00 No small order fee for this order. Current items total after discounts RM 22.20 No-fee threshold RM 30.00 Delivery charges do not count toward this threshold. Got it"
+    },
+    {
+      "name": "no-match: explicit small order fee quote keeps RM0.00 explanation available",
+      "status": "PASS",
+      "evidence": "Small order fee RM 0.00 No small order fee for this order. Current items total after discounts RM 22.20 Delivery charges are excluded from the items total after discounts. Got it"
+    },
+    {
+      "name": "disabled: explicit small order fee quote keeps RM0.00 explanation available",
+      "status": "PASS",
+      "evidence": "Small order fee RM 0.00 Small order fee is currently not applied. Current items total after discounts RM 22.20 Delivery charges are excluded from the items total after discounts. Got it"
+    },
+    {
+      "name": "unknown-threshold: no invented fee-free spend advice",
+      "status": "PASS",
+      "evidence": "Small order fee RM 2.00 A small order fee applies based on your items total after discounts. Current items total after discounts RM 22.20 Delivery charges are excluded from the items total after discounts. Got it Based on items total after discounts. Delivery is excluded. Small order fee RM 2.00 A small order fee applies based on your items total after discounts. Current items total after discounts RM 22.20 Delivery charges are excluded from the items total after discounts. Got it"
+    },
+    {
+      "name": "equal-threshold: no invented fee-free spend advice",
+      "status": "PASS",
+      "evidence": "Small order fee RM 2.00 A small order fee applies based on your items total after discounts. Current items total after discounts RM 22.20 No-fee threshold RM 22.20 Delivery charges do not count toward this threshold. Got it Based on items total after discounts. Delivery is excluded. Small order fee RM 2.00 A small order fee applies based on your items total after discounts. Current items total after discounts RM 22.20 No-fee threshold RM 22.20 Delivery charges do not count toward this threshold. Got it"
+    },
+    {
+      "name": "lower-threshold: no invented fee-free spend advice",
+      "status": "PASS",
+      "evidence": "Small order fee RM 2.00 A small order fee applies based on your items total after discounts. Current items total after discounts RM 22.20 No-fee threshold RM 10.00 Delivery charges do not count toward this threshold. Got it Based on items total after discounts. Delivery is excluded. Small order fee RM 2.00 A small order fee applies based on your items total after discounts. Current items total after discounts RM 22.20 No-fee threshold RM 10.00 Delivery charges do not count toward this threshold. Got it"
+    },
+    {
+      "name": "legacy-percentage: legacy processing fee remains free of small-order explanation",
+      "status": "PASS"
+    },
+    {
+      "name": "legacy-fixed: legacy processing fee remains free of small-order explanation",
+      "status": "PASS"
+    },
+    {
+      "name": "Quote invalidation while sheet is open removes stale explanation",
+      "status": "PASS"
+    },
+    {
+      "name": "34px safe-area inset keeps Got it above the home indicator",
+      "status": "PASS",
+      "evidence": {
+        "inset": 0,
+        "sharedToken": "34px",
+        "gap": 54,
+        "buttonBottom": 790,
+        "viewportHeight": 844,
+        "method": "CSS simulation: shared --safe-area-bottom token set to 34px; physical WebView env inset remains pending"
+      }
+    },
+    {
+      "name": "320x844: 200% dialog text and long wrapping stay within viewport",
+      "status": "FAIL",
+      "error": "Enlarged sheet title lines overlap: {\"fontSize\":40,\"lineHeight\":28}"
+    },
+    {
+      "name": "390x844: 200% dialog text and long wrapping stay within viewport",
+      "status": "FAIL",
+      "error": "Enlarged sheet title lines overlap: {\"fontSize\":40,\"lineHeight\":28}"
+    },
+    {
+      "name": "430x844: 200% dialog text and long wrapping stay within viewport",
+      "status": "FAIL",
+      "error": "Enlarged sheet title lines overlap: {\"fontSize\":40,\"lineHeight\":28}"
+    },
+    {
+      "name": "Fixture has no browser errors, external requests or native bridge",
+      "status": "PASS"
+    }
+  ],
+  "screenshots": [
+    "typography-red-text200-long-320-sheet-top.png",
+    "typography-red-text200-long-390-sheet-top.png",
+    "typography-red-text200-long-430-sheet-top.png"
+  ],
+  "errors": [],
+  "externalRequests": [],
+  "browserVersion": "154.0.8037.98",
+  "serverCleanedUp": true,
+  "finishedAt": "2026-10-07T14:30:14.161Z",
+  "summary": {
+    "passed": 32,
+    "failed": 3,
+    "runtimeErrors": 0
+  }
+}

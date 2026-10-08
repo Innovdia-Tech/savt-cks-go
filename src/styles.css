@@ -309,6 +309,20 @@
   background: var(--scrollbar-thumb-active);
 }
 
+/* Suppress visual scrollbars on the active customer page scroll owner. */
+:root:has(#root .delivery-setup),
+.app-shell__scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+:root:has(#root .delivery-setup)::-webkit-scrollbar,
+.app-shell__scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 @media (forced-colors: active) {
   :root,
   * {

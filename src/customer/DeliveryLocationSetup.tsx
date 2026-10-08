@@ -108,6 +108,7 @@ export function DeliveryLocationSetup({
   >("pending");
   const [mapStatus, setMapStatus] = useState<MapStatus>("loading");
   const [busy, setBusy] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [savedForAssignment, setSavedForAssignment] = useState<Address | null>(
     null,
@@ -127,6 +128,7 @@ export function DeliveryLocationSetup({
   const resolvedGeneration = useRef(-1);
   const generation = useRef(0);
   const currentStarted = useRef(false);
+  const locationInFlight = useRef<Promise<DeliveryLocation> | null>(null);
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(
@@ -144,6 +146,7 @@ export function DeliveryLocationSetup({
   }, [stage]);
 
   const openSearch = () => {
+    ++generation.current;
     invalidatePin();
     token.current = crypto.randomUUID();
     setQuery("");
@@ -223,22 +226,38 @@ export function DeliveryLocationSetup({
     };
   }, [query, stage, composing, locationSearch, controller]);
 
+  const requestCurrentCoordinates = () => {
+    if (locationInFlight.current) return locationInFlight.current;
+    const request = port.requestCurrentLocation();
+    locationInFlight.current = request;
+    setLocating(true);
+    const settled = () => {
+      if (locationInFlight.current === request) {
+        locationInFlight.current = null;
+        setLocating(false);
+      }
+    };
+    void request.then(settled, settled);
+    return request;
+  };
+
   const currentLocation = async () => {
-    if (busy || state.readOnly) return;
+    if (busy || locationInFlight.current || state.readOnly) return;
     invalidatePin();
-    ++generation.current;
+    const requestGeneration = ++generation.current;
     searchAbort.current?.abort();
-    token.current = null;
-    setBusy(true);
     setGpsError("");
     try {
-      const found = await port.requestCurrentLocation();
+      const found = await requestCurrentCoordinates();
+      if (generation.current !== requestGeneration) return;
+      token.current = null;
       setLocation(found);
       setMapInitial({ latitude: found.latitude, longitude: found.longitude });
       setMapStatus("loading");
       setReturnToChoose(true);
       setStage("confirm");
     } catch (error) {
+      if (generation.current !== requestGeneration) return;
       if (error instanceof DeliveryLocationError && error.kind === "denied") {
         setStage("denied");
       } else {
@@ -246,8 +265,6 @@ export function DeliveryLocationSetup({
           "We couldn’t get your current location. Search for your address or try again.",
         );
       }
-    } finally {
-      setBusy(false);
     }
   };
   useEffect(() => {
@@ -348,7 +365,7 @@ export function DeliveryLocationSetup({
   const recenterPin = async (): Promise<PinCoordinate | null> => {
     const requestGeneration = pinGeneration.current;
     try {
-      const found = await port.requestCurrentLocation();
+      const found = await requestCurrentCoordinates();
       if (pinGeneration.current !== requestGeneration) return null;
       return { latitude: found.latitude, longitude: found.longitude };
     } catch {
@@ -486,11 +503,11 @@ export function DeliveryLocationSetup({
           <button
             type="button"
             className="delivery-flow__current"
-            disabled={busy || state.readOnly}
+            disabled={busy || locating || state.readOnly}
             onClick={() => void currentLocation()}
           >
             <PinIcon className="h-5 w-5" />
-            {busy ? "Finding your location…" : "Use my current location"}
+            {locating ? "Finding your location…" : "Use my current location"}
           </button>
           {gpsError && (
             <p role="alert" className="delivery-setup__message">
@@ -534,7 +551,7 @@ export function DeliveryLocationSetup({
             type="button"
             className="delivery-flow__current"
             onClick={() => void currentLocation()}
-            disabled={busy || state.readOnly}
+            disabled={busy || locating || state.readOnly}
           >
             <PinIcon className="h-5 w-5" />
             Use my current location
@@ -614,7 +631,7 @@ export function DeliveryLocationSetup({
             type="button"
             className="delivery-setup__secondary"
             onClick={() => void currentLocation()}
-            disabled={busy}
+            disabled={busy || locating}
           >
             Try current location again
           </button>
@@ -668,7 +685,7 @@ export function DeliveryLocationSetup({
                 type="button"
                 className="delivery-setup__secondary"
                 onClick={() => void currentLocation()}
-                disabled={busy}
+                disabled={busy || locating}
               >
                 Try current location again
               </button>

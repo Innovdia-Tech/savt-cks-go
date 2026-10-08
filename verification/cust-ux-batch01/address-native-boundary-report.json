@@ -1,0 +1,162 @@
+{
+  "task": "CUST-UX-BATCH01 address native boundary diagnostic",
+  "startedAt": "2026-10-07T16:14:02.754Z",
+  "scope": "Actual production customer main.tsx and BrowserDeliveryLocationPort; native singleflight shim mirrors read-only Flutter host source. This is not a physical-device capture.",
+  "physicalWebView": "PENDING",
+  "outcome": "NATIVE FOLLOW-UP REQUIRED — modeled pre-existing unmount/reentry boundary",
+  "nativeBoundary": {
+    "source": "C:\\Users\\isaac\\Documents\\ChatGPT\\CKS go frontend\\merch-home01-native\\lib\\features\\cks_go\\cks_go_host_screen.dart",
+    "head": "e1edb589423550afdf9415846aab701fa2fd5335",
+    "guardLine": 343,
+    "guard": "if (_phase != _CksGoHostPhase.loaded || _locationInFlight) return;",
+    "inFlightSetLine": 375,
+    "inFlightClearedLine": 394,
+    "interpretation": "The host silently drops a new request while its previous location operation is pending. Web port dispose removes the old listener/rejects its local promise and has no native cancellation message."
+  },
+  "steps": [
+    "Stable authenticated Home",
+    "Open Delivery address",
+    "Tap current location once",
+    "Back out while the native request is still pending (location component unmounts)",
+    "Reenter current location with one explicit tap",
+    "Second request is dropped by the modeled host in-flight guard",
+    "First reply uses the old requestId and cannot complete the new web request",
+    "New request times out; no automatic retry was sent"
+  ],
+  "evidence": {
+    "requests": [
+      {
+        "method": "GET",
+        "path": "/api/v1/customer/session",
+        "body": null,
+        "at": "2026-10-07T16:14:05.650Z",
+        "status": 200,
+        "completedAt": "2026-10-07T16:14:05.650Z"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/customer/support",
+        "body": null,
+        "at": "2026-10-07T16:14:05.711Z",
+        "status": 200,
+        "completedAt": "2026-10-07T16:14:05.711Z"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/customer/me",
+        "body": null,
+        "at": "2026-10-07T16:14:05.713Z",
+        "status": 200,
+        "completedAt": "2026-10-07T16:14:05.713Z"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/customer/me/addresses",
+        "body": null,
+        "at": "2026-10-07T16:14:05.729Z",
+        "status": 200,
+        "completedAt": "2026-10-07T16:14:05.729Z"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/customer/outlet-assignment",
+        "body": {
+          "customerAddressId": "22222222-2222-4222-8222-222222222222",
+          "addressRowVersion": 1
+        },
+        "at": "2026-10-07T16:14:05.737Z",
+        "status": 200,
+        "completedAt": "2026-10-07T16:14:05.737Z"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+        "body": null,
+        "at": "2026-10-07T16:14:05.747Z",
+        "status": 200,
+        "completedAt": "2026-10-07T16:14:05.747Z"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+        "body": null,
+        "at": "2026-10-07T16:14:05.748Z",
+        "status": 200,
+        "completedAt": "2026-10-07T16:14:05.748Z"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+        "body": null,
+        "at": "2026-10-07T16:14:05.760Z",
+        "status": 200,
+        "completedAt": "2026-10-07T16:14:05.760Z"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+        "body": null,
+        "at": "2026-10-07T16:14:05.761Z",
+        "status": 200,
+        "completedAt": "2026-10-07T16:14:05.761Z"
+      }
+    ],
+    "unexpectedRequests": [],
+    "errors": [],
+    "embedded": {
+      "native": [
+        {
+          "message": {
+            "type": "loaded"
+          },
+          "at": 792.2000000029802
+        },
+        {
+          "message": {
+            "type": "location-current",
+            "requestId": "4e8385ee-67cf-40ca-b7c1-7b68b7707be8",
+            "protocolVersion": "1"
+          },
+          "at": 1136.7000000029802
+        },
+        {
+          "message": {
+            "type": "location-current",
+            "requestId": "e0ed3a55-8627-4814-93df-9acf1a406fb4",
+            "protocolVersion": "1"
+          },
+          "at": 1203.4000000059605
+        }
+      ],
+      "maps": [],
+      "replies": [
+        {
+          "detail": {
+            "protocolVersion": "1",
+            "requestId": "4e8385ee-67cf-40ca-b7c1-7b68b7707be8",
+            "status": "ok",
+            "latitude": 5.92,
+            "longitude": 116.08,
+            "formattedAddress": "1 Example Street, Kota Kinabalu, Sabah",
+            "addressLine1": "1 Example Street",
+            "city": "Kota Kinabalu",
+            "state": "Sabah",
+            "postcode": "88000"
+          },
+          "at": 1222.2999999970198
+        }
+      ],
+      "dropped": [
+        {
+          "type": "location-current",
+          "requestId": "e0ed3a55-8627-4814-93df-9acf1a406fb4",
+          "protocolVersion": "1"
+        }
+      ],
+      "recenters": []
+    }
+  },
+  "requiredNativeRepair": "The host must handle a new request after web cancellation/navigation explicitly, with correlated cancellation or queued completion, instead of silently discarding it behind _locationInFlight. No Flutter/native change or frontend retry was added.",
+  "serverCleanedUp": true,
+  "finishedAt": "2026-10-07T16:14:26.512Z"
+}

@@ -1,0 +1,759 @@
+{
+  "task": "CUST-UX-BATCH01 embedded startup",
+  "phase": "RED",
+  "baseline": "094a78e96851462b7c02cf147081a4642b16b2eb:src/catalogue/components.tsx",
+  "scope": "Actual src/main.tsx, production React, real web session/data/catalogue controllers; loopback native/API shims",
+  "physicalWebView": "PENDING",
+  "startedAt": "2026-10-07T16:01:39.435Z",
+  "checks": [
+    {
+      "name": "320: no authenticated UI or loaded acknowledgement before exchange",
+      "status": "PASS"
+    },
+    {
+      "name": "320: native acknowledged once, profile pending uses lightweight shell",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n1 !== 0\n"
+    },
+    {
+      "name": "320: address pending retains lightweight shell",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n1 !== 0\n"
+    },
+    {
+      "name": "320: authenticated saved coordinates start one assignment",
+      "status": "PASS"
+    },
+    {
+      "name": "320: Home keeps shell, native header ownership and backend NONE banner",
+      "status": "PASS",
+      "evidence": {
+        "viewport": 320,
+        "clientWidth": 320,
+        "scrollWidth": 320,
+        "webLogoCount": 0,
+        "shellCount": 1,
+        "navigationCount": 1,
+        "startupShellRetained": false
+      }
+    },
+    {
+      "name": "320: restored Home with zero advertisements has no fallback",
+      "status": "PASS"
+    },
+    {
+      "name": "390: no authenticated UI or loaded acknowledgement before exchange",
+      "status": "PASS"
+    },
+    {
+      "name": "390: native acknowledged once, profile pending uses lightweight shell",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n1 !== 0\n"
+    },
+    {
+      "name": "390: address pending retains lightweight shell",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n1 !== 0\n"
+    },
+    {
+      "name": "390: authenticated saved coordinates start one assignment",
+      "status": "PASS"
+    },
+    {
+      "name": "390: Home keeps shell, native header ownership and backend NONE banner",
+      "status": "PASS",
+      "evidence": {
+        "viewport": 390,
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "webLogoCount": 0,
+        "shellCount": 1,
+        "navigationCount": 1,
+        "startupShellRetained": false
+      }
+    },
+    {
+      "name": "390: restored Home with zero advertisements has no fallback",
+      "status": "PASS"
+    },
+    {
+      "name": "430: no authenticated UI or loaded acknowledgement before exchange",
+      "status": "PASS"
+    },
+    {
+      "name": "430: native acknowledged once, profile pending uses lightweight shell",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n1 !== 0\n"
+    },
+    {
+      "name": "430: address pending retains lightweight shell",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n1 !== 0\n"
+    },
+    {
+      "name": "430: authenticated saved coordinates start one assignment",
+      "status": "PASS"
+    },
+    {
+      "name": "430: Home keeps shell, native header ownership and backend NONE banner",
+      "status": "PASS",
+      "evidence": {
+        "viewport": 430,
+        "clientWidth": 430,
+        "scrollWidth": 430,
+        "webLogoCount": 0,
+        "shellCount": 1,
+        "navigationCount": 1,
+        "startupShellRetained": false
+      }
+    },
+    {
+      "name": "430: restored Home with zero advertisements has no fallback",
+      "status": "PASS"
+    }
+  ],
+  "screenshots": [
+    "startup-red-320-profile-pending.png",
+    "startup-red-320-address-pending.png",
+    "startup-red-320-home.png",
+    "startup-red-390-profile-pending.png",
+    "startup-red-390-address-pending.png",
+    "startup-red-390-home.png",
+    "startup-red-430-profile-pending.png",
+    "startup-red-430-address-pending.png",
+    "startup-red-430-home.png"
+  ],
+  "traces": [
+    {
+      "width": 320,
+      "session": "fresh",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/session",
+          "status": 401,
+          "at": "2026-10-07T16:01:42.482Z",
+          "completedAt": "2026-10-07T16:01:42.482Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/customer/session/bootstrap",
+          "status": 200,
+          "at": "2026-10-07T16:01:42.486Z",
+          "completedAt": "2026-10-07T16:01:42.486Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/customer/session/exchange",
+          "status": 200,
+          "at": "2026-10-07T16:01:42.501Z",
+          "completedAt": "2026-10-07T16:01:42.579Z",
+          "bodyKeys": ["protocolVersion", "launchRequestId", "state", "code"]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/support",
+          "status": 200,
+          "at": "2026-10-07T16:01:42.599Z",
+          "completedAt": "2026-10-07T16:01:42.599Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/me",
+          "status": 200,
+          "at": "2026-10-07T16:01:42.600Z",
+          "completedAt": "2026-10-07T16:01:42.740Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/me/addresses",
+          "status": 200,
+          "at": "2026-10-07T16:01:42.744Z",
+          "completedAt": "2026-10-07T16:01:42.870Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/customer/outlet-assignment",
+          "status": 200,
+          "at": "2026-10-07T16:01:42.907Z",
+          "completedAt": "2026-10-07T16:01:42.937Z",
+          "bodyKeys": ["customerAddressId", "addressRowVersion"]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+          "status": 200,
+          "at": "2026-10-07T16:01:42.945Z",
+          "completedAt": "2026-10-07T16:01:42.945Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+          "status": 200,
+          "at": "2026-10-07T16:01:42.947Z",
+          "completedAt": "2026-10-07T16:01:42.947Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+          "status": 200,
+          "at": "2026-10-07T16:01:42.953Z",
+          "completedAt": "2026-10-07T16:01:42.953Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+          "status": 200,
+          "at": "2026-10-07T16:01:42.954Z",
+          "completedAt": "2026-10-07T16:01:42.954Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/advertisement-media/33333333-3333-4333-8333-333333333333/44444444-4444-4444-8444-444444444444",
+          "at": "2026-10-07T16:01:42.961Z",
+          "bodyKeys": []
+        }
+      ],
+      "unexpectedRequests": [],
+      "errors": [],
+      "native": [
+        {
+          "type": "bootstrap",
+          "at": 1181.2999999970198,
+          "keys": ["type", "payload"],
+          "payloadKeys": [
+            "protocolVersion",
+            "launchRequestId",
+            "state",
+            "codeChallenge",
+            "codeChallengeMethod"
+          ]
+        },
+        {
+          "type": "loaded",
+          "at": 1274,
+          "keys": ["type"]
+        }
+      ]
+    },
+    {
+      "width": 320,
+      "session": "restored",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/session",
+          "status": 200,
+          "at": "2026-10-07T16:01:43.640Z",
+          "completedAt": "2026-10-07T16:01:43.640Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/support",
+          "status": 200,
+          "at": "2026-10-07T16:01:43.661Z",
+          "completedAt": "2026-10-07T16:01:43.661Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/me",
+          "status": 200,
+          "at": "2026-10-07T16:01:43.662Z",
+          "completedAt": "2026-10-07T16:01:43.662Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/me/addresses",
+          "status": 200,
+          "at": "2026-10-07T16:01:43.683Z",
+          "completedAt": "2026-10-07T16:01:43.683Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/customer/outlet-assignment",
+          "status": 200,
+          "at": "2026-10-07T16:01:43.711Z",
+          "completedAt": "2026-10-07T16:01:43.711Z",
+          "bodyKeys": ["customerAddressId", "addressRowVersion"]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+          "status": 200,
+          "at": "2026-10-07T16:01:43.719Z",
+          "completedAt": "2026-10-07T16:01:43.719Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+          "status": 200,
+          "at": "2026-10-07T16:01:43.720Z",
+          "completedAt": "2026-10-07T16:01:43.720Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+          "status": 200,
+          "at": "2026-10-07T16:01:43.725Z",
+          "completedAt": "2026-10-07T16:01:43.725Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+          "status": 200,
+          "at": "2026-10-07T16:01:43.726Z",
+          "completedAt": "2026-10-07T16:01:43.726Z",
+          "bodyKeys": []
+        }
+      ],
+      "unexpectedRequests": [],
+      "errors": [],
+      "native": [
+        {
+          "type": "loaded",
+          "at": 236.70000000298023,
+          "keys": ["type"]
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "session": "fresh",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/session",
+          "status": 401,
+          "at": "2026-10-07T16:01:44.210Z",
+          "completedAt": "2026-10-07T16:01:44.210Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/customer/session/bootstrap",
+          "status": 200,
+          "at": "2026-10-07T16:01:44.214Z",
+          "completedAt": "2026-10-07T16:01:44.214Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/customer/session/exchange",
+          "status": 200,
+          "at": "2026-10-07T16:01:44.228Z",
+          "completedAt": "2026-10-07T16:01:44.299Z",
+          "bodyKeys": ["protocolVersion", "launchRequestId", "state", "code"]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/support",
+          "status": 200,
+          "at": "2026-10-07T16:01:44.311Z",
+          "completedAt": "2026-10-07T16:01:44.311Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/me",
+          "status": 200,
+          "at": "2026-10-07T16:01:44.312Z",
+          "completedAt": "2026-10-07T16:01:44.438Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/me/addresses",
+          "status": 200,
+          "at": "2026-10-07T16:01:44.441Z",
+          "completedAt": "2026-10-07T16:01:44.570Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/customer/outlet-assignment",
+          "status": 200,
+          "at": "2026-10-07T16:01:44.606Z",
+          "completedAt": "2026-10-07T16:01:44.630Z",
+          "bodyKeys": ["customerAddressId", "addressRowVersion"]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+          "status": 200,
+          "at": "2026-10-07T16:01:44.636Z",
+          "completedAt": "2026-10-07T16:01:44.636Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+          "status": 200,
+          "at": "2026-10-07T16:01:44.636Z",
+          "completedAt": "2026-10-07T16:01:44.636Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+          "status": 200,
+          "at": "2026-10-07T16:01:44.641Z",
+          "completedAt": "2026-10-07T16:01:44.641Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+          "status": 200,
+          "at": "2026-10-07T16:01:44.642Z",
+          "completedAt": "2026-10-07T16:01:44.642Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/advertisement-media/33333333-3333-4333-8333-333333333333/44444444-4444-4444-8444-444444444444",
+          "at": "2026-10-07T16:01:44.646Z",
+          "bodyKeys": []
+        }
+      ],
+      "unexpectedRequests": [],
+      "errors": [],
+      "native": [
+        {
+          "type": "bootstrap",
+          "at": 241.6000000089407,
+          "keys": ["type", "payload"],
+          "payloadKeys": [
+            "protocolVersion",
+            "launchRequestId",
+            "state",
+            "codeChallenge",
+            "codeChallengeMethod"
+          ]
+        },
+        {
+          "type": "loaded",
+          "at": 325.6000000089407,
+          "keys": ["type"]
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "session": "restored",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/session",
+          "status": 200,
+          "at": "2026-10-07T16:01:45.152Z",
+          "completedAt": "2026-10-07T16:01:45.152Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/support",
+          "status": 200,
+          "at": "2026-10-07T16:01:45.172Z",
+          "completedAt": "2026-10-07T16:01:45.172Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/me",
+          "status": 200,
+          "at": "2026-10-07T16:01:45.173Z",
+          "completedAt": "2026-10-07T16:01:45.173Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/me/addresses",
+          "status": 200,
+          "at": "2026-10-07T16:01:45.191Z",
+          "completedAt": "2026-10-07T16:01:45.191Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/customer/outlet-assignment",
+          "status": 200,
+          "at": "2026-10-07T16:01:45.224Z",
+          "completedAt": "2026-10-07T16:01:45.224Z",
+          "bodyKeys": ["customerAddressId", "addressRowVersion"]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+          "status": 200,
+          "at": "2026-10-07T16:01:45.233Z",
+          "completedAt": "2026-10-07T16:01:45.233Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+          "status": 200,
+          "at": "2026-10-07T16:01:45.234Z",
+          "completedAt": "2026-10-07T16:01:45.234Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+          "status": 200,
+          "at": "2026-10-07T16:01:45.243Z",
+          "completedAt": "2026-10-07T16:01:45.243Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+          "status": 200,
+          "at": "2026-10-07T16:01:45.244Z",
+          "completedAt": "2026-10-07T16:01:45.244Z",
+          "bodyKeys": []
+        }
+      ],
+      "unexpectedRequests": [],
+      "errors": [],
+      "native": [
+        {
+          "type": "loaded",
+          "at": 223.70000000298023,
+          "keys": ["type"]
+        }
+      ]
+    },
+    {
+      "width": 430,
+      "session": "fresh",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/session",
+          "status": 401,
+          "at": "2026-10-07T16:01:45.744Z",
+          "completedAt": "2026-10-07T16:01:45.744Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/customer/session/bootstrap",
+          "status": 200,
+          "at": "2026-10-07T16:01:45.747Z",
+          "completedAt": "2026-10-07T16:01:45.747Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/customer/session/exchange",
+          "status": 200,
+          "at": "2026-10-07T16:01:45.762Z",
+          "completedAt": "2026-10-07T16:01:45.836Z",
+          "bodyKeys": ["protocolVersion", "launchRequestId", "state", "code"]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/support",
+          "status": 200,
+          "at": "2026-10-07T16:01:45.850Z",
+          "completedAt": "2026-10-07T16:01:45.850Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/me",
+          "status": 200,
+          "at": "2026-10-07T16:01:45.851Z",
+          "completedAt": "2026-10-07T16:01:45.974Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/me/addresses",
+          "status": 200,
+          "at": "2026-10-07T16:01:45.977Z",
+          "completedAt": "2026-10-07T16:01:46.105Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/customer/outlet-assignment",
+          "status": 200,
+          "at": "2026-10-07T16:01:46.136Z",
+          "completedAt": "2026-10-07T16:01:46.169Z",
+          "bodyKeys": ["customerAddressId", "addressRowVersion"]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+          "status": 200,
+          "at": "2026-10-07T16:01:46.174Z",
+          "completedAt": "2026-10-07T16:01:46.174Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+          "status": 200,
+          "at": "2026-10-07T16:01:46.175Z",
+          "completedAt": "2026-10-07T16:01:46.175Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+          "status": 200,
+          "at": "2026-10-07T16:01:46.180Z",
+          "completedAt": "2026-10-07T16:01:46.180Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+          "status": 200,
+          "at": "2026-10-07T16:01:46.181Z",
+          "completedAt": "2026-10-07T16:01:46.181Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/advertisement-media/33333333-3333-4333-8333-333333333333/44444444-4444-4444-8444-444444444444",
+          "at": "2026-10-07T16:01:46.199Z",
+          "bodyKeys": []
+        }
+      ],
+      "unexpectedRequests": [],
+      "errors": [],
+      "native": [
+        {
+          "type": "bootstrap",
+          "at": 251.29999999701977,
+          "keys": ["type", "payload"],
+          "payloadKeys": [
+            "protocolVersion",
+            "launchRequestId",
+            "state",
+            "codeChallenge",
+            "codeChallengeMethod"
+          ]
+        },
+        {
+          "type": "loaded",
+          "at": 339.6000000089407,
+          "keys": ["type"]
+        }
+      ]
+    },
+    {
+      "width": 430,
+      "session": "restored",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/session",
+          "status": 200,
+          "at": "2026-10-07T16:01:46.680Z",
+          "completedAt": "2026-10-07T16:01:46.680Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/support",
+          "status": 200,
+          "at": "2026-10-07T16:01:46.699Z",
+          "completedAt": "2026-10-07T16:01:46.699Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/me",
+          "status": 200,
+          "at": "2026-10-07T16:01:46.700Z",
+          "completedAt": "2026-10-07T16:01:46.700Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/me/addresses",
+          "status": 200,
+          "at": "2026-10-07T16:01:46.719Z",
+          "completedAt": "2026-10-07T16:01:46.719Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/customer/outlet-assignment",
+          "status": 200,
+          "at": "2026-10-07T16:01:46.752Z",
+          "completedAt": "2026-10-07T16:01:46.752Z",
+          "bodyKeys": ["customerAddressId", "addressRowVersion"]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+          "status": 200,
+          "at": "2026-10-07T16:01:46.760Z",
+          "completedAt": "2026-10-07T16:01:46.760Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+          "status": 200,
+          "at": "2026-10-07T16:01:46.762Z",
+          "completedAt": "2026-10-07T16:01:46.762Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+          "status": 200,
+          "at": "2026-10-07T16:01:46.773Z",
+          "completedAt": "2026-10-07T16:01:46.773Z",
+          "bodyKeys": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+          "status": 200,
+          "at": "2026-10-07T16:01:46.774Z",
+          "completedAt": "2026-10-07T16:01:46.774Z",
+          "bodyKeys": []
+        }
+      ],
+      "unexpectedRequests": [],
+      "errors": [],
+      "native": [
+        {
+          "type": "loaded",
+          "at": 219.30000001192093,
+          "keys": ["type"]
+        }
+      ]
+    }
+  ],
+  "serverCleanedUp": true,
+  "finishedAt": "2026-10-07T16:01:46.993Z",
+  "summary": {
+    "passed": 12,
+    "failed": 6,
+    "fatal": false
+  }
+}

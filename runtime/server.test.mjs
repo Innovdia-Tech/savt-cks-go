@@ -205,6 +205,82 @@ describe("same-origin customer runtime", () => {
     expect(received).toBe(assignmentContext);
   });
 
+  it.each([
+    ["POST", "/api/v1/checkout/quote", "small-order-fee-v1"],
+    [
+      "GET",
+      "/api/v1/customer/orders/11111111-1111-4111-8111-111111111111",
+      "small-order-fee-v1",
+    ],
+    ["GET", "/api/v1/customer/orders?page=1&pageSize=25", undefined],
+    [
+      "GET",
+      "/api/v1/customer/orders/11111111-1111-4111-8111-111111111111/documents",
+      undefined,
+    ],
+    [
+      "GET",
+      "/api/v1/orders/11111111-1111-4111-8111-111111111111/receipt/download",
+      undefined,
+    ],
+    [
+      "GET",
+      "/api/v1/orders/11111111-1111-4111-8111-111111111111/payment-receipt/download",
+      undefined,
+    ],
+    ["GET", "/api/v1/checkout/quote", undefined],
+    [
+      "POST",
+      "/api/v1/customer/orders/11111111-1111-4111-8111-111111111111",
+      undefined,
+    ],
+    ["GET", "/api/v1/customer/orders/not-a-uuid", undefined],
+    [
+      "GET",
+      "/api/v1/customer/orders/11111111-1111-1111-8111-111111111111",
+      undefined,
+    ],
+  ])("scopes the fee contract for %s %s", async (method, path, expected) => {
+    let received;
+    const { origin } = await setup(async (req, res) => {
+      let body = "";
+      for await (const chunk of req) body += chunk;
+      received = {
+        method: req.method,
+        url: req.url,
+        headers: req.headers,
+        body,
+      };
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end("{}");
+    });
+    const body = method === "POST" ? '{"items":[]}' : undefined;
+    const response = await fetch(origin + path, {
+      method,
+      body,
+      headers: {
+        Accept: "application/json",
+        Cookie: "__Host-cksgo_launch=synthetic",
+        "X-CKS-Fee-Contract": "small-order-fee-v1",
+        "x-cks-csrf": "synthetic-csrf",
+        "Idempotency-Key": "synthetic-key",
+        Authorization: "synthetic",
+        "X-Forwarded-Host": "attacker.invalid",
+      },
+    });
+    expect(response.status).toBe(200);
+    await response.text();
+    expect(received).toMatchObject({ method, url: path, body: body ?? "" });
+    expect(received.headers["x-cks-fee-contract"]).toBe(expected);
+    expect(received.headers.cookie === "__Host-cksgo_launch=synthetic").toBe(
+      true,
+    );
+    expect(received.headers["x-cks-csrf"] === "synthetic-csrf").toBe(true);
+    expect(received.headers["idempotency-key"]).toBe("synthetic-key");
+    expect(received.headers.authorization).toBeUndefined();
+    expect(received.headers["x-forwarded-host"]).toBeUndefined();
+  });
+
   it("returns multiple Set-Cookie headers byte-for-byte, including launch security and deletion", async () => {
     const cookies = [
       "__Host-cksgo_launch=synthetic; HttpOnly; Secure; SameSite=Lax; Path=/",

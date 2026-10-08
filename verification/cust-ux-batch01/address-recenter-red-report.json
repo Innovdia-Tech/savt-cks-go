@@ -1,0 +1,1736 @@
+{
+  "task": "CUST-UX-BATCH01 address",
+  "phase": "RED",
+  "scope": "Actual main.tsx, authenticated customer session, API fixture, native location event shim, Google Map boundary shim; browser evidence only",
+  "physicalWebView": "PENDING",
+  "startedAt": "2026-10-07T16:10:51.356Z",
+  "checks": [
+    {
+      "name": "Home address entry and one successful location request at 320",
+      "status": "PASS",
+      "evidence": {
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/session",
+            "body": null,
+            "at": "2026-10-07T16:10:53.868Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:53.868Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/support",
+            "body": null,
+            "at": "2026-10-07T16:10:53.919Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:53.919Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me",
+            "body": null,
+            "at": "2026-10-07T16:10:53.919Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:53.919Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me/addresses",
+            "body": null,
+            "at": "2026-10-07T16:10:53.929Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:53.929Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/outlet-assignment",
+            "body": {
+              "customerAddressId": "22222222-2222-4222-8222-222222222222",
+              "addressRowVersion": 1
+            },
+            "at": "2026-10-07T16:10:53.934Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:53.934Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+            "body": null,
+            "at": "2026-10-07T16:10:53.940Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:53.940Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+            "body": null,
+            "at": "2026-10-07T16:10:53.941Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:53.941Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+            "body": null,
+            "at": "2026-10-07T16:10:53.949Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:53.950Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+            "body": null,
+            "at": "2026-10-07T16:10:53.950Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:53.950Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/location/reverse",
+            "body": {
+              "latitude": 5.92,
+              "longitude": 116.08
+            },
+            "at": "2026-10-07T16:10:54.749Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:54.749Z"
+          }
+        ],
+        "unexpectedRequests": [],
+        "errors": [],
+        "embedded": {
+          "native": [
+            {
+              "message": {
+                "type": "loaded"
+              },
+              "at": 702
+            },
+            {
+              "message": {
+                "type": "location-current",
+                "requestId": "71184c9d-47c6-4ce8-ac66-8089e024c2cf",
+                "protocolVersion": "1"
+              },
+              "at": 1023.0999999940395
+            }
+          ],
+          "maps": [
+            {
+              "center": {
+                "lat": 5.92,
+                "lng": 116.08
+              },
+              "at": 1067
+            }
+          ],
+          "replies": [
+            {
+              "detail": {
+                "protocolVersion": "1",
+                "requestId": "71184c9d-47c6-4ce8-ac66-8089e024c2cf",
+                "status": "ok",
+                "latitude": 5.92,
+                "longitude": 116.08,
+                "formattedAddress": "1 Example Street, Kota Kinabalu, Sabah",
+                "addressLine1": "1 Example Street",
+                "city": "Kota Kinabalu",
+                "state": "Sabah",
+                "postcode": "88000"
+              },
+              "at": 1063.9000000059605
+            }
+          ],
+          "dropped": [],
+          "recenters": []
+        }
+      }
+    },
+    {
+      "name": "Home address entry and one successful location request at 390",
+      "status": "PASS",
+      "evidence": {
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/session",
+            "body": null,
+            "at": "2026-10-07T16:10:55.151Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:55.151Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/support",
+            "body": null,
+            "at": "2026-10-07T16:10:55.202Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:55.202Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me",
+            "body": null,
+            "at": "2026-10-07T16:10:55.203Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:55.203Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me/addresses",
+            "body": null,
+            "at": "2026-10-07T16:10:55.213Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:55.213Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/outlet-assignment",
+            "body": {
+              "customerAddressId": "22222222-2222-4222-8222-222222222222",
+              "addressRowVersion": 1
+            },
+            "at": "2026-10-07T16:10:55.217Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:55.217Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+            "body": null,
+            "at": "2026-10-07T16:10:55.223Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:55.223Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+            "body": null,
+            "at": "2026-10-07T16:10:55.224Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:55.224Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+            "body": null,
+            "at": "2026-10-07T16:10:55.239Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:55.239Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+            "body": null,
+            "at": "2026-10-07T16:10:55.240Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:55.240Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/location/reverse",
+            "body": {
+              "latitude": 5.92,
+              "longitude": 116.08
+            },
+            "at": "2026-10-07T16:10:55.949Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:55.949Z"
+          }
+        ],
+        "unexpectedRequests": [],
+        "errors": [],
+        "embedded": {
+          "native": [
+            {
+              "message": {
+                "type": "loaded"
+              },
+              "at": 179.40000000596046
+            },
+            {
+              "message": {
+                "type": "location-current",
+                "requestId": "6d5e6df9-3aa4-4149-b5d4-b211e7934416",
+                "protocolVersion": "1"
+              },
+              "at": 412.1000000089407
+            }
+          ],
+          "maps": [
+            {
+              "center": {
+                "lat": 5.92,
+                "lng": 116.08
+              },
+              "at": 460.20000000298023
+            }
+          ],
+          "replies": [
+            {
+              "detail": {
+                "protocolVersion": "1",
+                "requestId": "6d5e6df9-3aa4-4149-b5d4-b211e7934416",
+                "status": "ok",
+                "latitude": 5.92,
+                "longitude": 116.08,
+                "formattedAddress": "1 Example Street, Kota Kinabalu, Sabah",
+                "addressLine1": "1 Example Street",
+                "city": "Kota Kinabalu",
+                "state": "Sabah",
+                "postcode": "88000"
+              },
+              "at": 457.1000000089407
+            }
+          ],
+          "dropped": [],
+          "recenters": []
+        }
+      }
+    },
+    {
+      "name": "Home address entry and one successful location request at 430",
+      "status": "PASS",
+      "evidence": {
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/session",
+            "body": null,
+            "at": "2026-10-07T16:10:56.361Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:56.361Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/support",
+            "body": null,
+            "at": "2026-10-07T16:10:56.410Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:56.410Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me",
+            "body": null,
+            "at": "2026-10-07T16:10:56.411Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:56.411Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me/addresses",
+            "body": null,
+            "at": "2026-10-07T16:10:56.420Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:56.420Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/outlet-assignment",
+            "body": {
+              "customerAddressId": "22222222-2222-4222-8222-222222222222",
+              "addressRowVersion": 1
+            },
+            "at": "2026-10-07T16:10:56.429Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:56.430Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+            "body": null,
+            "at": "2026-10-07T16:10:56.437Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:56.437Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+            "body": null,
+            "at": "2026-10-07T16:10:56.438Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:56.438Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+            "body": null,
+            "at": "2026-10-07T16:10:56.445Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:56.445Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+            "body": null,
+            "at": "2026-10-07T16:10:56.445Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:56.445Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/location/reverse",
+            "body": {
+              "latitude": 5.92,
+              "longitude": 116.08
+            },
+            "at": "2026-10-07T16:10:57.155Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:57.155Z"
+          }
+        ],
+        "unexpectedRequests": [],
+        "errors": [],
+        "embedded": {
+          "native": [
+            {
+              "message": {
+                "type": "loaded"
+              },
+              "at": 180.09999999403954
+            },
+            {
+              "message": {
+                "type": "location-current",
+                "requestId": "87a53b7b-287f-4052-a0f3-6f041dc8284f",
+                "protocolVersion": "1"
+              },
+              "at": 404.29999999701977
+            }
+          ],
+          "maps": [
+            {
+              "center": {
+                "lat": 5.92,
+                "lng": 116.08
+              },
+              "at": 451.79999999701977
+            }
+          ],
+          "replies": [
+            {
+              "detail": {
+                "protocolVersion": "1",
+                "requestId": "87a53b7b-287f-4052-a0f3-6f041dc8284f",
+                "status": "ok",
+                "latitude": 5.92,
+                "longitude": 116.08,
+                "formattedAddress": "1 Example Street, Kota Kinabalu, Sabah",
+                "addressLine1": "1 Example Street",
+                "city": "Kota Kinabalu",
+                "state": "Sabah",
+                "postcode": "88000"
+              },
+              "at": 448.70000000298023
+            }
+          ],
+          "dropped": [],
+          "recenters": []
+        }
+      }
+    },
+    {
+      "name": "Previously failed checkout address check does not appear on fresh address entry",
+      "status": "PASS",
+      "evidence": {
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/session",
+            "body": null,
+            "at": "2026-10-07T16:10:57.580Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:57.580Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/support",
+            "body": null,
+            "at": "2026-10-07T16:10:57.629Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:57.629Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me",
+            "body": null,
+            "at": "2026-10-07T16:10:57.629Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:57.630Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me/addresses",
+            "body": null,
+            "at": "2026-10-07T16:10:57.640Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:57.640Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/outlet-assignment",
+            "body": {
+              "customerAddressId": "22222222-2222-4222-8222-222222222222",
+              "addressRowVersion": 1
+            },
+            "at": "2026-10-07T16:10:57.646Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:57.646Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+            "body": null,
+            "at": "2026-10-07T16:10:57.654Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:57.654Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+            "body": null,
+            "at": "2026-10-07T16:10:57.655Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:57.655Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+            "body": null,
+            "at": "2026-10-07T16:10:57.662Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:57.662Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+            "body": null,
+            "at": "2026-10-07T16:10:57.662Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:57.662Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/outlet-assignment",
+            "body": {
+              "customerAddressId": "55555555-5555-4555-8555-555555555555",
+              "addressRowVersion": 1
+            },
+            "at": "2026-10-07T16:10:57.794Z",
+            "status": 409,
+            "completedAt": "2026-10-07T16:10:57.794Z"
+          }
+        ],
+        "unexpectedRequests": [],
+        "errors": [],
+        "embedded": {
+          "native": [
+            {
+              "message": {
+                "type": "loaded"
+              },
+              "at": 181.40000000596046
+            }
+          ],
+          "maps": [],
+          "replies": [],
+          "dropped": [],
+          "recenters": []
+        }
+      }
+    },
+    {
+      "name": "Saved address coordinates can open a map without GPS",
+      "status": "PASS",
+      "evidence": {
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/session",
+            "body": null,
+            "at": "2026-10-07T16:10:58.337Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:58.337Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/support",
+            "body": null,
+            "at": "2026-10-07T16:10:58.388Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:58.388Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me",
+            "body": null,
+            "at": "2026-10-07T16:10:58.388Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:58.388Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me/addresses",
+            "body": null,
+            "at": "2026-10-07T16:10:58.398Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:58.398Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/outlet-assignment",
+            "body": {
+              "customerAddressId": "22222222-2222-4222-8222-222222222222",
+              "addressRowVersion": 1
+            },
+            "at": "2026-10-07T16:10:58.403Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:58.403Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+            "body": null,
+            "at": "2026-10-07T16:10:58.415Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:58.415Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+            "body": null,
+            "at": "2026-10-07T16:10:58.415Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:58.415Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+            "body": null,
+            "at": "2026-10-07T16:10:58.420Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:58.420Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+            "body": null,
+            "at": "2026-10-07T16:10:58.420Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:58.420Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/location/reverse",
+            "body": {
+              "latitude": 5.92,
+              "longitude": 116.08
+            },
+            "at": "2026-10-07T16:10:59.130Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:59.130Z"
+          }
+        ],
+        "unexpectedRequests": [],
+        "errors": [],
+        "embedded": {
+          "native": [
+            {
+              "message": {
+                "type": "loaded"
+              },
+              "at": 185.5
+            }
+          ],
+          "maps": [
+            {
+              "center": {
+                "lat": 5.92,
+                "lng": 116.08
+              },
+              "at": 449.20000000298023
+            }
+          ],
+          "replies": [],
+          "dropped": [],
+          "recenters": []
+        }
+      }
+    },
+    {
+      "name": "Saved address without coordinates opens normal setup",
+      "status": "PASS",
+      "evidence": {
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/session",
+            "body": null,
+            "at": "2026-10-07T16:10:59.549Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:59.549Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/support",
+            "body": null,
+            "at": "2026-10-07T16:10:59.601Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:59.601Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me",
+            "body": null,
+            "at": "2026-10-07T16:10:59.601Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:59.601Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me/addresses",
+            "body": null,
+            "at": "2026-10-07T16:10:59.611Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:59.611Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/outlet-assignment",
+            "body": {
+              "customerAddressId": "22222222-2222-4222-8222-222222222222",
+              "addressRowVersion": 1
+            },
+            "at": "2026-10-07T16:10:59.616Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:59.616Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+            "body": null,
+            "at": "2026-10-07T16:10:59.622Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:59.622Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+            "body": null,
+            "at": "2026-10-07T16:10:59.623Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:59.623Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+            "body": null,
+            "at": "2026-10-07T16:10:59.634Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:59.634Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+            "body": null,
+            "at": "2026-10-07T16:10:59.634Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:10:59.634Z"
+          }
+        ],
+        "unexpectedRequests": [],
+        "errors": [],
+        "embedded": {
+          "native": [
+            {
+              "message": {
+                "type": "loaded"
+              },
+              "at": 188.40000000596046
+            }
+          ],
+          "maps": [],
+          "replies": [],
+          "dropped": [],
+          "recenters": []
+        }
+      }
+    },
+    {
+      "name": "A late ok GPS reply cannot replace a customer's newer Search location action",
+      "status": "PASS",
+      "evidence": {
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/session",
+            "body": null,
+            "at": "2026-10-07T16:11:00.225Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:00.225Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/support",
+            "body": null,
+            "at": "2026-10-07T16:11:00.275Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:00.275Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me",
+            "body": null,
+            "at": "2026-10-07T16:11:00.275Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:00.275Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me/addresses",
+            "body": null,
+            "at": "2026-10-07T16:11:00.284Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:00.284Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/outlet-assignment",
+            "body": {
+              "customerAddressId": "22222222-2222-4222-8222-222222222222",
+              "addressRowVersion": 1
+            },
+            "at": "2026-10-07T16:11:00.291Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:00.291Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+            "body": null,
+            "at": "2026-10-07T16:11:00.302Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:00.302Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+            "body": null,
+            "at": "2026-10-07T16:11:00.303Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:00.303Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+            "body": null,
+            "at": "2026-10-07T16:11:00.311Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:00.311Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+            "body": null,
+            "at": "2026-10-07T16:11:00.311Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:00.311Z"
+          }
+        ],
+        "unexpectedRequests": [],
+        "errors": [],
+        "embedded": {
+          "native": [
+            {
+              "message": {
+                "type": "loaded"
+              },
+              "at": 178.40000000596046
+            },
+            {
+              "message": {
+                "type": "location-current",
+                "requestId": "8a3a2204-647c-479a-9b84-afe9aca500e7",
+                "protocolVersion": "1"
+              },
+              "at": 405.59999999403954
+            }
+          ],
+          "maps": [],
+          "replies": [
+            {
+              "detail": {
+                "protocolVersion": "1",
+                "requestId": "8a3a2204-647c-479a-9b84-afe9aca500e7",
+                "status": "ok",
+                "latitude": 5.92,
+                "longitude": 116.08,
+                "formattedAddress": "1 Example Street, Kota Kinabalu, Sabah",
+                "addressLine1": "1 Example Street",
+                "city": "Kota Kinabalu",
+                "state": "Sabah",
+                "postcode": "88000"
+              },
+              "at": 1106.5999999940395
+            }
+          ],
+          "dropped": [],
+          "recenters": []
+        }
+      }
+    },
+    {
+      "name": "A late unavailable GPS reply cannot replace a customer's newer Search location action",
+      "status": "PASS",
+      "evidence": {
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/session",
+            "body": null,
+            "at": "2026-10-07T16:11:01.616Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:01.616Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/support",
+            "body": null,
+            "at": "2026-10-07T16:11:01.666Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:01.666Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me",
+            "body": null,
+            "at": "2026-10-07T16:11:01.667Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:01.667Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me/addresses",
+            "body": null,
+            "at": "2026-10-07T16:11:01.676Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:01.676Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/outlet-assignment",
+            "body": {
+              "customerAddressId": "22222222-2222-4222-8222-222222222222",
+              "addressRowVersion": 1
+            },
+            "at": "2026-10-07T16:11:01.681Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:01.681Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+            "body": null,
+            "at": "2026-10-07T16:11:01.688Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:01.688Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+            "body": null,
+            "at": "2026-10-07T16:11:01.689Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:01.689Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+            "body": null,
+            "at": "2026-10-07T16:11:01.698Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:01.698Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+            "body": null,
+            "at": "2026-10-07T16:11:01.698Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:01.698Z"
+          }
+        ],
+        "unexpectedRequests": [],
+        "errors": [],
+        "embedded": {
+          "native": [
+            {
+              "message": {
+                "type": "loaded"
+              },
+              "at": 182.29999999701977
+            },
+            {
+              "message": {
+                "type": "location-current",
+                "requestId": "339c715c-6289-467e-b856-5d26ff72d43d",
+                "protocolVersion": "1"
+              },
+              "at": 399
+            }
+          ],
+          "maps": [],
+          "replies": [
+            {
+              "detail": {
+                "protocolVersion": "1",
+                "requestId": "339c715c-6289-467e-b856-5d26ff72d43d",
+                "status": "unavailable",
+                "latitude": null,
+                "longitude": null,
+                "formattedAddress": null,
+                "addressLine1": null,
+                "city": null,
+                "state": null,
+                "postcode": null
+              },
+              "at": 1105.3999999910593
+            }
+          ],
+          "dropped": [],
+          "recenters": []
+        }
+      }
+    },
+    {
+      "name": "A late denied GPS reply cannot replace a customer's newer Search location action",
+      "status": "PASS",
+      "evidence": {
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/session",
+            "body": null,
+            "at": "2026-10-07T16:11:02.987Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:02.987Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/support",
+            "body": null,
+            "at": "2026-10-07T16:11:03.036Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:03.036Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me",
+            "body": null,
+            "at": "2026-10-07T16:11:03.036Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:03.036Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me/addresses",
+            "body": null,
+            "at": "2026-10-07T16:11:03.045Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:03.045Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/outlet-assignment",
+            "body": {
+              "customerAddressId": "22222222-2222-4222-8222-222222222222",
+              "addressRowVersion": 1
+            },
+            "at": "2026-10-07T16:11:03.050Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:03.050Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+            "body": null,
+            "at": "2026-10-07T16:11:03.055Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:03.055Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+            "body": null,
+            "at": "2026-10-07T16:11:03.055Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:03.055Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+            "body": null,
+            "at": "2026-10-07T16:11:03.069Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:03.069Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+            "body": null,
+            "at": "2026-10-07T16:11:03.070Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:03.070Z"
+          }
+        ],
+        "unexpectedRequests": [],
+        "errors": [],
+        "embedded": {
+          "native": [
+            {
+              "message": {
+                "type": "loaded"
+              },
+              "at": 176.90000000596046
+            },
+            {
+              "message": {
+                "type": "location-current",
+                "requestId": "73981c09-dc6d-4cb0-a4ff-172058de3610",
+                "protocolVersion": "1"
+              },
+              "at": 424
+            }
+          ],
+          "maps": [],
+          "replies": [
+            {
+              "detail": {
+                "protocolVersion": "1",
+                "requestId": "73981c09-dc6d-4cb0-a4ff-172058de3610",
+                "status": "denied",
+                "latitude": null,
+                "longitude": null,
+                "formattedAddress": null,
+                "addressLine1": null,
+                "city": null,
+                "state": null,
+                "postcode": null
+              },
+              "at": 1133.9000000059605
+            }
+          ],
+          "dropped": [],
+          "recenters": []
+        }
+      }
+    },
+    {
+      "name": "A genuine current-location failure remains visible without an automatic retry",
+      "status": "PASS",
+      "evidence": {
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/session",
+            "body": null,
+            "at": "2026-10-07T16:11:04.382Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:04.382Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/support",
+            "body": null,
+            "at": "2026-10-07T16:11:04.430Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:04.430Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me",
+            "body": null,
+            "at": "2026-10-07T16:11:04.430Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:04.430Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me/addresses",
+            "body": null,
+            "at": "2026-10-07T16:11:04.438Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:04.438Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/outlet-assignment",
+            "body": {
+              "customerAddressId": "22222222-2222-4222-8222-222222222222",
+              "addressRowVersion": 1
+            },
+            "at": "2026-10-07T16:11:04.446Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:04.446Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+            "body": null,
+            "at": "2026-10-07T16:11:04.453Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:04.453Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+            "body": null,
+            "at": "2026-10-07T16:11:04.454Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:04.454Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+            "body": null,
+            "at": "2026-10-07T16:11:04.459Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:04.459Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+            "body": null,
+            "at": "2026-10-07T16:11:04.459Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:04.459Z"
+          }
+        ],
+        "unexpectedRequests": [],
+        "errors": [],
+        "embedded": {
+          "native": [
+            {
+              "message": {
+                "type": "loaded"
+              },
+              "at": 171.1000000089407
+            },
+            {
+              "message": {
+                "type": "location-current",
+                "requestId": "06296b9e-06bd-47ff-b660-4eb4c1005e5e",
+                "protocolVersion": "1"
+              },
+              "at": 363.5
+            }
+          ],
+          "maps": [],
+          "replies": [
+            {
+              "detail": {
+                "protocolVersion": "1",
+                "requestId": "06296b9e-06bd-47ff-b660-4eb4c1005e5e",
+                "status": "unavailable",
+                "latitude": null,
+                "longitude": null,
+                "formattedAddress": null,
+                "addressLine1": null,
+                "city": null,
+                "state": null,
+                "postcode": null
+              },
+              "at": 404.70000000298023
+            }
+          ],
+          "dropped": [],
+          "recenters": []
+        }
+      }
+    },
+    {
+      "name": "Typing a newer search during a GPS request keeps search usable",
+      "status": "PASS",
+      "evidence": {
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/session",
+            "body": null,
+            "at": "2026-10-07T16:11:05.092Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:05.092Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/support",
+            "body": null,
+            "at": "2026-10-07T16:11:05.145Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:05.145Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me",
+            "body": null,
+            "at": "2026-10-07T16:11:05.145Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:05.145Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me/addresses",
+            "body": null,
+            "at": "2026-10-07T16:11:05.154Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:05.154Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/outlet-assignment",
+            "body": {
+              "customerAddressId": "22222222-2222-4222-8222-222222222222",
+              "addressRowVersion": 1
+            },
+            "at": "2026-10-07T16:11:05.160Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:05.160Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+            "body": null,
+            "at": "2026-10-07T16:11:05.172Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:05.172Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+            "body": null,
+            "at": "2026-10-07T16:11:05.173Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:05.173Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+            "body": null,
+            "at": "2026-10-07T16:11:05.179Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:05.179Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+            "body": null,
+            "at": "2026-10-07T16:11:05.180Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:05.180Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/location/search",
+            "body": {
+              "input": "New address",
+              "sessionToken": "7f154940-8d0f-4b49-a226-0138cc1e07a4",
+              "bias": {
+                "latitude": 5.92,
+                "longitude": 116.08
+              }
+            },
+            "at": "2026-10-07T16:11:05.671Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:05.671Z"
+          }
+        ],
+        "unexpectedRequests": [],
+        "errors": [],
+        "embedded": {
+          "native": [
+            {
+              "message": {
+                "type": "loaded"
+              },
+              "at": 166
+            },
+            {
+              "message": {
+                "type": "location-current",
+                "requestId": "c5c7377a-7867-4b2a-bbd5-049f86eb63da",
+                "protocolVersion": "1"
+              },
+              "at": 422.29999999701977
+            }
+          ],
+          "maps": [],
+          "replies": [
+            {
+              "detail": {
+                "protocolVersion": "1",
+                "requestId": "c5c7377a-7867-4b2a-bbd5-049f86eb63da",
+                "status": "ok",
+                "latitude": 5.92,
+                "longitude": 116.08,
+                "formattedAddress": "1 Example Street, Kota Kinabalu, Sabah",
+                "addressLine1": "1 Example Street",
+                "city": "Kota Kinabalu",
+                "state": "Sabah",
+                "postcode": "88000"
+              },
+              "at": 1136.2000000029802
+            }
+          ],
+          "dropped": [],
+          "recenters": []
+        }
+      }
+    },
+    {
+      "name": "Search stays available while only one native GPS request is outstanding",
+      "status": "PASS",
+      "evidence": {
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/session",
+            "body": null,
+            "at": "2026-10-07T16:11:06.516Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:06.516Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/support",
+            "body": null,
+            "at": "2026-10-07T16:11:06.565Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:06.565Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me",
+            "body": null,
+            "at": "2026-10-07T16:11:06.565Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:06.565Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me/addresses",
+            "body": null,
+            "at": "2026-10-07T16:11:06.574Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:06.574Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/outlet-assignment",
+            "body": {
+              "customerAddressId": "22222222-2222-4222-8222-222222222222",
+              "addressRowVersion": 1
+            },
+            "at": "2026-10-07T16:11:06.578Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:06.579Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+            "body": null,
+            "at": "2026-10-07T16:11:06.585Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:06.585Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+            "body": null,
+            "at": "2026-10-07T16:11:06.585Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:06.585Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+            "body": null,
+            "at": "2026-10-07T16:11:06.594Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:06.594Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+            "body": null,
+            "at": "2026-10-07T16:11:06.594Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:06.594Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/location/search",
+            "body": {
+              "input": "New address",
+              "sessionToken": "0878498b-7992-4e78-b07f-ebcadde7eaaf",
+              "bias": {
+                "latitude": 5.92,
+                "longitude": 116.08
+              }
+            },
+            "at": "2026-10-07T16:11:07.117Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:07.117Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/location/reverse",
+            "body": {
+              "latitude": 5.92,
+              "longitude": 116.08
+            },
+            "at": "2026-10-07T16:11:08.710Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:08.710Z"
+          }
+        ],
+        "unexpectedRequests": [],
+        "errors": [],
+        "embedded": {
+          "native": [
+            {
+              "message": {
+                "type": "loaded"
+              },
+              "at": 165.8999999910593
+            },
+            {
+              "message": {
+                "type": "location-current",
+                "requestId": "0a657acb-dba8-4588-817c-bfb68aaabd84",
+                "protocolVersion": "1"
+              },
+              "at": 377.09999999403954
+            },
+            {
+              "message": {
+                "type": "location-current",
+                "requestId": "73843bc0-078a-4327-900b-fefc9bff43b1",
+                "protocolVersion": "1"
+              },
+              "at": 1115.5999999940395
+            }
+          ],
+          "maps": [
+            {
+              "center": {
+                "lat": 5.92,
+                "lng": 116.08
+              },
+              "at": 1829.199999988079
+            }
+          ],
+          "replies": [
+            {
+              "detail": {
+                "protocolVersion": "1",
+                "requestId": "0a657acb-dba8-4588-817c-bfb68aaabd84",
+                "status": "ok",
+                "latitude": 5.92,
+                "longitude": 116.08,
+                "formattedAddress": "1 Example Street, Kota Kinabalu, Sabah",
+                "addressLine1": "1 Example Street",
+                "city": "Kota Kinabalu",
+                "state": "Sabah",
+                "postcode": "88000"
+              },
+              "at": 1078.199999988079
+            },
+            {
+              "detail": {
+                "protocolVersion": "1",
+                "requestId": "73843bc0-078a-4327-900b-fefc9bff43b1",
+                "status": "ok",
+                "latitude": 5.92,
+                "longitude": 116.08,
+                "formattedAddress": "1 Example Street, Kota Kinabalu, Sabah",
+                "addressLine1": "1 Example Street",
+                "city": "Kota Kinabalu",
+                "state": "Sabah",
+                "postcode": "88000"
+              },
+              "at": 1821.8999999910593
+            }
+          ],
+          "dropped": [],
+          "recenters": []
+        }
+      }
+    },
+    {
+      "name": "Recenter shares the outstanding GPS coordinate lookup after a newer search",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n2 !== 1\n",
+      "evidence": {
+        "requests": [
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/session",
+            "body": null,
+            "at": "2026-10-07T16:11:09.135Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:09.135Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/support",
+            "body": null,
+            "at": "2026-10-07T16:11:09.184Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:09.184Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me",
+            "body": null,
+            "at": "2026-10-07T16:11:09.184Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:09.184Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/me/addresses",
+            "body": null,
+            "at": "2026-10-07T16:11:09.195Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:09.195Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/outlet-assignment",
+            "body": {
+              "customerAddressId": "22222222-2222-4222-8222-222222222222",
+              "addressRowVersion": 1
+            },
+            "at": "2026-10-07T16:11:09.199Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:09.199Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/categories?page=1&pageSize=50",
+            "body": null,
+            "at": "2026-10-07T16:11:09.205Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:09.205Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24",
+            "body": null,
+            "at": "2026-10-07T16:11:09.205Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:09.205Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/advertisements?placement=HOME_HERO",
+            "body": null,
+            "at": "2026-10-07T16:11:09.215Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:09.215Z"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/customer/outlets/11111111-1111-4111-8111-111111111111/products?page=1&pageSize=24&featured=true",
+            "body": null,
+            "at": "2026-10-07T16:11:09.215Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:09.215Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/location/search",
+            "body": {
+              "input": "New address",
+              "sessionToken": "e7d04455-3b98-46cf-91fa-a300a7f841c7",
+              "bias": {
+                "latitude": 5.92,
+                "longitude": 116.08
+              }
+            },
+            "at": "2026-10-07T16:11:09.743Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:09.744Z"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/customer/location/resolve",
+            "body": {
+              "placeId": "fixture-place",
+              "sessionToken": "e7d04455-3b98-46cf-91fa-a300a7f841c7"
+            },
+            "at": "2026-10-07T16:11:10.289Z",
+            "status": 200,
+            "completedAt": "2026-10-07T16:11:10.289Z"
+          }
+        ],
+        "unexpectedRequests": [],
+        "errors": [],
+        "embedded": {
+          "native": [
+            {
+              "message": {
+                "type": "loaded"
+              },
+              "at": 172.29999999701977
+            },
+            {
+              "message": {
+                "type": "location-current",
+                "requestId": "6dc96bcf-70e7-4ccf-803f-e1369db0d824",
+                "protocolVersion": "1"
+              },
+              "at": 406
+            },
+            {
+              "message": {
+                "type": "location-current",
+                "requestId": "c4ede56c-0816-480c-8454-90b5f06c0dfc",
+                "protocolVersion": "1"
+              },
+              "at": 1370.7999999970198
+            }
+          ],
+          "maps": [
+            {
+              "center": {
+                "lat": 5.93,
+                "lng": 116.09
+              },
+              "at": 1323
+            }
+          ],
+          "replies": [],
+          "dropped": [
+            {
+              "type": "location-current",
+              "requestId": "c4ede56c-0816-480c-8454-90b5f06c0dfc",
+              "protocolVersion": "1"
+            }
+          ],
+          "recenters": []
+        }
+      }
+    }
+  ],
+  "errors": [],
+  "finishedAt": "2026-10-07T16:11:10.569Z",
+  "summary": {
+    "pass": 12,
+    "fail": 1,
+    "errors": 0
+  },
+  "sourceStage": "Intermediate dedicated GPS owner before sharing pending lookup with Recenter; thirteen-check matrix"
+}

@@ -22,7 +22,7 @@ async function setup(fetcher: typeof fetch, timeout = 100) {
 }
 
 describe("trusted quote HTTP boundary", () => {
-  it("sends only authoritative identifiers and quantities with CSRF and the supplied stable key", async () => {
+  it("sends authoritative identifiers and quantities with the fee contract, CSRF, and the supplied stable key", async () => {
     const fetcher = vi
       .fn<typeof fetch>()
       .mockResolvedValue(Response.json(quoteEnvelope()));
@@ -44,7 +44,9 @@ describe("trusted quote HTTP boundary", () => {
       "content-type",
       "idempotency-key",
       "x-cks-csrf",
+      "x-cks-fee-contract",
     ]);
+    expect(headers.get("X-CKS-Fee-Contract")).toBe("small-order-fee-v1");
     expect(headers.get("Idempotency-Key")).toBe(key);
     expect(headers.get("x-cks-csrf")).toMatch(/^[\w-]{43}$/);
     expect(headers.has("X-CKS-Assignment-Context")).toBe(false);
@@ -76,11 +78,14 @@ describe("trusted quote HTTP boundary", () => {
     [409, "CHECKOUT_OUTLET_PRODUCT_UNAVAILABLE"],
     [409, "CHECKOUT_INSUFFICIENT_STOCK"],
     [409, "CHECKOUT_OUTLET_ASSIGNMENT_MISMATCH"],
+    [409, "CHECKOUT_FEE_CONTRACT_UPGRADE_REQUIRED"],
+    [409, "CHECKOUT_PROCESSING_FEE_UNCONFIGURED"],
+    [409, "CHECKOUT_PROCESSING_FEE_INVALID"],
     [409, "CUSTOMER_ADDRESS_CHANGED"],
     [503, "CUSTOMER_ASSIGNMENT_INCOMPLETE"],
     [422, "CUSTOMER_NO_SERVICEABLE_OUTLET"],
   ])("maps safe %s %s without exposing backend text", async (status, code) => {
-    const { api } = await setup(
+    const { api, session } = await setup(
       vi
         .fn<typeof fetch>()
         .mockResolvedValue(
@@ -90,9 +95,13 @@ describe("trusted quote HTTP boundary", () => {
           ),
         ),
     );
+    const originalRequest = structuredClone(request);
+    const originalSession = session.getSnapshot();
     await expect(
       api.create(request, crypto.randomUUID()),
     ).rejects.toMatchObject({ code, message: code });
+    expect(request).toEqual(originalRequest);
+    expect(session.getSnapshot()).toEqual(originalSession);
   });
 
   it("expires the customer session on 401 even with a malformed body", async () => {

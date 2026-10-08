@@ -12,6 +12,29 @@ vi.mock("../checkout/context", () => ({ useCheckout: () => fixture.checkout }));
 import { DeliveryAddressPicker } from "./DeliveryAddressPicker";
 
 describe("delivery address picker", () => {
+  it("does not display a previous checkout transition error on fresh entry", () => {
+    fixture.customer = {
+      state: { addresses: [], listPhase: "ready" },
+      controller: { selectedAddress: () => undefined },
+    };
+    fixture.checkout = {
+      state: {
+        transitionPhase: "error",
+        transitionError: "CUSTOMER_ASSIGNMENT_INCOMPLETE",
+      },
+    };
+    const html = renderToStaticMarkup(
+      createElement(DeliveryAddressPicker, {
+        embeddedHost: true,
+        onDone: () => {},
+        onBack: () => {},
+        onManage: () => {},
+      }),
+    );
+    expect(html).toContain("Delivery address");
+    expect(html).not.toContain('role="alert"');
+    expect(html).not.toContain("We couldn&#x27;t use this address.");
+  });
   it("leaves page Back to Flutter while keeping standalone recovery", () => {
     fixture.customer = {
       state: { addresses: [], listPhase: "ready" },

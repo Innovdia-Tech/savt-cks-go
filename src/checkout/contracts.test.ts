@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { parseQuote } from "./contracts";
 import { id, quoteEnvelope } from "./test-fixtures";
+import {
+  acceptedProcessingFees,
+  rejectedProcessingFees,
+  smallOrderFee,
+} from "./processing-fee.test-fixtures";
 
 describe("trusted quote response contract", () => {
   it("parses authoritative lines, totals, timing, expiry and optional assignment evidence", () => {
@@ -36,7 +41,10 @@ describe("trusted quote response contract", () => {
     } = quoteEnvelope().data;
     data.processingFee.rate = "0.03";
 
-    expect(parseQuote({ data }).processingFee.rate).toBe("0.03");
+    const processingFee = parseQuote({ data }).processingFee;
+    if (processingFee.feeType !== "PERCENTAGE")
+      throw new Error("Expected percentage fee");
+    expect(processingFee.rate).toBe("0.03");
   });
 
   it.each(["0", "0.03", "0.0300", "1", "1.5"])(
@@ -44,7 +52,10 @@ describe("trusted quote response contract", () => {
     (rate) => {
       const value = quoteEnvelope();
       value.data.processingFee.rate = rate;
-      expect(parseQuote(value).processingFee.rate).toBe(rate);
+      const processingFee = parseQuote(value).processingFee;
+      if (processingFee.feeType !== "PERCENTAGE")
+        throw new Error("Expected percentage fee");
+      expect(processingFee.rate).toBe(rate);
     },
   );
 
@@ -115,5 +126,36 @@ describe("trusted quote response contract", () => {
     expect(() => parseQuote(value())).toThrow(
       "Invalid checkout quote response",
     );
+  });
+});
+
+describe("quote processing fee snapshots", () => {
+  it.each(acceptedProcessingFees)("accepts %s", (_name, processingFee) => {
+    const value = quoteEnvelope();
+    const parsed = parseQuote({ data: { ...value.data, processingFee } });
+    expect(parsed.processingFee).toEqual(processingFee);
+    expect(parsed.processingFeeMinor).toBe(42);
+    expect(parsed.grandTotalMinor).toBe(1432);
+  });
+
+  it.each(rejectedProcessingFees)("rejects %s", (_name, processingFee) => {
+    const value = quoteEnvelope();
+    expect(() =>
+      parseQuote({ data: { ...value.data, processingFee } }),
+    ).toThrow("Invalid checkout quote response");
+  });
+
+  it("retains the authoritative charge independently of the tier charge", () => {
+    const value = quoteEnvelope();
+    const parsed = parseQuote({
+      data: {
+        ...value.data,
+        processingFee: smallOrderFee(),
+        processingFeeMinor: 17,
+        grandTotalMinor: 1407,
+      },
+    });
+    expect(parsed.processingFeeMinor).toBe(17);
+    expect(parsed.grandTotalMinor).toBe(1407);
   });
 });

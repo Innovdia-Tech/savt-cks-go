@@ -291,6 +291,97 @@
   margin-top: 8px;
   color: var(--color-text-muted);
 }
+.small-order-fee-label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-1);
+}
+.small-order-fee-info {
+  display: inline-grid;
+  flex: 0 0 44px;
+  width: 44px;
+  min-height: 44px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-button);
+  background: transparent;
+  padding: 0;
+  color: var(--color-cks-primary);
+  font-size: var(--text-price);
+  cursor: pointer;
+}
+.small-order-fee-info:hover {
+  background: var(--color-cks-primary-soft);
+}
+.small-order-fee-info:active {
+  background: var(--color-surface-muted);
+}
+.small-order-fee-amount {
+  align-self: center;
+}
+.quote-totals .small-order-fee-helper {
+  grid-column: 1 / -1;
+  margin-top: -4px;
+  text-align: left;
+  color: var(--color-text-muted);
+  font-size: var(--text-supporting);
+  font-weight: 400;
+  line-height: 1.5;
+}
+.small-order-fee-helper > p {
+  margin: 0;
+}
+.small-order-fee-progress {
+  color: var(--color-cks-primary);
+  font-weight: 500;
+}
+.small-order-fee-sheet {
+  color: var(--color-text);
+  text-align: left;
+  font-size: var(--text-body);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.small-order-fee-sheet .ui-bottom-sheet__panel {
+  overflow-x: hidden;
+  padding-top: var(--space-5);
+}
+.small-order-fee-sheet header {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+}
+.small-order-fee-sheet header h2,
+.small-order-fee-sheet header strong {
+  min-width: 0;
+  font-size: var(--text-heading);
+  line-height: max(var(--leading-heading), 1.4em);
+  font-weight: 700;
+}
+.small-order-fee-sheet .ui-bottom-sheet__panel > p {
+  margin-top: var(--space-4);
+}
+.small-order-fee-details {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-5);
+}
+.small-order-fee-details dt {
+  color: var(--color-text-muted);
+}
+.small-order-fee-sheet .small-order-fee-details dd {
+  text-align: left;
+  font-size: var(--text-price);
+  font-weight: 600;
+}
+.small-order-fee-details dd + dt {
+  margin-top: var(--space-4);
+}
+.small-order-fee-sheet .customer-button {
+  width: 100%;
+  margin-top: var(--space-5);
+}
 .quote-grand {
   margin-top: 4px;
   color: var(--color-cks-primary);

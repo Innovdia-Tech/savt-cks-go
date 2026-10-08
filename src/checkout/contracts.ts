@@ -17,6 +17,28 @@ export type QuoteLine = {
 
 type RuleReference = { ruleId: string; version: number };
 
+export type ProcessingFee =
+  | {
+      enabled: boolean;
+      feeType: "PERCENTAGE" | "FIXED";
+      rate: string | null;
+      fixedAmountMinor: number | null;
+      minimumAmountMinor?: number | null;
+    }
+  | {
+      feeType: "SMALL_ORDER_TIERS";
+      policyKind: "SMALL_ORDER_TIERS";
+      enabled: boolean;
+      qualifyingAmountMinor: number;
+      matchedTier: {
+        fromMinor: number;
+        belowMinor: number;
+        chargeMinor: number;
+      } | null;
+      outcome: "CHARGED" | "ZERO_TIER" | "NO_MATCH" | "DISABLED";
+      feeFreeFromMinor: number | null;
+    };
+
 export type CheckoutQuote = {
   quoteId: string;
   quoteToken: string;
@@ -42,12 +64,7 @@ export type CheckoutQuote = {
   deliveryDiscountMinor: number;
   finalDeliveryChargeMinor: number;
   processingFeeBasisMinor: number;
-  processingFee: {
-    enabled: boolean;
-    feeType: "PERCENTAGE" | "FIXED";
-    rate: string | null;
-    fixedAmountMinor: number | null;
-  };
+  processingFee: ProcessingFee;
   processingFeeMinor: number;
   grandTotalMinor: number;
   ruleReferences: {
@@ -126,21 +143,65 @@ const line = (value: unknown): QuoteLine => {
   return { ...value } as QuoteLine;
 };
 
-const processing = (value: unknown): CheckoutQuote["processingFee"] => {
+export const parseProcessingFee = (
+  value: unknown,
+  invalid: () => never = fail,
+): ProcessingFee => {
+  if (!record(value)) return invalid();
+  if (value.feeType === "SMALL_ORDER_TIERS") {
+    if (
+      !exact(value, [
+        "feeType",
+        "policyKind",
+        "enabled",
+        "qualifyingAmountMinor",
+        "matchedTier",
+        "outcome",
+        "feeFreeFromMinor",
+      ]) ||
+      value.policyKind !== "SMALL_ORDER_TIERS" ||
+      typeof value.enabled !== "boolean" ||
+      !money(value.qualifyingAmountMinor) ||
+      typeof value.outcome !== "string" ||
+      !["CHARGED", "ZERO_TIER", "NO_MATCH", "DISABLED"].includes(
+        value.outcome,
+      ) ||
+      !nullableMoney(value.feeFreeFromMinor)
+    )
+      return invalid();
+    const tier = value.matchedTier;
+    if (
+      tier !== null &&
+      (!record(tier) ||
+        !exact(tier, ["fromMinor", "belowMinor", "chargeMinor"]) ||
+        !money(tier.fromMinor) ||
+        !integer(tier.belowMinor, 1) ||
+        !money(tier.chargeMinor))
+    )
+      return invalid();
+    return { ...value } as ProcessingFee;
+  }
+  const hasMinimum = Object.hasOwn(value, "minimumAmountMinor");
   if (
-    !record(value) ||
-    !exact(value, ["enabled", "feeType", "rate", "fixedAmountMinor"]) ||
+    !exact(value, [
+      "enabled",
+      "feeType",
+      "rate",
+      "fixedAmountMinor",
+      ...(hasMinimum ? ["minimumAmountMinor"] : []),
+    ]) ||
     typeof value.enabled !== "boolean" ||
-    !["PERCENTAGE", "FIXED"].includes(String(value.feeType)) ||
+    (value.feeType !== "PERCENTAGE" && value.feeType !== "FIXED") ||
     !(
       value.rate === null ||
       (typeof value.rate === "string" &&
         value.rate.length <= 32 &&
         /^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value.rate))
     ) ||
-    !nullableMoney(value.fixedAmountMinor)
+    !nullableMoney(value.fixedAmountMinor) ||
+    (hasMinimum && !nullableMoney(value.minimumAmountMinor))
   )
-    return fail();
+    return invalid();
   if (
     value.enabled &&
     ((value.feeType === "PERCENTAGE" &&
@@ -148,8 +209,8 @@ const processing = (value: unknown): CheckoutQuote["processingFee"] => {
       (value.feeType === "FIXED" &&
         (value.fixedAmountMinor === null || value.rate !== null)))
   )
-    return fail();
-  return { ...value } as CheckoutQuote["processingFee"];
+    return invalid();
+  return { ...value } as ProcessingFee;
 };
 
 const promotion = (value: unknown): Record<string, unknown> | null => {
@@ -288,7 +349,7 @@ export function parseQuote(value: unknown): CheckoutQuote {
     ])
   )
     return fail();
-  const processingFee = processing(data.processingFee);
+  const processingFee = parseProcessingFee(data.processingFee);
   if (
     !uuid(data.quoteId) ||
     !text(data.quoteToken, 4096) ||

@@ -40,6 +40,9 @@ const safeCodes = new Set([
   "CHECKOUT_ROUTE_DURATION_UNAVAILABLE",
   "CHECKOUT_SCHEDULED_DEFERRED",
   "CHECKOUT_MONEY_UNSAFE",
+  "CHECKOUT_FEE_CONTRACT_UPGRADE_REQUIRED",
+  "CHECKOUT_PROCESSING_FEE_UNCONFIGURED",
+  "CHECKOUT_PROCESSING_FEE_INVALID",
   "IDEMPOTENCY_KEY_REUSED",
   "IDEMPOTENCY_REQUEST_IN_PROGRESS",
   "IDEMPOTENCY_PREVIOUS_ATTEMPT_FAILED",
@@ -103,6 +106,7 @@ export class QuoteApi {
                 headers: {
                   Accept: "application/json",
                   "Content-Type": "application/json",
+                  "X-CKS-Fee-Contract": "small-order-fee-v1",
                   "Idempotency-Key": idempotencyKey,
                   "x-cks-csrf": csrf,
                 },

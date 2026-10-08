@@ -56,6 +56,108 @@ const controller = {
   confirmAddressChange: () => null,
 };
 
+const smallOrderQuote = (overrides: Record<string, unknown> = {}) => ({
+  ...quoteEnvelope().data,
+  processingFeeMinor: 200,
+  processingFee: {
+    feeType: "SMALL_ORDER_TIERS",
+    policyKind: "SMALL_ORDER_TIERS",
+    enabled: true,
+    qualifyingAmountMinor: 2220,
+    matchedTier: { fromMinor: 0, belowMinor: 3000, chargeMinor: 900 },
+    outcome: "CHARGED",
+    feeFreeFromMinor: 3000,
+    ...overrides,
+  },
+});
+
+const feeMarkup = (quote: unknown) =>
+  renderToStaticMarkup(
+    createElement(CartScreen, {
+      state: { ...base, quote, quotePhase: "ready" },
+      controller,
+      onBrowse: () => {},
+    } as never),
+  );
+
+describe("small order fee presentation from the frozen quote", () => {
+  it("preserves the legacy fee name and charged amount", () => {
+    const html = feeMarkup(quoteEnvelope().data);
+    expect(html).toMatch(/<dt>Processing fee<\/dt><dd>RM[^<]*0\.42/);
+    expect(html).not.toContain("About small order fee");
+  });
+
+  it("renders one small-order row with the authoritative charge and a labelled info button", () => {
+    const html = feeMarkup(smallOrderQuote());
+    expect(html).toMatch(/Small order fee[^]*?<\/dt><dd[^>]*>RM[^<]*2\.00/);
+    expect(html.match(/<dt[^>]*>Small order fee/g)).toHaveLength(1);
+    expect(html).not.toContain("Processing fee</dt>");
+    expect(html).toContain('aria-label="About small order fee"');
+    expect(html).not.toMatch(/<dialog[^>]* open/);
+  });
+
+  it("uses only the quoted qualifying amount and threshold for the compact helper", () => {
+    const html = feeMarkup(smallOrderQuote());
+    expect(html).toMatch(/RM[^<]*7\.80 to go for no small order fee/);
+    expect(html).toContain(
+      "Based on items total after discounts. Delivery is excluded.",
+    );
+    expect(html).not.toContain("21.00 to go");
+    expect(html).not.toContain("16.10 to go");
+  });
+
+  it.each([null, 2220, 2000])(
+    "does not invent a no-fee promise for threshold %s",
+    (feeFreeFromMinor) => {
+      const html = feeMarkup(smallOrderQuote({ feeFreeFromMinor }));
+      expect(html).not.toContain("to go for no small order fee");
+    },
+  );
+
+  it.each(["ZERO_TIER", "NO_MATCH"])(
+    "explains %s without a threshold promise",
+    (outcome) => {
+      const html = feeMarkup({
+        ...smallOrderQuote({ outcome }),
+        processingFeeMinor: 0,
+      });
+      expect(html).toContain("No small order fee for this order.");
+      expect(html).not.toContain("to go for no small order fee");
+    },
+  );
+
+  it("explains disabled policy without earned-savings language", () => {
+    const html = feeMarkup({
+      ...smallOrderQuote({ outcome: "DISABLED", enabled: false }),
+      processingFeeMinor: 0,
+    });
+    expect(html).toContain("Small order fee is currently not applied.");
+    expect(html).not.toMatch(/saved|reward|to go for no small order fee/i);
+  });
+
+  it.each([
+    "CHECKOUT_FEE_CONTRACT_UPGRADE_REQUIRED",
+    "CHECKOUT_PROCESSING_FEE_UNCONFIGURED",
+    "CHECKOUT_PROCESSING_FEE_INVALID",
+  ])("keeps the basket and shows safe recovery for %s", (error) => {
+    const html = renderToStaticMarkup(
+      createElement(CartScreen, {
+        state: { ...base, quotePhase: "error", error },
+        controller,
+        onBrowse: () => {},
+      } as never),
+    );
+    expect(html).toContain("We couldn&#x27;t confirm the checkout fee.");
+    expect(html).toContain(
+      "Your basket is still here. Refresh your total and try again.",
+    );
+    expect(html).toContain("Rice");
+    expect(html).toContain("Refresh total");
+    expect(html).not.toContain(error);
+    expect(html).not.toContain("Processing fee</dt>");
+  });
+});
+
 describe("real cart and trusted quote presentation", () => {
   it.each([
     "PENDING",

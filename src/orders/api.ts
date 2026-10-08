@@ -72,7 +72,10 @@ export class OrdersApi {
       return Promise.reject(new OrdersError("VALIDATION_FAILED"));
     return this.json(
       `/api/v1/customer/orders/${orderId}`,
-      { method: "GET" },
+      {
+        method: "GET",
+        headers: { "X-CKS-Fee-Contract": "small-order-fee-v1" },
+      },
       parseOrderDetail,
       external,
     );
