@@ -2,6 +2,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { CatalogueApp } from "./components";
+import { parseDetail } from "./contracts";
+import align02 from "../../verification/cat-cks-align02/handoff/serializer-fixtures.json";
 
 // Isolate presentation from session/network effects. Directory authority and
 // request fencing remain covered by the real controller tests.
@@ -142,17 +144,56 @@ it("preserves authoritative product detail content and its purchase action", () 
   ])
     expect(html).toContain(text);
   expect(html).toContain('src="https://catalogue.example.com/media/rice.jpg"');
-  expect(html).not.toContain('aria-labelledby="product-details-title"');
-  for (const retired of [
+  for (const text of [
+    "Item description",
     "Store in a cool, dry place.",
+    "Category",
+    "Pantry",
+    "Subcategory",
     "Rice and grains",
-    "Example brand",
-    "<dt>Unit</dt>",
-    "Room temperature",
   ])
+    expect(html).toContain(text);
+  for (const retired of ["Example brand", "<dt>Unit</dt>", "Room temperature"])
     expect(html).not.toContain(retired);
   expect(html).not.toContain("support-action");
 });
+
+it.each(["detail", "legacyDetail"] as const)(
+  "renders supplied ALIGN02 %s through the actual parser",
+  (key) => {
+    const detail = parseDetail(align02[key]);
+    fixture.catalogue.detail = detail;
+    window.location.hash = `#detail/${detail.data.outletProductId}`;
+    const html = render();
+    expect(html).toContain("Item description");
+    expect(html).toContain(detail.data.description!);
+    expect(html).toContain("Category");
+    expect(html).toContain("Subcategory");
+    if (key === "detail") {
+      for (const text of [
+        "000123",
+        "Approved Groceries",
+        "Rice",
+        "12.99",
+        "Add to Basket",
+      ])
+        expect(html).toContain(text);
+    } else {
+      expect(html.match(/Not available/g)).toHaveLength(2);
+      expect(html).not.toContain("Other");
+      expect(html).not.toContain("Barcode");
+    }
+    for (const field of [
+      "<dt>Brand</dt>",
+      "<dt>Unit</dt>",
+      "<dt>Pack Size</dt>",
+      "Storage Type",
+      "sourceCode",
+      "imageReference",
+    ])
+      expect(html).not.toContain(field);
+  },
+);
 
 it("describes featured products without claiming personalization or duplicating native chrome", () => {
   fixture.catalogue.featured = [

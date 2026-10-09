@@ -1220,6 +1220,40 @@ export function CatalogueApp({
                     </div>
                   </section>
                 )}
+                {route === "categories" &&
+                  state.categoryId &&
+                  state.subcategories?.length > 0 && (
+                    <section
+                      className="catalogue-subcategories"
+                      aria-labelledby="browse-subcategories-title"
+                    >
+                      <h2
+                        id="browse-subcategories-title"
+                        className="catalogue-browse-heading"
+                      >
+                        Shop by subcategory
+                      </h2>
+                      <div className="catalogue-categories">
+                        <button
+                          aria-pressed={!state.subcategoryId}
+                          onClick={() => void controller.subcategory()}
+                        >
+                          All in {selectedCategoryName}
+                        </button>
+                        {state.subcategories.map((child) => (
+                          <button
+                            key={child.id}
+                            aria-pressed={state.subcategoryId === child.id}
+                            onClick={() =>
+                              void controller.subcategory(child.id)
+                            }
+                          >
+                            {child.name}
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  )}
                 {state.phase !== "ready" ? (
                   <CatalogueStatus
                     supportWhatsApp={supportWhatsApp}
@@ -1241,6 +1275,23 @@ export function CatalogueApp({
                         <ItemBarcode barcode={p.barcode} />
                         <strong>{money(p.sellingPriceMinor)}</strong>
                         {p.availability !== "AVAILABLE" && <p>Unavailable</p>}
+                        <section
+                          className="catalogue-detail-metadata"
+                          aria-label="Product information"
+                        >
+                          <dl>
+                            <dt>Item description</dt>
+                            <dd>
+                              {p.description?.trim()
+                                ? p.description
+                                : "Not available"}
+                            </dd>
+                            <dt>Category</dt>
+                            <dd>{p.category?.name ?? "Not available"}</dd>
+                            <dt>Subcategory</dt>
+                            <dd>{p.subcategory?.name ?? "Not available"}</dd>
+                          </dl>
+                        </section>
                       </div>
                     </article>
                   )

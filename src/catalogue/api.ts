@@ -6,6 +6,7 @@ import { parseAdvertisements } from "./advertisements";
 import {
   parseAssignment,
   parseCategories,
+  parseSubcategories,
   parseProducts,
   parseDetail,
   type Assignment,
@@ -20,6 +21,7 @@ export type Filter = {
   page: number;
   q?: string;
   categoryId?: string;
+  subcategoryId?: string;
   featured?: boolean;
   productId?: string;
 };
@@ -95,6 +97,34 @@ export class CatalogueApi {
       signal,
     );
   }
+  subcategories(
+    a: Assignment,
+    categoryId: string,
+    filter: Filter = { page: 1 },
+    signal?: AbortSignal,
+  ) {
+    if (!uuid(categoryId))
+      return Promise.reject(new CatalogueError("VALIDATION_FAILED"));
+    return this.request(
+      this.path(a) +
+        "/categories/" +
+        categoryId +
+        "/subcategories?" +
+        this.query(filter, true),
+      (v) => parseSubcategories(v, categoryId),
+      a,
+      undefined,
+      signal,
+      true,
+    ).catch((error: unknown) => {
+      if (
+        error instanceof CatalogueError &&
+        error.code === "SUBCATEGORIES_UNSUPPORTED"
+      )
+        return null;
+      throw error;
+    });
+  }
   async products(a: Assignment, filter: Filter, signal?: AbortSignal) {
     return this.request(
       this.path(a) + "/products?" + this.query(filter),
@@ -126,6 +156,8 @@ export class CatalogueApi {
       f.page > 1000 ||
       (f.q !== undefined && f.q.length > 200) ||
       (f.categoryId !== undefined && !uuid(f.categoryId)) ||
+      (f.subcategoryId !== undefined &&
+        (!uuid(f.subcategoryId) || !f.categoryId)) ||
       (f.productId !== undefined && !uuid(f.productId)) ||
       (f.featured !== undefined && typeof f.featured !== "boolean")
     )
@@ -137,6 +169,7 @@ export class CatalogueApi {
     if (!categories) {
       if (f.q?.trim()) q.set("q", f.q.trim());
       if (f.categoryId) q.set("categoryId", f.categoryId);
+      if (f.subcategoryId) q.set("subcategoryId", f.subcategoryId);
       if (f.featured !== undefined) q.set("featured", String(f.featured));
       if (f.productId) q.set("productId", f.productId);
     }
@@ -148,6 +181,7 @@ export class CatalogueApi {
     assignment?: Assignment,
     body?: string,
     external?: AbortSignal,
+    optionalRoute = false,
   ): Promise<T> {
     try {
       return await this.session.withCredentials(async (token) => {
@@ -186,6 +220,10 @@ export class CatalogueApi {
           }
           if (response.status === 401)
             throw new ApiClientError("expired", "CUSTOMER_SESSION_INVALID");
+          // ALIGN01 has no child directory. Successful responses still pass
+          // the closed parser; only a missing endpoint falls back.
+          if (optionalRoute && response.status === 404)
+            throw new CatalogueError("SUBCATEGORIES_UNSUPPORTED");
           if (!response.ok) {
             let code = "INVALID_RESPONSE";
             try {
@@ -239,4 +277,4 @@ export type CataloguePort = Pick<
   CatalogueApi,
   "assign" | "categories" | "products" | "detail"
 > &
-  Partial<Pick<CatalogueApi, "advertisements">>;
+  Partial<Pick<CatalogueApi, "advertisements" | "subcategories">>;

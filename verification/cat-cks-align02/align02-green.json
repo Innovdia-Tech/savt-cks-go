@@ -1,0 +1,220 @@
+{
+  "numTotalTestSuites": 1,
+  "numPassedTestSuites": 1,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 20,
+  "numPassedTests": 20,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1791538796995,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "parses the unchanged mapped and historical-null serializer details",
+          "status": "passed",
+          "title": "parses the unchanged mapped and historical-null serializer details",
+          "duration": 5.152600000000007,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "parses a closed parent-scoped child directory without deriving labels",
+          "status": "passed",
+          "title": "parses a closed parent-scoped child directory without deriving labels",
+          "duration": 0.9144000000000005,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "rejects malformed child directory: parent",
+          "status": "passed",
+          "title": "rejects malformed child directory: parent",
+          "duration": 1.4003000000000156,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "rejects malformed child directory: extra",
+          "status": "passed",
+          "title": "rejects malformed child directory: extra",
+          "duration": 0.3751999999999498,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "rejects malformed child directory: missing",
+          "status": "passed",
+          "title": "rejects malformed child directory: missing",
+          "duration": 0.5445999999999458,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "rejects malformed child directory: numeric-code",
+          "status": "passed",
+          "title": "rejects malformed child directory: numeric-code",
+          "duration": 0.5757999999999583,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "rejects malformed child directory: duplicate",
+          "status": "passed",
+          "title": "rejects malformed child directory: duplicate",
+          "duration": 0.40639999999996235,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "requests children and filters products with both authoritative IDs",
+          "status": "passed",
+          "title": "requests children and filters products with both authoritative IDs",
+          "duration": 12.690599999999904,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "falls back only for ALIGN01's missing child route, rejecting malformed success",
+          "status": "passed",
+          "title": "falls back only for ALIGN01's missing child route, rejecting malformed success",
+          "duration": 1.9705000000000155,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "keeps child filtering through detail/back and clears it on parent/all changes",
+          "status": "passed",
+          "title": "keeps child filtering through detail/back and clears it on parent/all changes",
+          "duration": 4.56110000000001,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "keeps category browsing on ALIGN01 without inventing children",
+          "status": "passed",
+          "title": "keeps category browsing on ALIGN01 without inventing children",
+          "duration": 0.885599999999954,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "opens a product truthfully even when its former child directory is no longer available",
+          "status": "passed",
+          "title": "opens a product truthfully even when its former child directory is no longer available",
+          "duration": 0.9371999999999616,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "fences stale child directories after a parent switch",
+          "status": "passed",
+          "title": "fences stale child directories after a parent switch",
+          "duration": 0.9490000000000691,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "rejects child selection outside its approved parent without a request",
+          "status": "passed",
+          "title": "rejects child selection outside its approved parent without a request",
+          "duration": 0.5366999999999962,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "does not hide a child endpoint failure (400) as ALIGN01 compatibility",
+          "status": "passed",
+          "title": "does not hide a child endpoint failure (400) as ALIGN01 compatibility",
+          "duration": 1.1280000000000427,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "does not hide a child endpoint failure (401) as ALIGN01 compatibility",
+          "status": "passed",
+          "title": "does not hide a child endpoint failure (401) as ALIGN01 compatibility",
+          "duration": 1.327099999999973,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "does not hide a child endpoint failure (500) as ALIGN01 compatibility",
+          "status": "passed",
+          "title": "does not hide a child endpoint failure (500) as ALIGN01 compatibility",
+          "duration": 1.358000000000061,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "clears child state when the assignment expires",
+          "status": "passed",
+          "title": "clears child state when the assignment expires",
+          "duration": 5.016099999999938,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "accumulates parent-scoped children across directory pages",
+          "status": "passed",
+          "title": "accumulates parent-scoped children across directory pages",
+          "duration": 1.401299999999992,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "rejects products outside the selected child instead of showing a misleading match",
+          "status": "passed",
+          "title": "rejects products outside the selected child instead of showing a misleading match",
+          "duration": 1.4056000000000495,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1791538798628,
+      "endTime": 1791538798672.4055,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/isaac/Documents/ChatGPT/CKS GO/exports/fe-final01/customer-cat-cks-align02/src/catalogue/align02.test.ts"
+    }
+  ]
+}

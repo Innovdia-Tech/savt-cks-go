@@ -18,6 +18,7 @@ export type Assignment = {
 };
 export type Category = { id: string; name: string };
 export type CustomerCategory = Category & { code: string };
+export type CustomerSubcategory = CustomerCategory & { categoryId: string };
 export type Product = {
   productId: string;
   outletProductId: string;
@@ -250,6 +251,25 @@ function page<T>(
 }
 export const parseCategories = (v: unknown): Page<CustomerCategory> =>
   page(v, 100, customerCategory, (d) => d.id);
+export function parseSubcategories(
+  v: unknown,
+  categoryId: string,
+): Page<CustomerSubcategory> {
+  if (!uuid(categoryId)) return fail();
+  return page(
+    v,
+    100,
+    (value) => {
+      const d = obj(value, ["id", "categoryId", "code", "name"]);
+      if (d.categoryId !== categoryId) return fail();
+      return {
+        ...customerCategory({ id: d.id, code: d.code, name: d.name }),
+        categoryId,
+      };
+    },
+    (d) => d.id,
+  );
+}
 export const parseProducts = (v: unknown): Page<Product> => {
   const result = page(
     v,

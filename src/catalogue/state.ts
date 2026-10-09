@@ -4,6 +4,7 @@ import type { Advertisement, AdvertisementAction } from "./advertisements";
 import type {
   Assignment,
   CustomerCategory,
+  CustomerSubcategory,
   Product,
   DetailEnvelope,
   DetailMeta,
@@ -31,6 +32,8 @@ export type CatalogueState = {
   assignment: Assignment | null;
   categories: CustomerCategory[];
   homeCategories: CustomerCategory[];
+  subcategories: CustomerSubcategory[];
+  subcategoryId?: string;
   categoryPage: number;
   categoryHasNext: boolean;
   products: Page<Product> | null;
@@ -49,6 +52,7 @@ const empty = (): CatalogueState => ({
   assignment: null,
   categories: [],
   homeCategories: [],
+  subcategories: [],
   categoryPage: 1,
   categoryHasNext: false,
   products: null,
@@ -142,6 +146,8 @@ export class CatalogueController {
   ) {
     this.update({
       categoryId,
+      subcategoryId: undefined,
+      subcategories: [],
       q,
       categoryPage,
       page: 1,
@@ -154,6 +160,8 @@ export class CatalogueController {
     this.update({
       q: "",
       categoryId: undefined,
+      subcategoryId: undefined,
+      subcategories: [],
       page: 1,
       detail: null,
       detailId: undefined,
@@ -163,6 +171,20 @@ export class CatalogueController {
   nextPage(page: number) {
     if (page < 1 || page > 1000) return Promise.resolve();
     this.update({ page, detail: null, detailId: undefined });
+    return this.load();
+  }
+  subcategory(subcategoryId?: string) {
+    if (
+      !this.state.categoryId ||
+      (subcategoryId &&
+        !this.state.subcategories.some(
+          (child) =>
+            child.id === subcategoryId &&
+            child.categoryId === this.state.categoryId,
+        ))
+    )
+      return Promise.resolve(false);
+    this.update({ subcategoryId, page: 1, detail: null, detailId: undefined });
     return this.load();
   }
   categoryPage(page: number) {
@@ -296,6 +318,8 @@ export class CatalogueController {
           detail: null,
           categories: [],
           homeCategories: [],
+          subcategories: [],
+          subcategoryId: undefined,
           page: 1,
           error: "CUSTOMER_ASSIGNMENT_CONTEXT_EXPIRED",
         });
@@ -311,6 +335,39 @@ export class CatalogueController {
       throw new CatalogueError("INVALID_RESPONSE");
     if (Date.parse(a.expiresAt) <= this.now())
       throw new CatalogueError("CUSTOMER_ASSIGNMENT_CONTEXT_EXPIRED");
+  }
+  private async loadSubcategories(
+    a: Assignment,
+    categoryId: string | undefined,
+    signal: AbortSignal,
+  ) {
+    if (!categoryId || !this.api.subcategories) return [];
+    const children: CustomerSubcategory[] = [];
+    let page = 1;
+    let pageSize: number | undefined;
+    while (page <= 1000) {
+      const result = await this.api.subcategories(
+        a,
+        categoryId,
+        { page },
+        signal,
+      );
+      if (result === null) return [];
+      this.validateMeta(result.meta, a);
+      if (
+        result.meta.page !== page ||
+        (pageSize !== undefined && result.meta.pageSize !== pageSize) ||
+        result.data.some((child) => child.categoryId !== categoryId)
+      )
+        throw new CatalogueError("INVALID_RESPONSE");
+      pageSize = result.meta.pageSize;
+      children.push(...result.data);
+      if (new Set(children.map((child) => child.id)).size !== children.length)
+        throw new CatalogueError("INVALID_RESPONSE");
+      if (!result.meta.hasNextPage) return children;
+      page++;
+    }
+    throw new CatalogueError("INVALID_RESPONSE");
   }
   private async load(background = false): Promise<boolean> {
     const binding = this.binding;
@@ -350,6 +407,7 @@ export class CatalogueController {
               detail: null,
               categories: [],
               homeCategories: [],
+              subcategories: [],
               page: 1,
               categoryPage: 1,
               error: null,
@@ -380,13 +438,19 @@ export class CatalogueController {
           page: this.state.page,
           q: this.state.q,
           categoryId: this.state.categoryId,
+          ...(this.state.subcategoryId
+            ? { subcategoryId: this.state.subcategoryId }
+            : {}),
         };
         const detailId = this.state.detailId;
-        const [categories, result] = await Promise.all([
+        const [categories, result, subcategories] = await Promise.all([
           this.api.categories(a, { page: this.state.categoryPage }, signal),
           detailId
             ? this.api.detail(a, detailId, signal)
             : this.api.products(a, filter, signal),
+          detailId
+            ? Promise.resolve(this.state.subcategories)
+            : this.loadSubcategories(a, filter.categoryId, signal),
         ]);
         if (!current()) return false;
         this.validateMeta(categories.meta, a);
@@ -397,6 +461,16 @@ export class CatalogueController {
         )
           throw new CatalogueError("INVALID_RESPONSE");
         if (!detailId && (result as Page<Product>).meta.page !== filter.page)
+          throw new CatalogueError("INVALID_RESPONSE");
+        if (
+          !detailId &&
+          filter.subcategoryId &&
+          (result as Page<Product>).data.some(
+            (product) =>
+              product.category?.id !== filter.categoryId ||
+              product.subcategory?.id !== filter.subcategoryId,
+          )
+        )
           throw new CatalogueError("INVALID_RESPONSE");
         let homeDirectory = categories.data;
         if (this.state.categoryPage === 1) {
@@ -423,6 +497,7 @@ export class CatalogueController {
         this.update({
           phase: "ready",
           categories: categories.data,
+          subcategories,
           ...(this.state.categoryPage === 1
             ? { homeCategories: homeDirectory }
             : {}),
@@ -456,6 +531,8 @@ export class CatalogueController {
             assignment: null,
             categories: [],
             homeCategories: [],
+            subcategories: [],
+            subcategoryId: undefined,
             products: null,
             featured: [],
             advertisements: [],
@@ -492,6 +569,7 @@ export class CatalogueController {
           detail: null,
           categories: [],
           homeCategories: [],
+          subcategories: [],
           ...(code === "CUSTOMER_NO_SERVICEABLE_OUTLET" ||
           renewCodes.includes(code) ||
           code === "CUSTOMER_SESSION_INVALID" ||
