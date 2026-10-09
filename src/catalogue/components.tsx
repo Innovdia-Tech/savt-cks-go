@@ -1,4 +1,5 @@
 import { guardHistoryNavigation } from "./navigation";
+import { ItemBarcode } from "../components/ItemBarcode";
 import { useSupportWhatsApp } from "../support/context";
 import { SupportAction } from "../support/SupportAction";
 import { useEffect, useRef, useState } from "react";
@@ -18,11 +19,7 @@ import { useCustomer } from "../customer/context";
 import { useCatalogue } from "./context";
 import type { Product } from "./contracts";
 import type { CatalogueState } from "./state";
-import {
-  homeCategories,
-  homeCategoryArtwork,
-  productStorageLabel,
-} from "./shopping";
+import { homeCategories, homeCategoryArtwork } from "./shopping";
 import type { Screen } from "../types";
 import { useCheckout } from "../checkout/context";
 import { cartMerchandiseSummary } from "../checkout/state";
@@ -172,9 +169,7 @@ export function ProductTile({
       >
         <ProductImage url={product.imageUrl} name={product.name} />
         <span className="catalogue-name">{product.name}</span>
-        <span className="catalogue-unit">
-          {product.packSize || product.uom.name}
-        </span>
+        <ItemBarcode barcode={product.barcode} />
         {variant === "list" && (
           <span className="catalogue-price-row">
             <strong className="catalogue-price">
@@ -1243,43 +1238,10 @@ export function CatalogueApp({
                       <ProductImage url={p.imageUrl} name={p.name} />
                       <div className="catalogue-detail-info">
                         <h2>{p.name}</h2>
-                        <p className="catalogue-detail-unit">
-                          {p.packSize || p.uom.name}
-                        </p>
+                        <ItemBarcode barcode={p.barcode} />
                         <strong>{money(p.sellingPriceMinor)}</strong>
                         {p.availability !== "AVAILABLE" && <p>Unavailable</p>}
-                        {p.description && (
-                          <p className="catalogue-detail-description">
-                            {p.description}
-                          </p>
-                        )}
                       </div>
-                      <section
-                        className="catalogue-detail-metadata"
-                        aria-labelledby="product-details-title"
-                      >
-                        <h3 id="product-details-title">Product details</h3>
-                        <dl>
-                          <dt>Category</dt>
-                          <dd>{p.category.name}</dd>
-                          {p.subcategory && (
-                            <>
-                              <dt>Subcategory</dt>
-                              <dd>{p.subcategory.name}</dd>
-                            </>
-                          )}
-                          {p.brand && (
-                            <>
-                              <dt>Brand</dt>
-                              <dd>{p.brand.name}</dd>
-                            </>
-                          )}
-                          <dt>Unit</dt>
-                          <dd>{p.uom.name}</dd>
-                          <dt>Storage</dt>
-                          <dd>{productStorageLabel(p.storageType)}</dd>
-                        </dl>
-                      </section>
                     </article>
                   )
                 ) : route === "home" ? (

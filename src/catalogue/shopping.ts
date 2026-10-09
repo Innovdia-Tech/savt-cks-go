@@ -5,7 +5,9 @@ import frozen from "../assets/categories/frozen.webp";
 import beverages from "../assets/categories/beverages.webp";
 
 const preferred = ["001", "002", "003", "004"];
-export function productStorageLabel(storage: Detail["storageType"]): string {
+export function productStorageLabel(
+  storage: NonNullable<Detail["storageType"]>,
+): string {
   return { AMBIENT: "Room temperature", CHILLED: "Chilled", FROZEN: "Frozen" }[
     storage
   ];

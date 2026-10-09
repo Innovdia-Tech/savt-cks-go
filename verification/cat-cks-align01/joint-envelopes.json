@@ -1,0 +1,436 @@
+{
+  "synthetic": true,
+  "catalogue": {
+    "data": [
+      {
+        "productId": "962e78d8-7f92-4c20-9131-7a4d38fab9c9",
+        "outletProductId": "9f94dabe-b30e-4071-a4df-9a1f69c0ee78",
+        "name": "M07A product",
+        "imageUrl": null,
+        "barcode": null,
+        "category": {
+          "id": "39b53892-b053-4775-8abc-e4f8f753bcba",
+          "name": "M07A category a8b3aff3"
+        },
+        "subcategory": null,
+        "brand": null,
+        "uom": {
+          "code": "M07A-a8b3aff3",
+          "name": "Carton"
+        },
+        "packSize": null,
+        "sellingPriceMinor": 500,
+        "currency": "MYR",
+        "availability": "AVAILABLE"
+      },
+      {
+        "productId": "cec44829-2ab9-4ee5-a8fc-ca7ffc894baa",
+        "outletProductId": "ab79ef05-b70e-48c6-b2c9-12ce89240e57",
+        "name": "Synthetic CKS minimal Item description",
+        "imageUrl": null,
+        "barcode": "0001234567890",
+        "category": null,
+        "subcategory": null,
+        "brand": null,
+        "uom": null,
+        "packSize": null,
+        "sellingPriceMinor": 1299,
+        "currency": "MYR",
+        "availability": "AVAILABLE"
+      }
+    ],
+    "meta": {
+      "page": 1,
+      "pageSize": 24,
+      "total": 2,
+      "hasNextPage": false,
+      "outlet": {
+        "id": "23bade31-d29b-455d-9b05-e5c1dec95d58",
+        "displayReference": "M07A-a8b3aff3-A",
+        "displayName": "M07A outlet a8b3aff3",
+        "status": "ACTIVE",
+        "operatingState": "ONLINE",
+        "availability": "AVAILABLE"
+      },
+      "assignmentContextExpiresAt": "2026-10-08T02:05:00.000Z",
+      "asOf": "2026-10-08T02:00:00.000Z"
+    }
+  },
+  "detail": {
+    "data": {
+      "productId": "cec44829-2ab9-4ee5-a8fc-ca7ffc894baa",
+      "outletProductId": "ab79ef05-b70e-48c6-b2c9-12ce89240e57",
+      "name": "Synthetic CKS minimal Item description",
+      "imageUrl": null,
+      "barcode": "0001234567890",
+      "category": null,
+      "subcategory": null,
+      "brand": null,
+      "uom": null,
+      "packSize": null,
+      "sellingPriceMinor": 1299,
+      "currency": "MYR",
+      "availability": "AVAILABLE",
+      "description": "Synthetic CKS minimal Item description",
+      "storageType": null
+    },
+    "meta": {
+      "outlet": {
+        "id": "23bade31-d29b-455d-9b05-e5c1dec95d58",
+        "displayReference": "M07A-a8b3aff3-A",
+        "displayName": "M07A outlet a8b3aff3",
+        "status": "ACTIVE",
+        "operatingState": "ONLINE",
+        "availability": "AVAILABLE"
+      },
+      "assignmentContextExpiresAt": "2026-10-08T02:05:00.000Z",
+      "asOf": "2026-10-08T02:00:00.000Z"
+    }
+  },
+  "quote": {
+    "quoteId": "21f3e18c-dba6-410e-915a-8f97030e8e34",
+    "currency": "MYR",
+    "items": [
+      {
+        "outletProductId": "ab79ef05-b70e-48c6-b2c9-12ce89240e57",
+        "productId": "cec44829-2ab9-4ee5-a8fc-ca7ffc894baa",
+        "skuCode": "SYNTHETIC-JOINT-a8b3aff3",
+        "productNameSnapshot": "Synthetic CKS minimal Item description",
+        "uomCodeSnapshot": null,
+        "uomNameSnapshot": null,
+        "quantity": 2,
+        "unitPriceMinor": 1299,
+        "lineSubtotalMinor": 2598,
+        "barcodeSnapshot": "0001234567890"
+      },
+      {
+        "outletProductId": "9f94dabe-b30e-4071-a4df-9a1f69c0ee78",
+        "productId": "962e78d8-7f92-4c20-9131-7a4d38fab9c9",
+        "skuCode": "M07A-a8b3aff3",
+        "productNameSnapshot": "M07A product",
+        "uomCodeSnapshot": "M07A-a8b3aff3",
+        "uomNameSnapshot": "Carton",
+        "quantity": 1,
+        "unitPriceMinor": 500,
+        "lineSubtotalMinor": 500,
+        "barcodeSnapshot": null
+      }
+    ],
+    "itemsSubtotalMinor": 3098,
+    "discountAmountMinor": 0,
+    "baseDeliveryFeeMinor": 500,
+    "deliveryDiscountMinor": 0,
+    "processingFeeMinor": 108,
+    "netItemsTotalMinor": 3098,
+    "finalDeliveryChargeMinor": 500,
+    "processingFeeBasisMinor": 3598,
+    "grandTotalMinor": 3706,
+    "routeDistanceMeters": 3500,
+    "distanceKm": 3.5,
+    "routeDurationSeconds": 840,
+    "distanceProvider": "GOOGLE_ROUTES",
+    "deliveryBandId": "a4ac85e3-c96a-437e-89d9-b996f8eb571f",
+    "deliverySlaMinutes": 25,
+    "preparationTargetMinutes": 30,
+    "minimumTravelSlaMinutes": 20,
+    "operationalAllowanceMinutes": 10,
+    "roundingIntervalMinutes": 5,
+    "googleEstimatedTravelMinutes": 14,
+    "committedTravelSlaMinutes": 25,
+    "estimatedTotalOrderMinutes": 55,
+    "processingFee": {
+      "enabled": true,
+      "feeType": "PERCENTAGE",
+      "rate": "0.03",
+      "fixedAmountMinor": null,
+      "minimumAmountMinor": null
+    },
+    "ruleReferences": {
+      "scheduling": {
+        "ruleId": "a5ca0358-2a08-452b-888a-6cb5ed05b90f",
+        "version": 1
+      },
+      "deliveryPricing": {
+        "ruleId": "300b44af-9767-42d5-9959-83132cfecb40",
+        "version": 1
+      },
+      "deliveryTiming": {
+        "ruleId": "692689fe-5e48-42cc-a167-248685a4649d",
+        "version": 1
+      },
+      "freeDelivery": null,
+      "processingFee": {
+        "ruleId": "48e84a2e-ee26-4f77-8864-ecd3cff32b12",
+        "version": 1
+      },
+      "refundPolicy": {
+        "ruleId": "9eae52b1-770f-4e81-8836-8542e3f7a6d6",
+        "version": 1
+      }
+    },
+    "deliveryPromotion": null,
+    "savtVoucher": null,
+    "quoteIssuedAt": "2026-10-08T02:00:00.000Z",
+    "quoteExpiresAt": "2026-10-08T02:10:00.000Z",
+    "quoteToken": "SYNTHETIC-NONFUNCTIONAL-QUOTE-TOKEN"
+  },
+  "orderBeforeMasterEdit": {
+    "orderId": "a940ccdb-bc2a-44be-834c-960144c69b2c",
+    "orderNumber": "CKSGO-20261008-00001",
+    "createdAt": "2026-10-08T02:00:00.000Z",
+    "updatedAt": "2026-10-08T02:00:00.000Z",
+    "customerStage": "ORDER_RECEIVED",
+    "paymentStatus": "PAID",
+    "cancellationKind": null,
+    "operationalFailure": null,
+    "outletId": "23bade31-d29b-455d-9b05-e5c1dec95d58",
+    "outletName": "M07A outlet a8b3aff3",
+    "canCancel": false,
+    "items": [
+      {
+        "orderItemId": "a3081379-5806-4ab8-a238-aca284a27744",
+        "skuCode": "M07A-a8b3aff3",
+        "productName": "M07A product",
+        "uomCode": "M07A-a8b3aff3",
+        "uomName": "Carton",
+        "orderedQuantity": 1,
+        "fulfilledQuantity": null,
+        "unavailableQuantity": null,
+        "unitPriceMinor": 500,
+        "discountMinor": 0,
+        "lineTotalMinor": 500,
+        "barcode": null
+      },
+      {
+        "orderItemId": "4649fd18-2f46-41d5-acd8-fdb541b7d1e2",
+        "skuCode": "SYNTHETIC-JOINT-a8b3aff3",
+        "productName": "Synthetic CKS minimal Item description",
+        "uomCode": null,
+        "uomName": null,
+        "orderedQuantity": 2,
+        "fulfilledQuantity": null,
+        "unavailableQuantity": null,
+        "unitPriceMinor": 1299,
+        "discountMinor": 0,
+        "lineTotalMinor": 2598,
+        "barcode": "0001234567890"
+      }
+    ],
+    "fulfilment": {
+      "fulfilmentConfirmed": false,
+      "confirmedAt": null
+    },
+    "money": {
+      "processingFee": {
+        "enabled": true,
+        "feeType": "PERCENTAGE",
+        "rate": "0.03",
+        "fixedAmountMinor": null,
+        "minimumAmountMinor": null
+      },
+      "itemsSubtotalMinor": 3098,
+      "discountAmountMinor": 0,
+      "netItemsTotalMinor": 3098,
+      "finalDeliveryChargeMinor": 500,
+      "processingFeeMinor": 108,
+      "grandTotalMinor": 3706,
+      "currency": "MYR"
+    },
+    "destination": {
+      "recipientName": "Synthetic Customer",
+      "recipientPhoneE164": null,
+      "addressLine1": "Synthetic Joint Verification Address",
+      "addressLine2": null,
+      "city": "Kota Kinabalu",
+      "state": "Sabah",
+      "postcode": "88000",
+      "instructions": null
+    },
+    "delivery": {
+      "deliveryType": "NOW",
+      "currentState": null,
+      "assignedAt": null,
+      "pickedUpAt": null,
+      "deliveredAt": null
+    },
+    "milestones": {
+      "paymentConfirmedAt": "2026-10-08T02:00:00.000Z",
+      "acceptedAt": null,
+      "pickingStartedAt": null,
+      "pickingConfirmedAt": null,
+      "pandaConfirmedAt": null,
+      "packingCompletedAt": null,
+      "cancelledAt": null,
+      "deliveredAt": null,
+      "completedAt": null
+    },
+    "refund": {
+      "refundRequired": false,
+      "requiredAmountMinor": 0,
+      "totalRequiredAmountMinor": 0,
+      "requirementStatus": null
+    },
+    "receipt": {
+      "receiptAvailable": false,
+      "receiptReference": null,
+      "issuedAt": null,
+      "metadataPath": null,
+      "downloadPath": null
+    }
+  },
+  "orderAfterMasterEdit": {
+    "orderId": "a940ccdb-bc2a-44be-834c-960144c69b2c",
+    "orderNumber": "CKSGO-20261008-00001",
+    "createdAt": "2026-10-08T02:00:00.000Z",
+    "updatedAt": "2026-10-08T02:00:00.000Z",
+    "customerStage": "ORDER_RECEIVED",
+    "paymentStatus": "PAID",
+    "cancellationKind": null,
+    "operationalFailure": null,
+    "outletId": "23bade31-d29b-455d-9b05-e5c1dec95d58",
+    "outletName": "M07A outlet a8b3aff3",
+    "canCancel": false,
+    "items": [
+      {
+        "orderItemId": "a3081379-5806-4ab8-a238-aca284a27744",
+        "skuCode": "M07A-a8b3aff3",
+        "productName": "M07A product",
+        "uomCode": "M07A-a8b3aff3",
+        "uomName": "Carton",
+        "orderedQuantity": 1,
+        "fulfilledQuantity": null,
+        "unavailableQuantity": null,
+        "unitPriceMinor": 500,
+        "discountMinor": 0,
+        "lineTotalMinor": 500,
+        "barcode": null
+      },
+      {
+        "orderItemId": "4649fd18-2f46-41d5-acd8-fdb541b7d1e2",
+        "skuCode": "SYNTHETIC-JOINT-a8b3aff3",
+        "productName": "Synthetic CKS minimal Item description",
+        "uomCode": null,
+        "uomName": null,
+        "orderedQuantity": 2,
+        "fulfilledQuantity": null,
+        "unavailableQuantity": null,
+        "unitPriceMinor": 1299,
+        "discountMinor": 0,
+        "lineTotalMinor": 2598,
+        "barcode": "0001234567890"
+      }
+    ],
+    "fulfilment": {
+      "fulfilmentConfirmed": false,
+      "confirmedAt": null
+    },
+    "money": {
+      "processingFee": {
+        "enabled": true,
+        "feeType": "PERCENTAGE",
+        "rate": "0.03",
+        "fixedAmountMinor": null,
+        "minimumAmountMinor": null
+      },
+      "itemsSubtotalMinor": 3098,
+      "discountAmountMinor": 0,
+      "netItemsTotalMinor": 3098,
+      "finalDeliveryChargeMinor": 500,
+      "processingFeeMinor": 108,
+      "grandTotalMinor": 3706,
+      "currency": "MYR"
+    },
+    "destination": {
+      "recipientName": "Synthetic Customer",
+      "recipientPhoneE164": null,
+      "addressLine1": "Synthetic Joint Verification Address",
+      "addressLine2": null,
+      "city": "Kota Kinabalu",
+      "state": "Sabah",
+      "postcode": "88000",
+      "instructions": null
+    },
+    "delivery": {
+      "deliveryType": "NOW",
+      "currentState": null,
+      "assignedAt": null,
+      "pickedUpAt": null,
+      "deliveredAt": null
+    },
+    "milestones": {
+      "paymentConfirmedAt": "2026-10-08T02:00:00.000Z",
+      "acceptedAt": null,
+      "pickingStartedAt": null,
+      "pickingConfirmedAt": null,
+      "pandaConfirmedAt": null,
+      "packingCompletedAt": null,
+      "cancelledAt": null,
+      "deliveredAt": null,
+      "completedAt": null
+    },
+    "refund": {
+      "refundRequired": false,
+      "requiredAmountMinor": 0,
+      "totalRequiredAmountMinor": 0,
+      "requirementStatus": null
+    },
+    "receipt": {
+      "receiptAvailable": false,
+      "receiptReference": null,
+      "issuedAt": null,
+      "metadataPath": null,
+      "downloadPath": null
+    }
+  },
+  "catalogueAfterMasterEdit": {
+    "data": {
+      "productId": "cec44829-2ab9-4ee5-a8fc-ca7ffc894baa",
+      "outletProductId": "ab79ef05-b70e-48c6-b2c9-12ce89240e57",
+      "name": "Synthetic changed master description",
+      "imageUrl": null,
+      "barcode": "0009876543210",
+      "category": {
+        "id": "39b53892-b053-4775-8abc-e4f8f753bcba",
+        "name": "M07A category a8b3aff3"
+      },
+      "subcategory": null,
+      "brand": null,
+      "uom": {
+        "code": "M07A-a8b3aff3",
+        "name": "Carton"
+      },
+      "packSize": null,
+      "sellingPriceMinor": 1299,
+      "currency": "MYR",
+      "availability": "AVAILABLE",
+      "description": "Synthetic changed master description",
+      "storageType": "FROZEN"
+    },
+    "meta": {
+      "outlet": {
+        "id": "23bade31-d29b-455d-9b05-e5c1dec95d58",
+        "displayReference": "M07A-a8b3aff3-A",
+        "displayName": "M07A outlet a8b3aff3",
+        "status": "ACTIVE",
+        "operatingState": "ONLINE",
+        "availability": "AVAILABLE"
+      },
+      "assignmentContextExpiresAt": "2026-10-08T02:05:00.000Z",
+      "asOf": "2026-10-08T02:00:00.000Z"
+    }
+  },
+  "legacyProductKeys": [
+    "availability",
+    "brand",
+    "category",
+    "currency",
+    "imageUrl",
+    "name",
+    "outletProductId",
+    "packSize",
+    "productId",
+    "sellingPriceMinor",
+    "subcategory",
+    "uom"
+  ]
+}

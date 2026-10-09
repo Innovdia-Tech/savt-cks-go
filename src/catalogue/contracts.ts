@@ -23,10 +23,11 @@ export type Product = {
   outletProductId: string;
   name: string;
   imageUrl: string | null;
-  category: Category;
+  barcode?: string | null;
+  category: Category | null;
   subcategory: Category | null;
   brand: Category | null;
-  uom: { code: string; name: string };
+  uom: { code: string; name: string } | null;
   packSize: string | null;
   sellingPriceMinor: number;
   currency: "MYR";
@@ -34,7 +35,7 @@ export type Product = {
 };
 export type Detail = Product & {
   description: string | null;
-  storageType: "AMBIENT" | "CHILLED" | "FROZEN";
+  storageType: "AMBIENT" | "CHILLED" | "FROZEN" | null;
 };
 export type DetailMeta = {
   outlet: Outlet;
@@ -136,18 +137,17 @@ const productKeys = [
   "availability",
 ];
 function product(v: unknown, detail = false): Product | Detail {
-  const d = obj(
-    v,
-    detail ? [...productKeys, "description", "storageType"] : productKeys,
-  );
-  const u = obj(d.uom, ["code", "name"]);
+  const cks = record(v) && Object.hasOwn(v, "barcode");
+  const keys = [...productKeys, ...(cks ? ["barcode"] : [])];
+  const d = obj(v, detail ? [...keys, "description", "storageType"] : keys);
+  const u = cks && d.uom === null ? null : obj(d.uom, ["code", "name"]);
   if (
     !uuid(d.productId) ||
     !uuid(d.outletProductId) ||
     !str(d.name, 200) ||
     !imageUrl(d.imageUrl, d.productId) ||
-    !str(u.code, 40) ||
-    !str(u.name, 120) ||
+    (cks && !(d.barcode === null || str(d.barcode, 80))) ||
+    (u !== null && (!str(u.code, 40) || !str(u.name, 120))) ||
     !(d.packSize === null || str(d.packSize, 120, true)) ||
     !integer(d.sellingPriceMinor, 0, 999999999999) ||
     d.currency !== "MYR" ||
@@ -157,15 +157,16 @@ function product(v: unknown, detail = false): Product | Detail {
   if (
     detail &&
     (!(d.description === null || str(d.description, 4000, true)) ||
-      !["AMBIENT", "CHILLED", "FROZEN"].includes(String(d.storageType)))
+      (!(cks && d.storageType === null) &&
+        !["AMBIENT", "CHILLED", "FROZEN"].includes(String(d.storageType))))
   )
     return fail();
   return {
     ...d,
-    category: category(d.category),
+    category: cks && d.category === null ? null : category(d.category),
     subcategory: d.subcategory === null ? null : category(d.subcategory),
     brand: d.brand === null ? null : category(d.brand),
-    uom: { ...u },
+    uom: u === null ? null : { ...u },
   } as Product | Detail;
 }
 function meta(v: unknown, pageSize?: number): DetailMeta | PageMeta {

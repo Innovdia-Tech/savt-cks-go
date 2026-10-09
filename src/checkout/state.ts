@@ -28,8 +28,9 @@ export type CartLine = {
     productId: string;
     name: string;
     imageUrl: string | null;
+    barcode?: string | null;
     packSize: string | null;
-    uom: { code: string; name: string };
+    uom: { code: string; name: string } | null;
   };
   quantity: number;
   displayedUnitPriceMinor: number;
@@ -265,8 +266,11 @@ export class CartController {
         productId: product.productId,
         name: product.name,
         imageUrl: product.imageUrl,
+        ...(Object.hasOwn(product, "barcode")
+          ? { barcode: product.barcode }
+          : {}),
         packSize: product.packSize,
-        uom: { ...product.uom },
+        uom: product.uom === null ? null : { ...product.uom },
       },
       quantity,
       displayedUnitPriceMinor: product.sellingPriceMinor,

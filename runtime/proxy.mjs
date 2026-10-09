@@ -90,6 +90,18 @@ export function createApiProxy(target, timeoutMs = 12_000) {
     if (feeContractRoute && req.headers["x-cks-fee-contract"] !== undefined) {
       headers["x-cks-fee-contract"] = req.headers["x-cks-fee-contract"];
     }
+    const productContractRoute =
+      (req.method === "POST" && path === "/api/v1/checkout/quote") ||
+      (req.method === "GET" &&
+        (/^\/api\/v1\/customer\/outlets\/[0-9a-f-]{36}\/products(?:\/[0-9a-f-]{36})?$/i.test(
+          path,
+        ) ||
+          /^\/api\/v1\/customer\/orders\/[0-9a-f-]{36}$/i.test(path)));
+    if (
+      productContractRoute &&
+      req.headers["x-cks-product-contract"] !== undefined
+    )
+      headers["x-cks-product-contract"] = req.headers["x-cks-product-contract"];
     // Node's request parser validates framing before this handler. Preserve the
     // validated length or explicitly reframe its decoded chunk stream: Node does
     // not infer chunked framing for methods such as DELETE, GET and OPTIONS.

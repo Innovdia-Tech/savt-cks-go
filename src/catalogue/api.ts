@@ -160,6 +160,8 @@ export class CatalogueApi {
           const headers: Record<string, string> = {
             Accept: "application/json",
           };
+          if (/\/products(?:\?|\/)/.test(path))
+            headers["X-CKS-Product-Contract"] = "cks-v1";
           if (body !== undefined) {
             headers["Content-Type"] = "application/json";
             headers["x-cks-csrf"] = token;

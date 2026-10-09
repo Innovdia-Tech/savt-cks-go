@@ -109,6 +109,7 @@ export class QuoteApi {
                   "X-CKS-Fee-Contract": "small-order-fee-v1",
                   "Idempotency-Key": idempotencyKey,
                   "x-cks-csrf": csrf,
+                  "X-CKS-Product-Contract": "cks-v1",
                 },
                 credentials: "include",
                 cache: "no-store",

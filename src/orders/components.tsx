@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ItemBarcode } from "../components/ItemBarcode";
 import type {
   CustomerOrderStage,
   OrderDetail,
@@ -536,9 +537,8 @@ export function OrderDetailScreen({
             <li key={item.orderItemId}>
               <div>
                 <strong>{item.productName}</strong>
-                <span>
-                  {item.orderedQuantity} × {item.uomName}
-                </span>
+                <ItemBarcode barcode={item.barcode} />
+                <span>Quantity {item.orderedQuantity}</span>
                 {order.fulfilment.fulfilmentConfirmed && (
                   <span>
                     Fulfilled {item.fulfilledQuantity ?? 0}; unavailable{" "}
