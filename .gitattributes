@@ -1,2 +1,6 @@
 # Keep the coordinated operations master assets and provenance byte-identical.
 /src/assets/brand/* -text
+
+# Preserve supplied local regression evidence bytes, including PDF xref spacing.
+/verification/cat-ops-repair01/handoff/* -text
+/verification/cat-ops-repair01/handoff/*.pdf binary

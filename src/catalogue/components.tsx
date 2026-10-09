@@ -1,5 +1,4 @@
 import { guardHistoryNavigation } from "./navigation";
-import { ItemBarcode } from "../components/ItemBarcode";
 import { useSupportWhatsApp } from "../support/context";
 import { SupportAction } from "../support/SupportAction";
 import { useEffect, useRef, useState } from "react";
@@ -169,7 +168,6 @@ export function ProductTile({
       >
         <ProductImage url={product.imageUrl} name={product.name} />
         <span className="catalogue-name">{product.name}</span>
-        <ItemBarcode barcode={product.barcode} />
         {variant === "list" && (
           <span className="catalogue-price-row">
             <strong className="catalogue-price">
@@ -1272,7 +1270,6 @@ export function CatalogueApp({
                       <ProductImage url={p.imageUrl} name={p.name} />
                       <div className="catalogue-detail-info">
                         <h2>{p.name}</h2>
-                        <ItemBarcode barcode={p.barcode} />
                         <strong>{money(p.sellingPriceMinor)}</strong>
                         {p.availability !== "AVAILABLE" && <p>Unavailable</p>}
                         <section

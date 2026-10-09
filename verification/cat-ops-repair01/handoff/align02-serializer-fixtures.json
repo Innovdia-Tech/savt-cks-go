@@ -1,0 +1,207 @@
+{
+  "boundary": "Real services and serializer against migrated disposable PostgreSQL. Trusted session/context/readiness collaborators are synthetic.",
+  "categories": {
+    "data": [
+      {
+        "id": "fcb06f80-9722-41d1-881e-6ad8475016e4",
+        "code": "02",
+        "name": "Approved Groceries"
+      },
+      {
+        "id": "8a5d1e16-e9d8-4442-8fea-5f1f4e9a1b35",
+        "code": "20",
+        "name": "Changed after preview"
+      },
+      {
+        "id": "9dbf1124-391e-4aa4-b1da-93236376c7c1",
+        "code": "OTHER-PARENT",
+        "name": "Separate approved category"
+      },
+      {
+        "id": "0c55c636-a6d0-4c61-8d0d-7c1f9fd333fe",
+        "code": "CKS-91EE4812030DDFC3BCF58C82",
+        "name": "Shared Code Department"
+      },
+      {
+        "id": "2c96c8e7-7e80-44ae-9bb4-7ffa7b2d7a93",
+        "code": "CKS-9722F8BC556D8D224DDBEF39",
+        "name": "Shared Code Department"
+      },
+      {
+        "id": "7eb93d2a-4525-4d29-8db5-6509417e0177",
+        "code": "CKS-7D2FBD0C9DB09491D9CEABF9",
+        "name": "Shared Code Department"
+      }
+    ],
+    "meta": {
+      "page": 1,
+      "pageSize": 50,
+      "total": 6,
+      "hasNextPage": false,
+      "outlet": {
+        "id": "f27b3d9a-f38a-4747-b277-cfd59f4209c6",
+        "displayReference": "SYNTHETIC",
+        "displayName": "Synthetic outlet",
+        "status": "ACTIVE",
+        "operatingState": "ONLINE",
+        "availability": "AVAILABLE"
+      },
+      "assignmentContextExpiresAt": "2026-10-09T09:06:08.405Z",
+      "asOf": "2026-10-09T09:01:08.464Z"
+    }
+  },
+  "subcategories": {
+    "data": [
+      {
+        "id": "3980f847-7a0a-4ca5-8995-630d89e59374",
+        "categoryId": "fcb06f80-9722-41d1-881e-6ad8475016e4",
+        "code": "03",
+        "name": "Rice"
+      }
+    ],
+    "meta": {
+      "page": 1,
+      "pageSize": 50,
+      "total": 1,
+      "hasNextPage": false,
+      "outlet": {
+        "id": "f27b3d9a-f38a-4747-b277-cfd59f4209c6",
+        "displayReference": "SYNTHETIC",
+        "displayName": "Synthetic outlet",
+        "status": "ACTIVE",
+        "operatingState": "ONLINE",
+        "availability": "AVAILABLE"
+      },
+      "assignmentContextExpiresAt": "2026-10-09T09:06:08.405Z",
+      "asOf": "2026-10-09T09:01:08.485Z"
+    }
+  },
+  "detail": {
+    "data": {
+      "productId": "e45d9934-11d8-4cb3-b672-8ec98fedba0d",
+      "outletProductId": "ed0b84ed-c1f6-479b-b0a4-326c02defd22",
+      "name": "Brand Rice 5kg",
+      "imageUrl": null,
+      "barcode": "000123",
+      "category": {
+        "id": "fcb06f80-9722-41d1-881e-6ad8475016e4",
+        "name": "Approved Groceries"
+      },
+      "subcategory": {
+        "id": "3980f847-7a0a-4ca5-8995-630d89e59374",
+        "name": "Rice"
+      },
+      "brand": null,
+      "uom": null,
+      "packSize": null,
+      "sellingPriceMinor": 1299,
+      "currency": "MYR",
+      "availability": "AVAILABLE",
+      "description": "Brand Rice 5kg",
+      "storageType": null
+    },
+    "meta": {
+      "outlet": {
+        "id": "f27b3d9a-f38a-4747-b277-cfd59f4209c6",
+        "displayReference": "SYNTHETIC",
+        "displayName": "Synthetic outlet",
+        "status": "ACTIVE",
+        "operatingState": "ONLINE",
+        "availability": "AVAILABLE"
+      },
+      "assignmentContextExpiresAt": "2026-10-09T09:06:08.405Z",
+      "asOf": "2026-10-09T09:01:08.416Z"
+    }
+  },
+  "legacyDetail": {
+    "data": {
+      "productId": "2c974ad5-cd93-4ff1-a83f-3623d07b21f7",
+      "outletProductId": "4d89f18e-cac0-4880-a3f6-08a3cee633c4",
+      "name": "Historical record edited",
+      "imageUrl": null,
+      "barcode": null,
+      "category": null,
+      "subcategory": null,
+      "brand": null,
+      "uom": null,
+      "packSize": null,
+      "sellingPriceMinor": 599,
+      "currency": "MYR",
+      "availability": "AVAILABLE",
+      "description": "Historical record edited",
+      "storageType": null
+    },
+    "meta": {
+      "outlet": {
+        "id": "f27b3d9a-f38a-4747-b277-cfd59f4209c6",
+        "displayReference": "SYNTHETIC",
+        "displayName": "Synthetic outlet",
+        "status": "ACTIVE",
+        "operatingState": "ONLINE",
+        "availability": "AVAILABLE"
+      },
+      "assignmentContextExpiresAt": "2026-10-09T09:06:08.405Z",
+      "asOf": "2026-10-09T09:01:08.445Z"
+    }
+  },
+  "filtered": {
+    "data": [
+      {
+        "productId": "e45d9934-11d8-4cb3-b672-8ec98fedba0d",
+        "outletProductId": "ed0b84ed-c1f6-479b-b0a4-326c02defd22",
+        "name": "Brand Rice 5kg",
+        "imageUrl": null,
+        "barcode": "000123",
+        "category": {
+          "id": "fcb06f80-9722-41d1-881e-6ad8475016e4",
+          "name": "Approved Groceries"
+        },
+        "subcategory": {
+          "id": "3980f847-7a0a-4ca5-8995-630d89e59374",
+          "name": "Rice"
+        },
+        "brand": null,
+        "uom": null,
+        "packSize": null,
+        "sellingPriceMinor": 1299,
+        "currency": "MYR",
+        "availability": "AVAILABLE"
+      }
+    ],
+    "meta": {
+      "page": 1,
+      "pageSize": 24,
+      "total": 1,
+      "hasNextPage": false,
+      "outlet": {
+        "id": "f27b3d9a-f38a-4747-b277-cfd59f4209c6",
+        "displayReference": "SYNTHETIC",
+        "displayName": "Synthetic outlet",
+        "status": "ACTIVE",
+        "operatingState": "ONLINE",
+        "availability": "AVAILABLE"
+      },
+      "assignmentContextExpiresAt": "2026-10-09T09:06:08.405Z",
+      "asOf": "2026-10-09T09:01:08.510Z"
+    }
+  },
+  "wrongParent": {
+    "data": [],
+    "meta": {
+      "page": 1,
+      "pageSize": 24,
+      "total": 0,
+      "hasNextPage": false,
+      "outlet": {
+        "id": "f27b3d9a-f38a-4747-b277-cfd59f4209c6",
+        "displayReference": "SYNTHETIC",
+        "displayName": "Synthetic outlet",
+        "status": "ACTIVE",
+        "operatingState": "ONLINE",
+        "availability": "AVAILABLE"
+      },
+      "assignmentContextExpiresAt": "2026-10-09T09:06:08.405Z",
+      "asOf": "2026-10-09T09:01:08.552Z"
+    }
+  }
+}

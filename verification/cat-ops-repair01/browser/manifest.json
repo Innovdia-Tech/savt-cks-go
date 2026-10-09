@@ -1,0 +1,326 @@
+{
+  "result": "PASS",
+  "claimScope": "LOCAL ONLY bounded Chromium evidence from actual built React apps, actual runtime proxy and strict parsers against synthetic HTTP/session/native boundaries. No full authenticated/backend/native-device/payment acceptance.",
+  "baselineSourceHead": "b7f47ff4ded165161a6c2c0d84ad52afff495e8e",
+  "baselineSourceTree": "efe1073fb69e0ce4cafac2f33f3e5b6645f84a27",
+  "browser": "154.0.8037.98",
+  "widths": [390, 320],
+  "screenshots": {
+    "before": 10,
+    "after": 10,
+    "total": 20,
+    "pairs": [
+      {
+        "width": 390,
+        "surface": "catalogue-card",
+        "scenario": "leading-zero",
+        "before": {
+          "path": "before/390-catalogue-card.png",
+          "byteLength": 33952,
+          "sha256": "6ddb366c3fa2239afd4d4da1c5e1f9544d1bd36cd98d166714a13ffab5758ce6"
+        },
+        "after": {
+          "path": "after/390-catalogue-card.png",
+          "byteLength": 31392,
+          "sha256": "55b400fb19fec7136dafaa0d1e141353429723692072911e446c1531a2f642cc"
+        }
+      },
+      {
+        "width": 390,
+        "surface": "product-detail",
+        "scenario": "leading-zero",
+        "before": {
+          "path": "before/390-product-detail.png",
+          "byteLength": 35175,
+          "sha256": "632bb1d9c70e1f2bf99b34957e7cbd50e3ec70d538ee3ad25ee067d3519ebf04"
+        },
+        "after": {
+          "path": "after/390-product-detail.png",
+          "byteLength": 32510,
+          "sha256": "4ed53df0b5d06e0879ebadbd2e8b6a5caeae75a1b0b2cf7ba3795b2312b56190"
+        }
+      },
+      {
+        "width": 390,
+        "surface": "basket-item",
+        "scenario": "leading-zero",
+        "before": {
+          "path": "before/390-basket-item.png",
+          "byteLength": 45964,
+          "sha256": "5d7b1980aae6b016afb20a3939ddb21f05776c165d1e88f455883dbaf893a5f4"
+        },
+        "after": {
+          "path": "after/390-basket-item.png",
+          "byteLength": 43174,
+          "sha256": "5882d0f259168ef627981a2edc0521c3deee561a925cba273874587472427a8c"
+        }
+      },
+      {
+        "width": 390,
+        "surface": "checkout-item",
+        "scenario": "leading-zero",
+        "before": {
+          "path": "before/390-checkout-item.png",
+          "byteLength": 61828,
+          "sha256": "e0eb5098b30a36e7189733680e418deb419c5934531c51967677d1d6a40457f9"
+        },
+        "after": {
+          "path": "after/390-checkout-item.png",
+          "byteLength": 58636,
+          "sha256": "495c294c2896fd2b313d3a1ba5233161341dc4c8bc533055b8d2f22d30802e51"
+        }
+      },
+      {
+        "width": 390,
+        "surface": "order-item",
+        "scenario": "leading-zero",
+        "before": {
+          "path": "before/390-order-item.png",
+          "byteLength": 60380,
+          "sha256": "f3c0ae05c9ef581e61c16276eaeaa3670efc80c714b2763a5fca8b6da1396804"
+        },
+        "after": {
+          "path": "after/390-order-item.png",
+          "byteLength": 59761,
+          "sha256": "5e3c8cf62e0bbe08c427edab17282d8fcc138825919b3464d9894ee623dddcdb"
+        }
+      },
+      {
+        "width": 320,
+        "surface": "catalogue-card",
+        "scenario": "leading-zero",
+        "before": {
+          "path": "before/320-catalogue-card.png",
+          "byteLength": 33190,
+          "sha256": "4d89aca1612ae5e786ac32396acec506b0a026fa6fc9ef666a52bf9964a06ece"
+        },
+        "after": {
+          "path": "after/320-catalogue-card.png",
+          "byteLength": 30385,
+          "sha256": "4372ff0a610ca3b3665ed5c238ea640c5f04bd3daaaab0599b4588561c347304"
+        }
+      },
+      {
+        "width": 320,
+        "surface": "product-detail",
+        "scenario": "leading-zero",
+        "before": {
+          "path": "before/320-product-detail.png",
+          "byteLength": 32815,
+          "sha256": "ef29003b023ea7661ad5d13d4c1d232c0bafdcdb8100841cf8303a102bb95eb3"
+        },
+        "after": {
+          "path": "after/320-product-detail.png",
+          "byteLength": 30203,
+          "sha256": "7aa60f3221d5151a33da4c2fbc170dd2ba44b9f995a7c55fa6778f459062e1e9"
+        }
+      },
+      {
+        "width": 320,
+        "surface": "basket-item",
+        "scenario": "leading-zero",
+        "before": {
+          "path": "before/320-basket-item.png",
+          "byteLength": 44799,
+          "sha256": "da9b2d0ce14fdd44d5b11031898b6f0ebd1a1b7b2548366543efc91860e1fcee"
+        },
+        "after": {
+          "path": "after/320-basket-item.png",
+          "byteLength": 42216,
+          "sha256": "9a23407c28250b5728d42090f320b4a81d01c0e39570ff03cca63fea2819131e"
+        }
+      },
+      {
+        "width": 320,
+        "surface": "checkout-item",
+        "scenario": "leading-zero",
+        "before": {
+          "path": "before/320-checkout-item.png",
+          "byteLength": 56509,
+          "sha256": "b32591bc91e9a99575d8345e1487135e5bcb77e7cdfc8d78319e28556e74bedf"
+        },
+        "after": {
+          "path": "after/320-checkout-item.png",
+          "byteLength": 54927,
+          "sha256": "953baeec96023bdc81e1c009ffb92ec0c81a981b4c67e97de68eef00d52ae855"
+        }
+      },
+      {
+        "width": 320,
+        "surface": "order-item",
+        "scenario": "leading-zero",
+        "before": {
+          "path": "before/320-order-item.png",
+          "byteLength": 56276,
+          "sha256": "6fb13812bba0c5b82b6c7ddb1f12aef5044432d00b83f326e64b986498d11fe6"
+        },
+        "after": {
+          "path": "after/320-order-item.png",
+          "byteLength": 53965,
+          "sha256": "34bb014f51aa7611ba2b653001ae79723b8878b64e8f5fbbc6446a868494479e"
+        }
+      }
+    ]
+  },
+  "assertions": {
+    "surfaceChecksBefore": 40,
+    "surfaceChecksAfter": 40,
+    "populatedOrLeadingZeroVisibleBefore": 20,
+    "barcodeDisplaysAfter": 0,
+    "missingAndNullCasesAccepted": true,
+    "descriptionNumbersAndApprovedClassificationPreserved": true,
+    "pricesQuantitiesCartQuoteOrderIdentityPreserved": true,
+    "quotePaymentEntryEnabledWithoutPaymentExecution": true,
+    "sameRawHttpEnvelopesBeforeAfter": true,
+    "rawResponseComparisonsPerPhase": 64,
+    "originalHandoffBytesUnchanged": true,
+    "exactPdfHandoffsBefore": 16,
+    "exactPdfHandoffsAfter": 16,
+    "pdfSha256": "ead9013ac7abc78f9b79837c3c9e519b9c9f747a5475f636efcc976558571b4f",
+    "noHorizontalOverflow": true,
+    "noNavigationPurchaseOverlap": true,
+    "browserErrors": [],
+    "unexpectedRoutes": [],
+    "blockedExternalOrigins": []
+  },
+  "beforeReport": "before/results.json",
+  "afterReport": "after/results.json",
+  "beforeArtifacts": [
+    {
+      "path": "assets/beverages-BQZlOkGi.webp",
+      "sha256": "6a3f0b9c78f8dd235d271fee16341344f66e7eee9b3ee8847289286de8336911"
+    },
+    {
+      "path": "assets/cks-go-logo-colour-Blpo3O5j.svg",
+      "sha256": "3e9259474a6cd573816b8a61570dc29db1cbd018d02e863ca18b44171da13c2b"
+    },
+    {
+      "path": "assets/development-CxAw7K9U.js",
+      "sha256": "c5a246d10a2f1f52bb1fa469b68afebf723c90e5b6a0126e3afa4724de7a8ce5"
+    },
+    {
+      "path": "assets/development-map-Jmwn9tIH.js",
+      "sha256": "e390b362771033f9e40f79ea1765cc2b4e812dd86fe13919bab8c2ef75e5f117"
+    },
+    {
+      "path": "assets/fresh-produce-BEfgyfFc.webp",
+      "sha256": "055e9bcc85ee079de4d35aeb9bb1bd8eaa571be5b52bf980b4edb0b70da66fee"
+    },
+    {
+      "path": "assets/frozen-7_-9FdJz.webp",
+      "sha256": "99f8a6ed72ef2e941923d98fdeb9143cc9d5faca4479487ca23e44b0819468fe"
+    },
+    {
+      "path": "assets/household-CZTFQSTQ.webp",
+      "sha256": "d3e9aac5520647728ecaa622506dedaa0280b745c175107a25e5a0f95dd1b8f1"
+    },
+    {
+      "path": "assets/index-By1nfIWc.css",
+      "sha256": "1c83e716008a985430ff9b35f14653a92d6047fe4570b64b5791899a1c847978"
+    },
+    {
+      "path": "assets/index-M4IYWeuc.js",
+      "sha256": "ef9d493ee460f7b67d70c64887dffde8f4da02fcd8bfefa26afb9f4e41862827"
+    },
+    {
+      "path": "assets/Inter-Bold-B3d6VThR.otf",
+      "sha256": "a1e8d028b7007a080d3b081a636712b98d48eeca67cf24724febd9447521e288"
+    },
+    {
+      "path": "assets/Inter-Medium-D-ZOsHNp.otf",
+      "sha256": "13aa9491299ab70f308fce811f07a4b774ab8db3b8ba332f5b559f2cc99c0d09"
+    },
+    {
+      "path": "assets/Inter-Regular-qJaOJz1D.otf",
+      "sha256": "546c3155911a8e84c320958f6bb55ff8eeb81bf32d60c18d9805e007fabe30e0"
+    },
+    {
+      "path": "assets/Inter-SemiBold-CfXHxm_A.otf",
+      "sha256": "2f08d4cfcb4757f62d682da44f7a88b572db2bc09e1a7998d8a2b76d7c06593f"
+    },
+    {
+      "path": "index.html",
+      "sha256": "ad7117edb72bda7d4773ff5f7a6dedbb9be2ea2d801400a3e4675143577b2ab9"
+    }
+  ],
+  "afterArtifacts": [
+    {
+      "path": "assets/beverages-BQZlOkGi.webp",
+      "sha256": "6a3f0b9c78f8dd235d271fee16341344f66e7eee9b3ee8847289286de8336911"
+    },
+    {
+      "path": "assets/cks-go-logo-colour-Blpo3O5j.svg",
+      "sha256": "3e9259474a6cd573816b8a61570dc29db1cbd018d02e863ca18b44171da13c2b"
+    },
+    {
+      "path": "assets/development-BqcduxZL.js",
+      "sha256": "87c1ec71fca7a823776aa0f65d16f2e03fd80faa7891413be9f28b93f091c558"
+    },
+    {
+      "path": "assets/development-map-Jmwn9tIH.js",
+      "sha256": "e390b362771033f9e40f79ea1765cc2b4e812dd86fe13919bab8c2ef75e5f117"
+    },
+    {
+      "path": "assets/fresh-produce-BEfgyfFc.webp",
+      "sha256": "055e9bcc85ee079de4d35aeb9bb1bd8eaa571be5b52bf980b4edb0b70da66fee"
+    },
+    {
+      "path": "assets/frozen-7_-9FdJz.webp",
+      "sha256": "99f8a6ed72ef2e941923d98fdeb9143cc9d5faca4479487ca23e44b0819468fe"
+    },
+    {
+      "path": "assets/household-CZTFQSTQ.webp",
+      "sha256": "d3e9aac5520647728ecaa622506dedaa0280b745c175107a25e5a0f95dd1b8f1"
+    },
+    {
+      "path": "assets/index-CwRMVKiH.css",
+      "sha256": "b757d6ae50dca23aa407e53bac832c259184215e1a233fbb531e9fe4a42290a7"
+    },
+    {
+      "path": "assets/index-DL_onmaE.js",
+      "sha256": "622b3d4ed98cb7b77b2245c0eef5543ba63ea29382826ba6be190e2b7dd08e07"
+    },
+    {
+      "path": "assets/Inter-Bold-B3d6VThR.otf",
+      "sha256": "a1e8d028b7007a080d3b081a636712b98d48eeca67cf24724febd9447521e288"
+    },
+    {
+      "path": "assets/Inter-Medium-D-ZOsHNp.otf",
+      "sha256": "13aa9491299ab70f308fce811f07a4b774ab8db3b8ba332f5b559f2cc99c0d09"
+    },
+    {
+      "path": "assets/Inter-Regular-qJaOJz1D.otf",
+      "sha256": "546c3155911a8e84c320958f6bb55ff8eeb81bf32d60c18d9805e007fabe30e0"
+    },
+    {
+      "path": "assets/Inter-SemiBold-CfXHxm_A.otf",
+      "sha256": "2f08d4cfcb4757f62d682da44f7a88b572db2bc09e1a7998d8a2b76d7c06593f"
+    },
+    {
+      "path": "index.html",
+      "sha256": "5ae0b44f966f19d56ac5ed57e844182b60c24f975dad4e906456c60f969be19f"
+    }
+  ],
+  "handoffHashes": {
+    "order-envelopes.json": "ea3ddbf75a4a389bfa728e0df9567b29c151023b325a973836a52009319395bf",
+    "fixtures.json": "b9b496183e202d865b5ecd4d3738fe565b1a0c9cf28fbeec8fc919df138c10b8",
+    "align02-serializer-fixtures.json": "29f28b88f7f236d1eba6c3cbe9f3f655c86f4c6d70dda414294bdb9211868eb3",
+    "quote-envelopes.json": "79c7ff6f656f1b68c3e4109f4395a35b6130494182f38607b68b2fcc230ec8aa",
+    "final-sales-receipt.pdf": "ead9013ac7abc78f9b79837c3c9e519b9c9f747a5475f636efcc976558571b4f"
+  },
+  "syntheticDependencies": [
+    "HTTP catalogue/quote/order/documents backend",
+    "authenticated session and CSRF",
+    "member/address and assignment context",
+    "empty advertising/support",
+    "fixed browser clock",
+    "native host presence and saved acknowledgement",
+    "coherent catalogue IDs/prices derived from independent quote fixture",
+    "catalogue numeric description and frozen quote/order name derivatives",
+    "completed order/document availability",
+    "normal barcode and null-barcode derivatives",
+    "null images using actual fallback"
+  ],
+  "limitations": "Original handoff files and static backend-rendered final-sales PDF remain unchanged. Rendered catalogue/quote/order envelopes are explicitly derived synthetic setups, not claimed unchanged backend serializer outputs. The same static PDF is served at both receipt endpoints to verify exact transport bytes; this is not live receipt rendering or native file-system save acceptance.",
+  "visualReview": "Five BEFORE and five AFTER captures spanning every surface and both widths were visually inspected. Every screenshot also has DOM overflow/navigation geometry assertions."
+}
