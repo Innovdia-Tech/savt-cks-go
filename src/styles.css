@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+.item-barcode {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #64748b;
+}
+
 .ui-search-field__input {
   position: relative;
   display: flex;

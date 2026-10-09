@@ -95,7 +95,7 @@ it("provides a local shopping acceptance catalogue with the four preferred categ
   });
   expect(selected.data.length).toBeGreaterThan(0);
   expect(
-    selected.data.every((product) => product.category.id === categories[0].id),
+    selected.data.every((product) => product.category?.id === categories[0].id),
   ).toBe(true);
 });
 it("omits unavailable Frozen from the local customer-visible category response", async () => {
@@ -109,7 +109,7 @@ it("omits unavailable Frozen from the local customer-visible category response",
     "Pantry",
   ]);
   const products = (await api.products(assignment, { page: 1 })).data;
-  expect(products.every((product) => product.category.name !== "Frozen")).toBe(
+  expect(products.every((product) => product.category?.name !== "Frozen")).toBe(
     true,
   );
 });

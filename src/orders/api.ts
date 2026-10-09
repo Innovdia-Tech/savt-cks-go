@@ -74,7 +74,10 @@ export class OrdersApi {
       `/api/v1/customer/orders/${orderId}`,
       {
         method: "GET",
-        headers: { "X-CKS-Fee-Contract": "small-order-fee-v1" },
+        headers: {
+          "X-CKS-Fee-Contract": "small-order-fee-v1",
+          "X-CKS-Product-Contract": "cks-v1",
+        },
       },
       parseOrderDetail,
       external,

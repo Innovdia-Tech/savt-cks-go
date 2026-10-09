@@ -134,6 +134,7 @@ describe("catalogue HTTP boundary", () => {
       expect([...h.keys()].sort()).toEqual([
         "accept",
         "x-cks-assignment-context",
+        ...(route === "categories" ? [] : ["x-cks-product-contract"]),
       ]);
       expect(String(url)).not.toContain(handle);
       expect(String(url)).not.toMatch(/customerAddress|addressRowVersion/);

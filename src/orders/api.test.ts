@@ -38,7 +38,7 @@ describe("OrdersApi", () => {
     ]);
   });
 
-  it("gets detail with the fee contract from the exact UUID route without query parameters", async () => {
+  it("gets detail with both capability contracts from the exact UUID route without query parameters", async () => {
     let request: { url: string; init?: RequestInit } | undefined;
     const api = new OrdersApi("", session, async (input, init) => {
       request = { url: String(input), init };
@@ -57,6 +57,7 @@ describe("OrdersApi", () => {
     expect([...new Headers(request?.init?.headers).entries()]).toEqual([
       ["accept", "application/json"],
       ["x-cks-fee-contract", "small-order-fee-v1"],
+      ["x-cks-product-contract", "cks-v1"],
     ]);
   });
 

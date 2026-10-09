@@ -40,8 +40,9 @@ export type OrderItem = {
   orderItemId: string;
   skuCode: string;
   productName: string;
-  uomCode: string;
-  uomName: string;
+  barcode?: string | null;
+  uomCode: string | null;
+  uomName: string | null;
   orderedQuantity: number;
   fulfilledQuantity: number | null;
   unavailableQuantity: number | null;
@@ -242,6 +243,7 @@ const validateItems = (value: unknown): void => {
   if (!Array.isArray(value) || value.length === 0 || value.length > 100)
     return invalid();
   for (const raw of value) {
+    const cks = Object.hasOwn(record(raw), "barcode");
     const item = exact(raw, [
       "orderItemId",
       "skuCode",
@@ -254,13 +256,17 @@ const validateItems = (value: unknown): void => {
       "unitPriceMinor",
       "discountMinor",
       "lineTotalMinor",
+      ...(cks ? ["barcode"] : []),
     ]);
     if (
       !uuid(item.orderItemId) ||
       !text(item.skuCode, 120) ||
       !text(item.productName, 240) ||
-      !text(item.uomCode, 80) ||
-      !text(item.uomName, 120) ||
+      (cks && !(item.barcode === null || text(item.barcode, 80))) ||
+      !(
+        (cks && item.uomCode === null && item.uomName === null) ||
+        (text(item.uomCode, 80) && text(item.uomName, 120))
+      ) ||
       !positive(item.orderedQuantity) ||
       !(item.fulfilledQuantity === null || natural(item.fulfilledQuantity)) ||
       !(
@@ -391,7 +397,7 @@ export const parseOrderDetail = (value: unknown): OrderDetail => {
     !nullableText(destination.addressLine2, 240) ||
     !text(destination.city, 120) ||
     !text(destination.state, 120) ||
-    !text(destination.postcode, 24) ||
+    !(destination.postcode === "" || text(destination.postcode, 24)) ||
     !nullableText(destination.instructions, 500)
   )
     invalid();

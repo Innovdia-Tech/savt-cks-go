@@ -362,7 +362,7 @@ describe("real cart and trusted quote presentation", () => {
       expect(html).toContain('aria-label="Quantity for Rice"');
       expect(html).toContain(`<span aria-live="polite">${quantity}</span>`);
       expect(html).toContain('aria-label="Remove Rice"');
-      expect(html).toContain("1 kg");
+      expect(html).not.toContain("1 kg");
       expect(html).toMatch(/cart-line-copy[^]*RM[^<]*4\.50/);
       if (quantity === 1) expect(html).not.toContain("Item subtotal</span>");
       else expect(html).toMatch(/Item subtotal<\/span><strong>RM[^<]*27\.00/);

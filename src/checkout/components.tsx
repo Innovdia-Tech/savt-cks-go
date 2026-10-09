@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type ComponentProps } from "react";
 import { PaymentPanel } from "../payment/components";
 import { MAX_LINE_QUANTITY, type ProcessingFee } from "./contracts";
 import { syncDialog } from "../components/ui";
+import { ItemBarcode } from "../components/ItemBarcode";
 import {
   cartMerchandiseSummary,
   type CartController,
@@ -323,9 +324,8 @@ function QuoteSummary({
               <li key={line.outletProductId}>
                 <div>
                   <strong>{line.productNameSnapshot}</strong>
-                  <span>
-                    {line.quantity} × {line.uomNameSnapshot}
-                  </span>
+                  <ItemBarcode barcode={line.barcodeSnapshot} />
+                  <span>Quantity {line.quantity}</span>
                   {previous !== undefined &&
                     previous !== line.unitPriceMinor && (
                       <span className="quote-price-change">
@@ -505,50 +505,69 @@ export function CartScreen({
         <div className="cart-section-heading">
           <h2 id="cart-lines-title">Your items</h2>
         </div>
-        {state.lines.map((line) => (
-          <article className="cart-line" key={line.outletProductId}>
-            <CartProductImage
-              url={line.product.imageUrl}
-              name={line.product.name}
-            />
-            <div className="cart-line-copy">
-              <h3>{line.product.name}</h3>
-              <p>{line.product.packSize || line.product.uom.name}</p>
-              <strong>{money(line.displayedUnitPriceMinor)}</strong>
-            </div>
-            <QuantitySelector
-              className="cart-quantity"
-              label={`Quantity for ${line.product.name}`}
-              quantity={line.quantity}
-              minimum={0}
-              maximum={MAX_LINE_QUANTITY}
-              disabled={state.paymentFrozen}
-              onDecrement={() =>
-                controller.setQuantity(line.outletProductId, line.quantity - 1)
-              }
-              onIncrement={() =>
-                controller.setQuantity(line.outletProductId, line.quantity + 1)
-              }
-            />
-            <button
-              className="cart-remove"
-              aria-label={`Remove ${line.product.name}`}
-              disabled={state.paymentFrozen}
-              onClick={() => controller.remove(line.outletProductId)}
-            >
-              <TrashIcon className="h-4 w-4" />
-              Remove
-            </button>
-            {line.quantity > 1 && (
-              <p className="cart-line-subtotal">
-                <span>Item subtotal</span>
+        {state.lines.map((line) => {
+          const accepted = state.quote?.items.find(
+            (item) => item.outletProductId === line.outletProductId,
+          );
+          const name = accepted?.productNameSnapshot ?? line.product.name;
+          const barcode = accepted
+            ? accepted.barcodeSnapshot
+            : line.product.barcode;
+          return (
+            <article className="cart-line" key={line.outletProductId}>
+              <CartProductImage url={line.product.imageUrl} name={name} />
+              <div className="cart-line-copy">
+                <h3>{name}</h3>
+                <ItemBarcode barcode={barcode} />
                 <strong>
-                  {money(line.displayedUnitPriceMinor * line.quantity)}
+                  {money(
+                    accepted?.unitPriceMinor ?? line.displayedUnitPriceMinor,
+                  )}
                 </strong>
-              </p>
-            )}
-          </article>
-        ))}
+              </div>
+              <QuantitySelector
+                className="cart-quantity"
+                label={`Quantity for ${name}`}
+                quantity={line.quantity}
+                minimum={0}
+                maximum={MAX_LINE_QUANTITY}
+                disabled={state.paymentFrozen}
+                onDecrement={() =>
+                  controller.setQuantity(
+                    line.outletProductId,
+                    line.quantity - 1,
+                  )
+                }
+                onIncrement={() =>
+                  controller.setQuantity(
+                    line.outletProductId,
+                    line.quantity + 1,
+                  )
+                }
+              />
+              <button
+                className="cart-remove"
+                aria-label={`Remove ${name}`}
+                disabled={state.paymentFrozen}
+                onClick={() => controller.remove(line.outletProductId)}
+              >
+                <TrashIcon className="h-4 w-4" />
+                Remove
+              </button>
+              {line.quantity > 1 && (
+                <p className="cart-line-subtotal">
+                  <span>Item subtotal</span>
+                  <strong>
+                    {money(
+                      accepted?.lineSubtotalMinor ??
+                        line.displayedUnitPriceMinor * line.quantity,
+                    )}
+                  </strong>
+                </p>
+              )}
+            </article>
+          );
+        })}
       </section>
       {!state.quote && (
         <section className="quote-card" aria-labelledby="cart-estimate-title">

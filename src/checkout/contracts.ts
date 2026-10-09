@@ -8,8 +8,9 @@ export type QuoteLine = {
   productId: string;
   skuCode: string;
   productNameSnapshot: string;
-  uomCodeSnapshot: string;
-  uomNameSnapshot: string;
+  barcodeSnapshot?: string | null;
+  uomCodeSnapshot: string | null;
+  uomNameSnapshot: string | null;
   quantity: number;
   unitPriceMinor: number;
   lineSubtotalMinor: number;
@@ -114,6 +115,7 @@ const rule = (value: unknown): RuleReference => {
 };
 
 const line = (value: unknown): QuoteLine => {
+  const cks = record(value) && Object.hasOwn(value, "barcodeSnapshot");
   const keys = [
     "outletProductId",
     "productId",
@@ -124,6 +126,7 @@ const line = (value: unknown): QuoteLine => {
     "quantity",
     "unitPriceMinor",
     "lineSubtotalMinor",
+    ...(cks ? ["barcodeSnapshot"] : []),
   ];
   if (
     !record(value) ||
@@ -132,8 +135,14 @@ const line = (value: unknown): QuoteLine => {
     !uuid(value.productId) ||
     !text(value.skuCode, 120) ||
     !text(value.productNameSnapshot, 200) ||
-    !text(value.uomCodeSnapshot, 40) ||
-    !text(value.uomNameSnapshot, 120) ||
+    (cks &&
+      !(value.barcodeSnapshot === null || text(value.barcodeSnapshot, 80))) ||
+    !(
+      (cks &&
+        value.uomCodeSnapshot === null &&
+        value.uomNameSnapshot === null) ||
+      (text(value.uomCodeSnapshot, 40) && text(value.uomNameSnapshot, 120))
+    ) ||
     !integer(value.quantity, 1, MAX_LINE_QUANTITY) ||
     !money(value.unitPriceMinor) ||
     !money(value.lineSubtotalMinor) ||

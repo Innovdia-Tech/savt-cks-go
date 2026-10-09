@@ -1,5 +1,10 @@
 import sample from "./reference-sample-content.json";
-import type { CustomerCategory, Detail } from "../contracts";
+import type { Category, CustomerCategory, Detail } from "../contracts";
+
+export type DevelopmentProduct = Detail & {
+  category: Category;
+  uom: NonNullable<Detail["uom"]>;
+};
 
 // The imported package is a local design fixture, never a catalogue seed.
 export const referenceSample = sample;
@@ -17,7 +22,7 @@ export const referenceCategories: CustomerCategory[] =
 const fruitKeys = new Set(["banana", "red-apple", "orange"]);
 const vegetableKeys = new Set(["broccoli", "carrot", "tomato", "potato"]);
 
-export const referenceProducts: Detail[] = sample.catalogue.map(
+export const referenceProducts: DevelopmentProduct[] = sample.catalogue.map(
   (item, index) => ({
     productId: referenceId(100 + index),
     outletProductId: referenceId(200 + index),

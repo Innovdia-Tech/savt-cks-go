@@ -118,6 +118,7 @@ it("preserves authoritative product detail content and its purchase action", () 
       productId: "00000000-0000-4000-8000-000000000100",
       outletProductId: "00000000-0000-4000-8000-000000000200",
       name: "Rice 1 kg",
+      barcode: "0000123456789",
       imageUrl: "https://catalogue.example.com/media/rice.jpg",
       category: { id: "pantry", name: "Pantry" },
       subcategory: { id: "rice", name: "Rice and grains" },
@@ -136,17 +137,20 @@ it("preserves authoritative product detail content and its purchase action", () 
     "Rice 1 kg",
     "1 kg",
     "12.34",
-    "Store in a cool, dry place.",
-    "Pantry",
-    "Rice and grains",
-    "Example brand",
-    "Pack",
-    "Room temperature",
+    "Barcode 0000123456789",
     "Add to Basket",
   ])
     expect(html).toContain(text);
   expect(html).toContain('src="https://catalogue.example.com/media/rice.jpg"');
-  expect(html).toContain('aria-labelledby="product-details-title"');
+  expect(html).not.toContain('aria-labelledby="product-details-title"');
+  for (const retired of [
+    "Store in a cool, dry place.",
+    "Rice and grains",
+    "Example brand",
+    "<dt>Unit</dt>",
+    "Room temperature",
+  ])
+    expect(html).not.toContain(retired);
   expect(html).not.toContain("support-action");
 });
 

@@ -45,6 +45,7 @@ describe("trusted quote HTTP boundary", () => {
       "idempotency-key",
       "x-cks-csrf",
       "x-cks-fee-contract",
+      "x-cks-product-contract",
     ]);
     expect(headers.get("X-CKS-Fee-Contract")).toBe("small-order-fee-v1");
     expect(headers.get("Idempotency-Key")).toBe(key);
@@ -70,7 +71,9 @@ describe("trusted quote HTTP boundary", () => {
     ])
       await expect(
         api.create(value as never, crypto.randomUUID()),
-      ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+      ).rejects.toMatchObject({
+        code: "VALIDATION_FAILED",
+      });
     expect(fetcher).not.toHaveBeenCalled();
   });
 
@@ -110,7 +113,9 @@ describe("trusted quote HTTP boundary", () => {
     );
     await expect(
       api.create(request, crypto.randomUUID()),
-    ).rejects.toMatchObject({ code: "CUSTOMER_SESSION_INVALID" });
+    ).rejects.toMatchObject({
+      code: "CUSTOMER_SESSION_INVALID",
+    });
     expect(session.getSnapshot().phase).toBe("expired");
   });
 

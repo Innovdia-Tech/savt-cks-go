@@ -21,6 +21,7 @@ import {
   referenceProducts,
   referenceSample,
   referenceScenario,
+  type DevelopmentProduct,
   referenceId,
 } from "./reference-match/content";
 const id = (n: number) =>
@@ -224,9 +225,9 @@ export class DevelopmentCatalogueAdapter {
       availability: this.scenario === "blocked" ? "UNAVAILABLE" : "AVAILABLE",
     };
   }
-  private products(): Detail[] {
+  private products(): DevelopmentProduct[] {
     if (this.scenario === referenceScenario) return referenceProducts;
-    return Array.from({ length: 30 }, (_, i): Detail => ({
+    return Array.from({ length: 30 }, (_, i): DevelopmentProduct => ({
       productId: id(100 + i),
       outletProductId: id(200 + i),
       name:
@@ -968,7 +969,7 @@ export class DevelopmentCatalogueAdapter {
           )
           .sort((a, b) => {
             if (this.scenario !== referenceScenario || !category) return 0;
-            const rank = (product: Detail) => {
+            const rank = (product: DevelopmentProduct) => {
               const index = referenceCategoryGrid.indexOf(product);
               return index === -1 ? referenceCategoryGrid.length : index;
             };
