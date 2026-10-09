@@ -586,8 +586,8 @@ export function OrderDetailScreen({
             <>, {order.destination.addressLine2}</>
           )}
           <br />
-          {order.destination.postcode} {order.destination.city},{" "}
-          {order.destination.state}
+          {order.destination.postcode && <>{order.destination.postcode} </>}
+          {order.destination.city}, {order.destination.state}
         </address>
       </section>
       {order.refund.refundRequired && (

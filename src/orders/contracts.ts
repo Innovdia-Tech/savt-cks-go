@@ -397,7 +397,7 @@ export const parseOrderDetail = (value: unknown): OrderDetail => {
     !nullableText(destination.addressLine2, 240) ||
     !text(destination.city, 120) ||
     !text(destination.state, 120) ||
-    !text(destination.postcode, 24) ||
+    !(destination.postcode === "" || text(destination.postcode, 24)) ||
     !nullableText(destination.instructions, 500)
   )
     invalid();
