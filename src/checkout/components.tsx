@@ -2,7 +2,6 @@ import { useEffect, useId, useRef, useState, type ComponentProps } from "react";
 import { PaymentPanel } from "../payment/components";
 import { MAX_LINE_QUANTITY, type ProcessingFee } from "./contracts";
 import { syncDialog } from "../components/ui";
-import { ItemBarcode } from "../components/ItemBarcode";
 import {
   cartMerchandiseSummary,
   type CartController,
@@ -324,7 +323,6 @@ function QuoteSummary({
               <li key={line.outletProductId}>
                 <div>
                   <strong>{line.productNameSnapshot}</strong>
-                  <ItemBarcode barcode={line.barcodeSnapshot} />
                   <span>Quantity {line.quantity}</span>
                   {previous !== undefined &&
                     previous !== line.unitPriceMinor && (
@@ -510,15 +508,11 @@ export function CartScreen({
             (item) => item.outletProductId === line.outletProductId,
           );
           const name = accepted?.productNameSnapshot ?? line.product.name;
-          const barcode = accepted
-            ? accepted.barcodeSnapshot
-            : line.product.barcode;
           return (
             <article className="cart-line" key={line.outletProductId}>
               <CartProductImage url={line.product.imageUrl} name={name} />
               <div className="cart-line-copy">
                 <h3>{name}</h3>
-                <ItemBarcode barcode={barcode} />
                 <strong>
                   {money(
                     accepted?.unitPriceMinor ?? line.displayedUnitPriceMinor,

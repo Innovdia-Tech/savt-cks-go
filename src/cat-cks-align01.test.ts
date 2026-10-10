@@ -138,7 +138,8 @@ describe("CAT-CKS-ALIGN01 actual item screens", () => {
       controller: {},
       onBrowse() {},
     });
-    expect(html).toContain("Barcode 0001234567890");
+    expect(html).not.toContain("Barcode");
+    expect(html).not.toContain("0001234567890");
     expect(html).toMatch(/RM[^<]*12\.99/);
     expect(html).toMatch(/RM[^<]*37\.06/);
     expect(html).not.toMatch(/RM[^<]*29\.99/);
@@ -198,7 +199,9 @@ describe("CAT-CKS-ALIGN01 actual item screens", () => {
       const html = render(ProductTile, { product, onOpen() {}, onAdd() {} });
       expect(html).toContain(product.name);
       expect(html).toMatch(/RM[^<]*12\.99/);
-      if (product.barcode) expect(html).toContain(`Barcode ${product.barcode}`);
+      expect(html).not.toContain("Barcode");
+      expect(html).not.toContain("item-barcode");
+      if (product.barcode) expect(html).not.toContain(product.barcode);
       expect(itemText(html)).not.toMatch(
         /Each|Farm|1 L|AUTO-|44444444|22222222/,
       );
@@ -241,7 +244,8 @@ describe("CAT-CKS-ALIGN01 actual item screens", () => {
       controller: cart,
       onBrowse() {},
     });
-    expect(draft).toContain("Barcode 0000123456789");
+    expect(draft).not.toContain("Barcode");
+    expect(draft).not.toContain("0000123456789");
     await cart.requestQuote();
     expect(create.mock.calls[0][0].items).toEqual([
       { outletProductId: product.outletProductId, quantity: 1 },
@@ -260,7 +264,8 @@ describe("CAT-CKS-ALIGN01 actual item screens", () => {
       onBrowse() {},
     });
     expect(accepted).toContain("Brand Rice 5kg");
-    expect(accepted).toContain("Barcode 0000123456789");
+    expect(accepted).not.toContain("Barcode");
+    expect(accepted).not.toContain("0000123456789");
     expect(accepted).not.toContain("Changed master");
     expect(accepted).not.toContain("999999");
   });
@@ -290,8 +295,8 @@ describe("CAT-CKS-ALIGN01 actual item screens", () => {
       });
       expect(html).toContain("Frozen product name");
       expect(itemText(html)).not.toMatch(/OLD-SKU|Each|88888888/);
-      if (mode === "cks") expect(html).toContain("Barcode 0000123456789");
-      else expect(html).not.toContain("Barcode");
+      expect(html).not.toContain("Barcode");
+      expect(html).not.toContain("0000123456789");
     },
   );
 });

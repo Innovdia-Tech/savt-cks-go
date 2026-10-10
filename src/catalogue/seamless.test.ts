@@ -113,50 +113,56 @@ it("puts one named refresh in the Orders header and general help directly below 
   );
 });
 
-it("preserves authoritative product detail content and its purchase action", () => {
-  window.location.hash = "#detail/00000000-0000-4000-8000-000000000100";
-  fixture.catalogue.detail = {
-    data: {
-      productId: "00000000-0000-4000-8000-000000000100",
-      outletProductId: "00000000-0000-4000-8000-000000000200",
-      name: "Rice 1 kg",
-      barcode: "0000123456789",
-      imageUrl: "https://catalogue.example.com/media/rice.jpg",
-      category: { id: "pantry", name: "Pantry" },
-      subcategory: { id: "rice", name: "Rice and grains" },
-      brand: { id: "brand", name: "Example brand" },
-      uom: { code: "PACK", name: "Pack" },
-      packSize: "1 kg",
-      sellingPriceMinor: 1234,
-      currency: "MYR",
-      availability: "AVAILABLE",
-      description: "Store in a cool, dry place.",
-      storageType: "AMBIENT",
-    },
-  };
-  const html = render();
-  for (const text of [
-    "Rice 1 kg",
-    "1 kg",
-    "12.34",
-    "Barcode 0000123456789",
-    "Add to Basket",
-  ])
-    expect(html).toContain(text);
-  expect(html).toContain('src="https://catalogue.example.com/media/rice.jpg"');
-  for (const text of [
-    "Item description",
-    "Store in a cool, dry place.",
-    "Category",
-    "Pantry",
-    "Subcategory",
-    "Rice and grains",
-  ])
-    expect(html).toContain(text);
-  for (const retired of ["Example brand", "<dt>Unit</dt>", "Room temperature"])
-    expect(html).not.toContain(retired);
-  expect(html).not.toContain("support-action");
-});
+it.each(["1234567890123", "0000123456789", null])(
+  "preserves authoritative product detail content and its purchase action with internal barcode %j",
+  (barcode) => {
+    window.location.hash = "#detail/00000000-0000-4000-8000-000000000100";
+    fixture.catalogue.detail = {
+      data: {
+        productId: "00000000-0000-4000-8000-000000000100",
+        outletProductId: "00000000-0000-4000-8000-000000000200",
+        name: "Rice 1 kg",
+        barcode,
+        imageUrl: "https://catalogue.example.com/media/rice.jpg",
+        category: { id: "pantry", name: "Pantry" },
+        subcategory: { id: "rice", name: "Rice and grains" },
+        brand: { id: "brand", name: "Example brand" },
+        uom: { code: "PACK", name: "Pack" },
+        packSize: "1 kg",
+        sellingPriceMinor: 1234,
+        currency: "MYR",
+        availability: "AVAILABLE",
+        description: "Store in a cool, dry place.",
+        storageType: "AMBIENT",
+      },
+    };
+    const html = render();
+    for (const text of ["Rice 1 kg", "1 kg", "12.34", "Add to Basket"])
+      expect(html).toContain(text);
+    expect(html).not.toContain("Barcode");
+    expect(html).not.toContain("item-barcode");
+    if (barcode) expect(html).not.toContain(barcode);
+    expect(html).toContain(
+      'src="https://catalogue.example.com/media/rice.jpg"',
+    );
+    for (const text of [
+      "Item description",
+      "Store in a cool, dry place.",
+      "Category",
+      "Pantry",
+      "Subcategory",
+      "Rice and grains",
+    ])
+      expect(html).toContain(text);
+    for (const retired of [
+      "Example brand",
+      "<dt>Unit</dt>",
+      "Room temperature",
+    ])
+      expect(html).not.toContain(retired);
+    expect(html).not.toContain("support-action");
+  },
+);
 
 it.each(["detail", "legacyDetail"] as const)(
   "renders supplied ALIGN02 %s through the actual parser",
@@ -171,18 +177,21 @@ it.each(["detail", "legacyDetail"] as const)(
     expect(html).toContain("Subcategory");
     if (key === "detail") {
       for (const text of [
-        "000123",
         "Approved Groceries",
         "Rice",
         "12.99",
         "Add to Basket",
       ])
         expect(html).toContain(text);
+      expect(detail.data.barcode).toBe("000123");
+      expect(html).not.toContain("000123");
     } else {
       expect(html.match(/Not available/g)).toHaveLength(2);
       expect(html).not.toContain("Other");
       expect(html).not.toContain("Barcode");
     }
+    expect(html).not.toContain("Barcode");
+    expect(html).not.toContain("item-barcode");
     for (const field of [
       "<dt>Brand</dt>",
       "<dt>Unit</dt>",
