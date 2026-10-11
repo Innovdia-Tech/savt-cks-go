@@ -242,6 +242,11 @@ export class CartController {
 
   add(product: Product, assignment: Assignment) {
     this.assertMutable();
+    if (
+      !Number.isFinite(Date.parse(assignment.expiresAt)) ||
+      Date.parse(assignment.expiresAt) <= this.now()
+    )
+      throw new Error("CART_ASSIGNMENT_EXPIRED");
     const committed = this.state.assignment;
     if (!committed) throw new Error("CART_ASSIGNMENT_REQUIRED");
     if (assignment.outlet.id !== committed.outletId)

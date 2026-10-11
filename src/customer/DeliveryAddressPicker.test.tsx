@@ -19,6 +19,8 @@ describe("delivery address picker", () => {
     };
     fixture.checkout = {
       state: {
+        lines: [],
+        assignment: null,
         transitionPhase: "error",
         transitionError: "CUSTOMER_ASSIGNMENT_INCOMPLETE",
       },
@@ -40,7 +42,9 @@ describe("delivery address picker", () => {
       state: { addresses: [], listPhase: "ready" },
       controller: { selectedAddress: () => undefined },
     };
-    fixture.checkout = { state: { transitionPhase: "idle" } };
+    fixture.checkout = {
+      state: { lines: [], assignment: null, transitionPhase: "idle" },
+    };
     const render = (embeddedHost: boolean) =>
       renderToStaticMarkup(
         createElement(DeliveryAddressPicker, {
@@ -76,6 +80,8 @@ describe("delivery address picker", () => {
     fixture.checkout = {
       state: {
         paymentFrozen: false,
+        lines: [],
+        assignment: null,
         transitionPhase: "idle",
         transitionError: null,
       },
@@ -126,6 +132,8 @@ describe("delivery address picker", () => {
     fixture.checkout = {
       state: {
         paymentFrozen: false,
+        lines: [],
+        assignment: null,
         transitionPhase: "idle",
         transitionError: null,
       },

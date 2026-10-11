@@ -1,4 +1,5 @@
 import { guardHistoryNavigation } from "./navigation";
+import { observeCatalogueBrowsing } from "./browsing-lifecycle";
 import { useSupportWhatsApp } from "../support/context";
 import { SupportAction } from "../support/SupportAction";
 import { useEffect, useRef, useState } from "react";
@@ -436,6 +437,10 @@ export function CatalogueStatus({
     loading: ["Loading catalogue", "Fetching the latest products."],
     "session-expired": errors.CUSTOMER_SESSION_INVALID,
     expired: errors.CUSTOMER_ASSIGNMENT_CONTEXT_EXPIRED,
+    "authority-change": [
+      "Delivery availability changed",
+      "Review your delivery address before continuing. Your basket has been kept.",
+    ],
   };
   const productConnectivityError =
     hasAssignment && ["NETWORK_ERROR", "REQUEST_TIMEOUT"].includes(error ?? "")
@@ -451,7 +456,9 @@ export function CatalogueStatus({
     phase,
   );
   const addressAction =
-    ["no-address", "coordinates", "address-error"].includes(phase) ||
+    ["no-address", "coordinates", "address-error", "authority-change"].includes(
+      phase,
+    ) ||
     error?.startsWith("CUSTOMER_ADDRESS_") ||
     error === "CUSTOMER_NO_SERVICEABLE_OUTLET";
   return (
@@ -551,6 +558,16 @@ export function CatalogueApp({
   const customer = useCustomer();
   const { guardNavigation } = customer;
   const [route, setRoute] = useState(readRoute);
+  useEffect(
+    () =>
+      observeCatalogueBrowsing(
+        controller,
+        route === "home" ||
+          route === "categories" ||
+          route.startsWith("detail/"),
+      ),
+    [controller, route],
+  );
   const [query, setQuery] = useState(state.q);
   const [composing, setComposing] = useState(false);
   const [advertisingScenario, setAdvertisingScenario] = useState<
@@ -817,6 +834,23 @@ export function CatalogueApp({
     })();
   const browse = route === "home" || route === "categories";
   const p = state.detail?.data;
+  const addProduct = (product: Product) => {
+    if (!state.assignment) return;
+    try {
+      checkout.controller.add(product, state.assignment);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === "CART_ASSIGNMENT_EXPIRED"
+      ) {
+        // A delayed expiry timer can leave Add visible. Recover authority,
+        // but never replay the purchase under refreshed prices or stock.
+        void controller.renewAssignment();
+        return;
+      }
+      throw error;
+    }
+  };
   const detailPurchase = p ? (
     <ProductDetailPurchase
       product={p}
@@ -827,14 +861,14 @@ export function CatalogueApp({
       }
       orderingDisabled={
         state.readOnly ||
+        state.renewing ||
+        Boolean(state.renewalError) ||
         p.availability !== "AVAILABLE" ||
         !state.assignment ||
         checkout.state.assignment?.outletId !== state.assignment.outlet.id
       }
       paymentFrozen={checkout.state.paymentFrozen}
-      onAdd={() => {
-        if (state.assignment) checkout.controller.add(p, state.assignment);
-      }}
+      onAdd={() => addProduct(p)}
       onSetQuantity={(quantity) =>
         checkout.controller.setQuantity(p.outletProductId, quantity)
       }
@@ -903,7 +937,7 @@ export function CatalogueApp({
         initialAdd={route === "delivery-address/new"}
         onDone={() => {
           navigate("home");
-          void controller.retry();
+          void controller.resumeAfterAddressSelection();
         }}
         onBack={() => navigate("home")}
         onManage={() => navigate("profile")}
@@ -1252,6 +1286,17 @@ export function CatalogueApp({
                       </div>
                     </section>
                   )}
+                {state.phase === "ready" && state.renewalError && (
+                  <div role="alert" className="catalogue-notice">
+                    We couldn’t refresh delivery availability. Please try again.
+                    <button
+                      type="button"
+                      onClick={() => void controller.retry()}
+                    >
+                      Try again
+                    </button>
+                  </div>
+                )}
                 {state.phase !== "ready" ? (
                   <CatalogueStatus
                     supportWhatsApp={supportWhatsApp}
@@ -1294,7 +1339,7 @@ export function CatalogueApp({
                   )
                 ) : route === "home" ? (
                   <HomeFeaturedProducts
-                    key={state.assignment?.assignmentContextId}
+                    key={`${state.assignment?.customerAddressId}/${state.assignment?.addressRowVersion}/${state.assignment?.outlet.id}`}
                     products={state.featured}
                     onBrowse={() => {
                       setQuery("");
@@ -1321,15 +1366,14 @@ export function CatalogueApp({
                         onOpen={() => openProduct(product.outletProductId)}
                         orderingDisabled={
                           state.readOnly ||
+                          state.renewing ||
+                          Boolean(state.renewalError) ||
                           checkout.state.paymentFrozen ||
                           !state.assignment ||
                           checkout.state.assignment?.outletId !==
                             state.assignment.outlet.id
                         }
-                        onAdd={() => {
-                          if (state.assignment)
-                            checkout.controller.add(product, state.assignment);
-                        }}
+                        onAdd={() => addProduct(product)}
                       />
                     )}
                   />
@@ -1375,18 +1419,14 @@ export function CatalogueApp({
                             onOpen={() => openProduct(product.outletProductId)}
                             orderingDisabled={
                               state.readOnly ||
+                              state.renewing ||
+                              Boolean(state.renewalError) ||
                               checkout.state.paymentFrozen ||
                               !state.assignment ||
                               checkout.state.assignment?.outletId !==
                                 state.assignment.outlet.id
                             }
-                            onAdd={() => {
-                              if (state.assignment)
-                                checkout.controller.add(
-                                  product,
-                                  state.assignment,
-                                );
-                            }}
+                            onAdd={() => addProduct(product)}
                           />
                         ))}
                       </div>

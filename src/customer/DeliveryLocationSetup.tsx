@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SupportAction } from "../support/SupportAction";
 import { useSupportWhatsApp } from "../support/context";
 import type { Address } from "../addresses/contracts";
@@ -22,10 +22,14 @@ import {
 import { DataFeedback } from "./components";
 import { useCustomer } from "./context";
 import { hasDeliveryCoordinates } from "./delivery-readiness";
+import { useDeliveryBack } from "./delivery-back";
 
-type Stage = "choose" | "search" | "confirm" | "details" | "denied";
+type Stage =
+  "choose" | "locating" | "search" | "confirm" | "details" | "denied";
 type SearchPhase =
   "initial" | "typing" | "loading" | "results" | "empty" | "error";
+type ConfirmBack = "cancel" | "choose" | "search";
+type SearchBack = "cancel" | "choose" | "confirm";
 const locationCopy = (location: DeliveryLocation) =>
   location.formattedAddress ||
   [location.addressLine1, location.postcode, location.city, location.state]
@@ -39,12 +43,16 @@ export function DeliveryLocationSetup({
   onCancel,
   initialMode = "choose",
   supportWhatsApp: suppliedSupportWhatsApp,
+  onCurrentLocationError,
+  backOwner,
 }: {
   onDone: () => void;
   address?: Address | null;
   onCancel?: () => void;
   initialMode?: "choose" | "search" | "current" | "confirm";
   supportWhatsApp?: string;
+  onCurrentLocationError?: () => void;
+  backOwner?: unknown;
 }) {
   const configuredSupportWhatsApp = useSupportWhatsApp();
   const supportWhatsApp = suppliedSupportWhatsApp ?? configuredSupportWhatsApp;
@@ -52,6 +60,7 @@ export function DeliveryLocationSetup({
     state,
     controller,
     guardNavigation,
+    navigationPending,
     locationSearch,
     currentLocation: currentLocationPort,
     pinMapAdapter,
@@ -63,6 +72,8 @@ export function DeliveryLocationSetup({
     address === undefined ? controller.selectedAddress() : address;
   const originalSelectedId = useRef(controller.selectedAddress()?.id ?? null);
   const repairing = Boolean(selected && !hasDeliveryCoordinates(selected));
+  const callerBack: ConfirmBack =
+    initialMode === "choose" ? "choose" : "cancel";
   const [port] = useState(
     () => currentLocationPort ?? new BrowserDeliveryLocationPort(),
   );
@@ -71,7 +82,9 @@ export function DeliveryLocationSetup({
       ? "search"
       : initialMode === "confirm"
         ? "confirm"
-        : "choose",
+        : initialMode === "current"
+          ? "locating"
+          : "choose",
   );
   const [query, setQuery] = useState("");
   const [composing, setComposing] = useState(false);
@@ -101,7 +114,18 @@ export function DeliveryLocationSetup({
       ? { latitude: selected.latitude!, longitude: selected.longitude! }
       : null,
   );
-  const [returnToChoose, setReturnToChoose] = useState(false);
+  const [confirmBack, setConfirmBack] = useState<ConfirmBack>(callerBack);
+  const [locationBack, setLocationBack] = useState<ConfirmBack>(callerBack);
+  const [searchBack, setSearchBack] = useState<SearchBack>(
+    initialMode === "search" || initialMode === "current"
+      ? "cancel"
+      : initialMode === "confirm"
+        ? "confirm"
+        : "choose",
+  );
+  const [searchCommitBack, setSearchCommitBack] = useState<ConfirmBack>(
+    initialMode === "search" ? "search" : callerBack,
+  );
   const [candidate, setCandidate] = useState<PinCoordinate | null>(null);
   const [previewPhase, setPreviewPhase] = useState<
     "pending" | "resolved" | "error"
@@ -127,31 +151,63 @@ export function DeliveryLocationSetup({
   const pinGeneration = useRef(0);
   const resolvedGeneration = useRef(-1);
   const generation = useRef(0);
+  const mountGeneration = useRef(0);
+  const lifecycleActive = useRef(false);
   const currentStarted = useRef(false);
   const locationInFlight = useRef<Promise<DeliveryLocation> | null>(null);
   const input = useRef<HTMLInputElement>(null);
 
-  useEffect(
-    () => () => {
-      searchAbort.current?.abort();
-      resolveAbort.current?.abort();
-      reverseAbort.current?.abort();
-      if (reverseTimer.current) clearTimeout(reverseTimer.current);
-      port.dispose?.();
-    },
-    [port],
-  );
+  useEffect(() => {
+    lifecycleActive.current = true;
+    const mounted = ++mountGeneration.current;
+    return () => {
+      lifecycleActive.current = false;
+      queueMicrotask(() => {
+        if (mountGeneration.current !== mounted) return;
+        ++generation.current;
+        searchAbort.current?.abort();
+        resolveAbort.current?.abort();
+        reverseAbort.current?.abort();
+        if (reverseTimer.current) clearTimeout(reverseTimer.current);
+        port.dispose?.();
+      });
+    };
+  }, [port]);
   useEffect(() => {
     if (stage === "search") input.current?.focus();
   }, [stage]);
 
-  const openSearch = () => {
+  const openSearch = (
+    backTarget: SearchBack = stage === "confirm"
+      ? "confirm"
+      : stage === "choose" || stage === "denied"
+        ? "choose"
+        : "cancel",
+    preserveQuery = false,
+    commitBack: ConfirmBack = backTarget === "choose"
+      ? "search"
+      : backTarget === "confirm"
+        ? confirmBack
+        : callerBack,
+  ) => {
+    if (
+      stage === "confirm" &&
+      candidate &&
+      (candidate.latitude !== mapInitial?.latitude ||
+        candidate.longitude !== mapInitial?.longitude)
+    ) {
+      setMapInitial(candidate);
+    }
     ++generation.current;
     invalidatePin();
     token.current = crypto.randomUUID();
-    setQuery("");
-    setSuggestions([]);
-    setSearchPhase("initial");
+    setSearchBack(backTarget);
+    setSearchCommitBack(commitBack);
+    if (!preserveQuery) {
+      setQuery("");
+      setSuggestions([]);
+      setSearchPhase("initial");
+    }
     setGpsError("");
     setStage("search");
   };
@@ -161,9 +217,19 @@ export function DeliveryLocationSetup({
     resolveAbort.current?.abort();
     reverseAbort.current?.abort();
     token.current = null;
+    if (searchBack === "confirm" && location && mapInitial) {
+      setStage("confirm");
+      return true;
+    }
     setQuery("");
     setSuggestions([]);
-    setStage("choose");
+    if (searchBack === "choose") {
+      setStage("choose");
+      return true;
+    }
+    if (!onCancel) return false;
+    guardNavigation(onCancel);
+    return true;
   };
   const changeQuery = (value: string) => {
     ++generation.current;
@@ -234,31 +300,52 @@ export function DeliveryLocationSetup({
     const settled = () => {
       if (locationInFlight.current === request) {
         locationInFlight.current = null;
-        setLocating(false);
+        if (lifecycleActive.current) setLocating(false);
       }
     };
     void request.then(settled, settled);
     return request;
   };
 
-  const currentLocation = async () => {
+  const currentLocation = async (returnFailureToPicker = false) => {
     if (busy || locationInFlight.current || state.readOnly) return;
+    const requestOrigin = stage;
+    const requestBack: ConfirmBack =
+      requestOrigin === "denied"
+        ? locationBack
+        : requestOrigin === "confirm"
+          ? confirmBack
+          : requestOrigin === "search"
+            ? searchCommitBack
+            : callerBack;
+    if (requestOrigin !== "denied") setLocationBack(requestBack);
     invalidatePin();
     const requestGeneration = ++generation.current;
     searchAbort.current?.abort();
     setGpsError("");
     try {
       const found = await requestCurrentCoordinates();
-      if (generation.current !== requestGeneration) return;
+      if (!lifecycleActive.current || generation.current !== requestGeneration)
+        return;
       token.current = null;
       setLocation(found);
       setMapInitial({ latitude: found.latitude, longitude: found.longitude });
       setMapStatus("loading");
-      setReturnToChoose(true);
+      setConfirmBack(requestBack);
+      if (requestBack === "search") setSearchBack(callerBack);
       setStage("confirm");
     } catch (error) {
-      if (generation.current !== requestGeneration) return;
-      if (error instanceof DeliveryLocationError && error.kind === "denied") {
+      if (!lifecycleActive.current || generation.current !== requestGeneration)
+        return;
+      if (
+        (returnFailureToPicker || initialMode === "current") &&
+        onCurrentLocationError
+      ) {
+        onCurrentLocationError();
+      } else if (
+        error instanceof DeliveryLocationError &&
+        error.kind === "denied"
+      ) {
         setStage("denied");
       } else {
         setGpsError(
@@ -270,7 +357,7 @@ export function DeliveryLocationSetup({
   useEffect(() => {
     if (initialMode === "current" && !currentStarted.current) {
       currentStarted.current = true;
-      void currentLocation();
+      void currentLocation(true);
     }
     // The initial current-location request exists only after an explicit picker tap.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -297,7 +384,8 @@ export function DeliveryLocationSetup({
         longitude: resolved.longitude,
       });
       setMapStatus("loading");
-      setReturnToChoose(false);
+      setConfirmBack(searchCommitBack);
+      if (searchCommitBack === "search") setSearchBack(callerBack);
       token.current = null;
       setStage("confirm");
     } catch {
@@ -442,9 +530,71 @@ export function DeliveryLocationSetup({
     onDone,
   ]);
 
-  if (state.profilePhase === "loading" || state.listPhase === "loading")
-    return <StoreLoading />;
-  if (state.profilePhase === "error" || state.listPhase === "error")
+  const back = () => {
+    if (stage === "search") return closeSearch();
+    if (stage === "confirm") {
+      invalidatePin();
+      if (confirmBack === "choose") {
+        setStage("choose");
+        return true;
+      }
+      if (confirmBack === "search") {
+        openSearch(searchBack, true, searchCommitBack);
+        return true;
+      }
+      if (!onCancel) return false;
+      guardNavigation(onCancel);
+      return true;
+    }
+    if (stage === "details") {
+      guardNavigation(() => setStage("confirm"));
+      return true;
+    }
+    if (!onCancel) return false;
+    ++generation.current;
+    guardNavigation(onCancel);
+    return true;
+  };
+  const canGoBack =
+    stage === "details" ||
+    (stage === "search" && (searchBack !== "cancel" || Boolean(onCancel))) ||
+    (stage === "confirm" && (confirmBack !== "cancel" || Boolean(onCancel))) ||
+    ((stage === "choose" || stage === "locating" || stage === "denied") &&
+      Boolean(onCancel));
+  const backDestination =
+    stage === "confirm"
+      ? confirmBack === "search"
+        ? `search:${searchBack}`
+        : confirmBack
+      : stage === "search"
+        ? searchBack
+        : stage === "details"
+          ? "confirm"
+          : "cancel";
+  const callerAvailable = Boolean(onCancel);
+  const deliverySurface =
+    state.profilePhase === "loading" || state.listPhase === "loading"
+      ? "loading"
+      : state.profilePhase === "error" || state.listPhase === "error"
+        ? "error"
+        : "ready";
+  const backOwnership = useMemo(
+    () => ({}),
+    [
+      controller,
+      backOwner,
+      initialMode,
+      selected?.id,
+      stage,
+      backDestination,
+      callerAvailable,
+      deliverySurface,
+    ],
+  );
+  useDeliveryBack(back, canGoBack && !navigationPending, false, backOwnership);
+
+  if (deliverySurface === "loading") return <StoreLoading />;
+  if (deliverySurface === "error")
     return (
       <main className="delivery-setup">
         <h1>Your delivery details could not be loaded</h1>
@@ -452,22 +602,16 @@ export function DeliveryLocationSetup({
       </main>
     );
 
-  const back = () => {
-    if (stage === "search") closeSearch();
-    else if (stage === "confirm") {
-      invalidatePin();
-      returnToChoose ? setStage("choose") : openSearch();
-    } else if (stage === "details") guardNavigation(() => setStage("confirm"));
-    else if (onCancel) guardNavigation(onCancel);
-  };
   return (
-    <main className="delivery-setup delivery-flow">
+    <main
+      className={`delivery-setup delivery-flow${stage === "locating" ? " delivery-picker" : ""}`}
+    >
       <button
         type="button"
         className="delivery-flow__back"
-        onClick={back}
+        onClick={() => back()}
         aria-label="Go back"
-        disabled={!onCancel && stage === "choose"}
+        disabled={!canGoBack}
       >
         ← <span>Back</span>
       </button>
@@ -495,7 +639,7 @@ export function DeliveryLocationSetup({
           <button
             type="button"
             className="delivery-flow__search-entry"
-            onClick={openSearch}
+            onClick={() => openSearch("choose")}
           >
             <SearchIcon className="h-5 w-5" /> Search building, street or
             postcode
@@ -514,6 +658,25 @@ export function DeliveryLocationSetup({
               {gpsError}
             </p>
           )}
+        </>
+      )}
+      {stage === "locating" && (
+        <>
+          <h1>Delivery address</h1>
+          <p className="delivery-picker__intro">
+            Choose where we should deliver your order.
+          </p>
+          <button
+            type="button"
+            className="delivery-flow__search-entry"
+            onClick={() => openSearch("cancel")}
+          >
+            <SearchIcon className="h-5 w-5" /> Search building, street or
+            postcode
+          </button>
+          <button type="button" className="delivery-flow__current" disabled>
+            <PinIcon className="h-5 w-5" /> Finding your location…
+          </button>
         </>
       )}
       {stage === "search" && (
@@ -623,7 +786,13 @@ export function DeliveryLocationSetup({
           <button
             type="button"
             className="delivery-setup__primary"
-            onClick={openSearch}
+            onClick={() =>
+              openSearch(
+                searchBack,
+                true,
+                locationBack === "choose" ? "search" : locationBack,
+              )
+            }
           >
             Search address
           </button>
@@ -677,7 +846,7 @@ export function DeliveryLocationSetup({
               <button
                 type="button"
                 className="delivery-setup__secondary"
-                onClick={openSearch}
+                onClick={() => openSearch("confirm", true)}
               >
                 Search again
               </button>
@@ -696,7 +865,7 @@ export function DeliveryLocationSetup({
                 type="button"
                 className="delivery-setup__secondary"
                 onClick={() => {
-                  openSearch();
+                  openSearch("confirm", true);
                 }}
               >
                 Search another location

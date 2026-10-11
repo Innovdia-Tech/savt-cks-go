@@ -4,6 +4,7 @@ import { useCustomer } from "./context";
 import { errorMessage } from "./errors";
 import { DeliveryLocationSetup } from "./DeliveryLocationSetup";
 import { hasDeliveryCoordinates } from "./delivery-readiness";
+import { useDeliveryBack } from "./delivery-back";
 import { AddressForm } from "../addresses/AddressForm";
 import { editAddressName } from "../addresses/presentation";
 import { useOptionalCheckout } from "../checkout/context";
@@ -134,8 +135,14 @@ export function CustomerProfileScreen({
 }: {
   shellOwnsTransientNotice?: boolean;
 }) {
-  const { state, controller, guardNavigation, setDirty, development } =
-    useCustomer();
+  const {
+    state,
+    controller,
+    guardNavigation,
+    navigationPending,
+    setDirty,
+    development,
+  } = useCustomer();
   const checkout = useOptionalCheckout();
   const [editing, setEditing] = useState<Address | "new" | null>(null);
   const [editingLocation, setEditingLocation] = useState(false);
@@ -157,6 +164,22 @@ export function CustomerProfileScreen({
     setEditing(null);
     setEditingLocation(false);
   };
+  const editingDetails = Boolean(
+    editing &&
+    editing !== "new" &&
+    hasDeliveryCoordinates(editing) &&
+    !editingLocation,
+  );
+  useDeliveryBack(
+    () => {
+      if (!editingDetails) return false;
+      guardNavigation(done);
+      return true;
+    },
+    editingDetails && !navigationPending,
+    false,
+    editing,
+  );
   const reload = () => {
     done();
     setDiscardReload(false);
@@ -197,6 +220,7 @@ export function CustomerProfileScreen({
       {editing === "new" ||
       (editing && (!hasDeliveryCoordinates(editing) || editingLocation)) ? (
         <DeliveryLocationSetup
+          backOwner={editing}
           address={editing === "new" ? null : editing}
           initialMode={editingLocation ? "confirm" : "choose"}
           onDone={done}

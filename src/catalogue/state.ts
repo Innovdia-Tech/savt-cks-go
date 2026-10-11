@@ -28,6 +28,7 @@ export type CatalogueState = {
     | "ready"
     | "error"
     | "expired"
+    | "authority-change"
     | "session-expired";
   assignment: Assignment | null;
   categories: CustomerCategory[];
@@ -46,6 +47,8 @@ export type CatalogueState = {
   page: number;
   error: string | null;
   readOnly: boolean;
+  renewing: boolean;
+  renewalError: string | null;
 };
 const empty = (): CatalogueState => ({
   phase: "address-loading",
@@ -63,6 +66,8 @@ const empty = (): CatalogueState => ({
   page: 1,
   error: null,
   readOnly: false,
+  renewing: false,
+  renewalError: null,
 });
 const renewCodes = [
   "CUSTOMER_ASSIGNMENT_CONTEXT_EXPIRED",
@@ -73,8 +78,13 @@ export class CatalogueController {
   private state = empty();
   private binding: Binding | undefined;
   private generation = 0;
+  private viewRevision = 0;
   private abort: AbortController | undefined;
   private timer: ReturnType<typeof setTimeout> | undefined;
+  private renewalTimer: ReturnType<typeof setTimeout> | undefined;
+  private renewal: Promise<boolean> | null = null;
+  private browsingActive = false;
+  private authority: Assignment | null = null;
   private listeners = new Set<() => void>();
   private bootstrapSession: object | null = null;
   constructor(
@@ -93,14 +103,21 @@ export class CatalogueController {
     this.state = { ...this.state, ...patch };
     this.listeners.forEach((l) => l());
   }
-  private cancel() {
+  private cancel(preserveRenewal = false) {
     ++this.generation;
     this.abort?.abort();
     clearTimeout(this.timer);
+    clearTimeout(this.renewalTimer);
+    if (!preserveRenewal) {
+      this.renewal = null;
+      this.state = { ...this.state, renewing: false };
+    }
   }
   dispose() {
     this.cancel();
     this.binding = undefined;
+    this.authority = null;
+    this.browsingActive = false;
     this.state = empty();
   }
   bind(binding: Binding) {
@@ -119,6 +136,7 @@ export class CatalogueController {
     if (same) return;
     this.cancel();
     this.binding = binding;
+    this.authority = null;
     this.state = empty();
     let phase: CatalogueState["phase"] = "assignment-loading";
     if (!binding.session) phase = "session-expired";
@@ -136,6 +154,7 @@ export class CatalogueController {
     if (phase === "assignment-loading") return this.load();
   }
   search(q: string) {
+    ++this.viewRevision;
     this.update({ q, page: 1, detail: null, detailId: undefined });
     return this.load();
   }
@@ -144,6 +163,7 @@ export class CatalogueController {
     categoryPage = this.state.categoryPage,
     q = this.state.q,
   ) {
+    ++this.viewRevision;
     this.update({
       categoryId,
       subcategoryId: undefined,
@@ -157,6 +177,7 @@ export class CatalogueController {
     return this.load();
   }
   resetFilters() {
+    ++this.viewRevision;
     this.update({
       q: "",
       categoryId: undefined,
@@ -170,6 +191,7 @@ export class CatalogueController {
   }
   nextPage(page: number) {
     if (page < 1 || page > 1000) return Promise.resolve();
+    ++this.viewRevision;
     this.update({ page, detail: null, detailId: undefined });
     return this.load();
   }
@@ -184,23 +206,111 @@ export class CatalogueController {
         ))
     )
       return Promise.resolve(false);
+    ++this.viewRevision;
     this.update({ subcategoryId, page: 1, detail: null, detailId: undefined });
     return this.load();
   }
   categoryPage(page: number) {
+    ++this.viewRevision;
     this.update({ categoryPage: page });
     return this.load();
   }
   open(id: string) {
+    ++this.viewRevision;
     this.update({ detailId: id, detail: null });
     return this.load();
   }
   closeDetail() {
+    ++this.viewRevision;
     this.update({ detailId: undefined, detail: null });
     return this.load();
   }
   retry() {
+    if (this.renewal) return this.renewal;
+    if (this.state.phase === "authority-change") return Promise.resolve(false);
+    if (this.state.renewalError || this.state.phase === "expired")
+      return this.renewAssignment();
     return this.load();
+  }
+  /** A committed picker selection has already passed the existing Basket dialog. */
+  resumeAfterAddressSelection() {
+    if (this.state.phase === "authority-change") {
+      this.authority = null;
+      this.update({
+        phase: "assignment-loading",
+        q: "",
+        categoryId: undefined,
+        page: 1,
+        categoryPage: 1,
+        detailId: undefined,
+        renewalError: null,
+      });
+    }
+    return this.retry();
+  }
+  setBrowsingActive(active: boolean) {
+    const resumed = active && !this.browsingActive;
+    this.browsingActive = active;
+    clearTimeout(this.renewalTimer);
+    if (
+      !active ||
+      ["authority-change", "session-expired"].includes(this.state.phase)
+    )
+      return;
+    if (this.state.assignment) {
+      if (resumed && Date.parse(this.state.assignment.expiresAt) <= this.now())
+        void this.renewAssignment();
+      else this.scheduleRenewal(this.state.assignment);
+    } else if (resumed && this.state.phase === "expired")
+      void this.renewAssignment();
+  }
+  /** One authenticated assignment/read operation, shared by timer/resume/retry. */
+  renewAssignment(): Promise<boolean> {
+    if (this.renewal) return this.renewal;
+    if (
+      !this.binding?.session ||
+      ["authority-change", "session-expired"].includes(this.state.phase)
+    )
+      return Promise.resolve(false);
+    const task = Promise.resolve()
+      .then(() => {
+        if (this.renewal !== task) return false;
+        this.update({ renewing: true, renewalError: null });
+        return this.load(true, true);
+      })
+      .finally(() => {
+        // Late completion never releases or updates a replacement operation.
+        if (this.renewal !== task) return;
+        this.renewal = null;
+        this.update({ renewing: false });
+        if (this.state.assignment) this.armExpiry(this.state.assignment);
+      });
+    this.renewal = task;
+    return task;
+  }
+  private scheduleRenewal(a: Assignment) {
+    clearTimeout(this.renewalTimer);
+    if (
+      !this.browsingActive ||
+      this.renewal ||
+      this.state.renewalError ||
+      this.state.phase !== "ready"
+    )
+      return;
+    const lead = Math.min(
+      30000,
+      (Date.parse(a.expiresAt) - Date.parse(a.resolvedAt)) / 5,
+    );
+    this.renewalTimer = setTimeout(
+      () => {
+        if (
+          this.browsingActive &&
+          this.state.assignment?.assignmentContextId === a.assignmentContextId
+        )
+          void this.renewAssignment();
+      },
+      Math.max(0, Date.parse(a.expiresAt) - this.now() - lead),
+    );
   }
   async resolveAdvertisement(
     action: AdvertisementAction,
@@ -308,9 +418,11 @@ export class CatalogueController {
           this.state.assignment?.assignmentContextId !== a.assignmentContextId
         )
           return;
-        this.cancel();
+        // A renewal may finish after the OLD deadline, but expired authority
+        // and its prices/stock are unavailable throughout that interval.
+        if (!this.state.renewing) this.cancel();
         this.update({
-          phase: "expired",
+          phase: this.state.renewing ? "assignment-loading" : "expired",
           assignment: null,
           products: null,
           featured: [],
@@ -320,12 +432,12 @@ export class CatalogueController {
           homeCategories: [],
           subcategories: [],
           subcategoryId: undefined,
-          page: 1,
           error: "CUSTOMER_ASSIGNMENT_CONTEXT_EXPIRED",
         });
       },
       Math.max(0, Date.parse(a.expiresAt) - this.now()),
     );
+    this.scheduleRenewal(a);
   }
   private validateMeta(m: DetailMeta, a: Assignment) {
     if (
@@ -369,8 +481,20 @@ export class CatalogueController {
     }
     throw new CatalogueError("INVALID_RESPONSE");
   }
-  private async load(background = false): Promise<boolean> {
+  private async load(
+    background = false,
+    forceAssignment = false,
+  ): Promise<boolean> {
     const binding = this.binding;
+    if (this.state.phase === "authority-change") return false;
+    if (!forceAssignment && this.renewal) {
+      await this.renewal;
+      if (
+        this.binding !== binding ||
+        this.getSnapshot().phase === "authority-change"
+      )
+        return false;
+    }
     if (
       !binding?.session ||
       !binding.address ||
@@ -388,16 +512,20 @@ export class CatalogueController {
           Date.parse(this.state.assignment.expiresAt) > this.now()))
         ? this.state
         : null;
-    this.cancel();
+    const previousAuthority = this.state.assignment ?? this.authority;
+    this.cancel(forceAssignment);
     const generation = this.generation;
     const controller = new AbortController();
     this.abort = controller;
     const signal = controller.signal;
     const current = () => generation === this.generation;
+    let viewRevision = this.viewRevision;
+    if (forceAssignment && this.state.assignment)
+      this.armExpiry(this.state.assignment);
 
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        let a = this.state.assignment;
+        let a = forceAssignment ? null : this.state.assignment;
         if (!a || Date.parse(a.expiresAt) <= this.now()) {
           if (!retained)
             this.update({
@@ -408,8 +536,7 @@ export class CatalogueController {
               categories: [],
               homeCategories: [],
               subcategories: [],
-              page: 1,
-              categoryPage: 1,
+              ...(!forceAssignment ? { page: 1, categoryPage: 1 } : {}),
               error: null,
             });
           a = await this.api.assign(
@@ -424,6 +551,28 @@ export class CatalogueController {
             throw new CatalogueError("INVALID_RESPONSE");
           if (Date.parse(a.expiresAt) <= this.now())
             throw new CatalogueError("CUSTOMER_ASSIGNMENT_CONTEXT_EXPIRED");
+          if (
+            previousAuthority &&
+            (previousAuthority.outlet.id !== a.outlet.id ||
+              a.outlet.availability !== "AVAILABLE")
+          ) {
+            this.update({
+              phase: "authority-change",
+              assignment: null,
+              products: null,
+              detail: null,
+              categories: [],
+              homeCategories: [],
+              featured: [],
+              advertisements: [],
+              error: "CUSTOMER_ASSIGNMENT_CHANGED",
+              renewalError: null,
+            });
+            clearTimeout(this.timer);
+            clearTimeout(this.renewalTimer);
+            return false;
+          }
+          this.authority = a;
           this.update({ assignment: a });
         }
         this.armExpiry(a);
@@ -443,6 +592,7 @@ export class CatalogueController {
             : {}),
         };
         const detailId = this.state.detailId;
+        viewRevision = this.viewRevision;
         const [categories, result, subcategories] = await Promise.all([
           this.api.categories(a, { page: this.state.categoryPage }, signal),
           detailId
@@ -452,7 +602,7 @@ export class CatalogueController {
             ? Promise.resolve(this.state.subcategories)
             : this.loadSubcategories(a, filter.categoryId, signal),
         ]);
-        if (!current()) return false;
+        if (!current() || viewRevision !== this.viewRevision) return false;
         this.validateMeta(categories.meta, a);
         this.validateMeta(result.meta, a);
         if (
@@ -482,7 +632,7 @@ export class CatalogueController {
               { page: nextPage },
               signal,
             );
-            if (!current()) return false;
+            if (!current() || viewRevision !== this.viewRevision) return false;
             this.validateMeta(next.meta, a);
             if (
               next.meta.page !== nextPage ||
@@ -496,6 +646,8 @@ export class CatalogueController {
         }
         this.update({
           phase: "ready",
+          error: null,
+          renewalError: null,
           categories: categories.data,
           subcategories,
           ...(this.state.categoryPage === 1
@@ -511,7 +663,7 @@ export class CatalogueController {
         this.armExpiry(a);
         return true;
       } catch (error) {
-        if (!current()) return false;
+        if (!current() || viewRevision !== this.viewRevision) return false;
         const code =
           error instanceof CatalogueError ? error.code : "INVALID_RESPONSE";
         if (
@@ -525,7 +677,7 @@ export class CatalogueController {
           attempt--;
           continue;
         }
-        if (attempt === 0 && renewCodes.includes(code)) {
+        if (!forceAssignment && attempt === 0 && renewCodes.includes(code)) {
           retained = null;
           this.update({
             assignment: null,
@@ -543,6 +695,7 @@ export class CatalogueController {
           continue;
         }
         if (
+          !forceAssignment &&
           retained &&
           ["NETWORK_ERROR", "REQUEST_TIMEOUT"].includes(code) &&
           (retained.phase === "no-service" ||
@@ -555,14 +708,49 @@ export class CatalogueController {
           if (retained.assignment) this.armExpiry(retained.assignment);
           return false;
         }
+        if (
+          forceAssignment &&
+          ![
+            "CUSTOMER_SESSION_INVALID",
+            "CUSTOMER_ADDRESS_CHANGED",
+            "CUSTOMER_ADDRESS_NOT_FOUND",
+            "CUSTOMER_ADDRESS_INACTIVE",
+            "CUSTOMER_NO_SERVICEABLE_OUTLET",
+          ].includes(code)
+        ) {
+          if (
+            retained?.assignment &&
+            Date.parse(retained.assignment.expiresAt) > this.now()
+          ) {
+            this.update({ ...retained, renewing: true, renewalError: code });
+            this.armExpiry(retained.assignment);
+          } else {
+            this.update({
+              phase: "error",
+              assignment: null,
+              products: null,
+              detail: null,
+              categories: [],
+              homeCategories: [],
+              featured: [],
+              advertisements: [],
+              error: code,
+              renewalError: code,
+            });
+          }
+          return false;
+        }
         this.update({
           phase:
             code === "CUSTOMER_SESSION_INVALID"
               ? "session-expired"
-              : code === "CUSTOMER_NO_SERVICEABLE_OUTLET"
-                ? "no-service"
-                : "error",
+              : forceAssignment && code.startsWith("CUSTOMER_ADDRESS_")
+                ? "authority-change"
+                : code === "CUSTOMER_NO_SERVICEABLE_OUTLET"
+                  ? "no-service"
+                  : "error",
           error: code,
+          renewalError: null,
           products: null,
           featured: [],
           advertisements: [],

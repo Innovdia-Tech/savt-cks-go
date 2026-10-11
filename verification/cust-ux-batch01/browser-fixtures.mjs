@@ -96,7 +96,6 @@ export async function startFixtureServer(port = 5207, production = true) {
       throw new Error(`Fixture server stopped: ${output}`);
     try {
       if (
-        output.includes(origin) &&
         (
           await fetch(
             `${origin}/verification/cust-ux-batch01/address-fixture.html`,
@@ -127,8 +126,17 @@ export async function stopFixtureServer(server) {
 export async function installEmbeddedFixture(page, options = {}) {
   const trace = { requests: [], unexpectedRequests: [], errors: [] };
   const delayed = new Map();
-  for (const stage of ["profile", "addresses", "assignment", "sessionExchange"])
-    if (options[`delay${stage[0].toUpperCase()}${stage.slice(1)}`]) {
+  for (const stage of [
+    "profile",
+    "addresses",
+    "assignment",
+    "sessionExchange",
+    "reverse",
+  ])
+    if (
+      options[`delay${stage[0].toUpperCase()}${stage.slice(1)}`] ||
+      (stage === "reverse" && options.holdReverse)
+    ) {
       let release;
       const promise = new Promise((resolve) => {
         release = resolve;
@@ -138,7 +146,13 @@ export async function installEmbeddedFixture(page, options = {}) {
   const timestamp = () => new Date().toISOString();
   page.on("pageerror", (error) => trace.errors.push(String(error)));
   await page.addInitScript(
-    ({ locationDelay, locationStatus, holdLocation }) => {
+    ({
+      locationDelay,
+      locationStatus,
+      holdLocation,
+      nativeNullAddress,
+      standalone,
+    }) => {
       window.__embeddedTrace = {
         native: [],
         maps: [],
@@ -147,8 +161,22 @@ export async function installEmbeddedFixture(page, options = {}) {
         recenters: [],
       };
       const trace = window.__embeddedTrace;
+      let activeMap;
+      let mapUnavailable = false;
+      window.__mapFixture = {
+        move: (center) => activeMap?.panTo(center),
+        idle: () => activeMap?.listeners.get("idle")?.(),
+        center: () => ({ ...activeMap?.center }),
+        setUnavailable: (value) => {
+          mapUnavailable = value;
+        },
+      };
+      let activeLocationStatus = locationStatus;
       let locationInFlight = false;
       let releaseLocation;
+      window.__setLocationStatus = (status) => {
+        activeLocationStatus = status;
+      };
       window.__releaseLocation = () => {
         const release = releaseLocation;
         releaseLocation = undefined;
@@ -183,18 +211,29 @@ export async function installEmbeddedFixture(page, options = {}) {
               const detail = {
                 protocolVersion: "1",
                 requestId: message.requestId,
-                status: locationStatus,
-                latitude: locationStatus === "ok" ? 5.92 : null,
-                longitude: locationStatus === "ok" ? 116.08 : null,
+                status: activeLocationStatus,
+                latitude: activeLocationStatus === "ok" ? 5.92 : null,
+                longitude: activeLocationStatus === "ok" ? 116.08 : null,
                 formattedAddress:
-                  locationStatus === "ok"
+                  activeLocationStatus === "ok" && !nativeNullAddress
                     ? "1 Example Street, Kota Kinabalu, Sabah"
                     : null,
                 addressLine1:
-                  locationStatus === "ok" ? "1 Example Street" : null,
-                city: locationStatus === "ok" ? "Kota Kinabalu" : null,
-                state: locationStatus === "ok" ? "Sabah" : null,
-                postcode: locationStatus === "ok" ? "88000" : null,
+                  activeLocationStatus === "ok" && !nativeNullAddress
+                    ? "1 Example Street"
+                    : null,
+                city:
+                  activeLocationStatus === "ok" && !nativeNullAddress
+                    ? "Kota Kinabalu"
+                    : null,
+                state:
+                  activeLocationStatus === "ok" && !nativeNullAddress
+                    ? "Sabah"
+                    : null,
+                postcode:
+                  activeLocationStatus === "ok" && !nativeNullAddress
+                    ? "88000"
+                    : null,
               };
               trace.replies.push({ detail, at: performance.now() });
               locationInFlight = false;
@@ -207,16 +246,20 @@ export async function installEmbeddedFixture(page, options = {}) {
           }
         },
       };
+      if (standalone) delete window.SavtCksGoBridge;
       window.google = {
         maps: {
           Map: class {
             constructor(element, options) {
+              if (mapUnavailable) throw new Error("Fixture map unavailable");
               this.center = options.center;
               this.listeners = new Map();
+              activeMap = this;
               element.style.background = "#e5e7eb";
               element.textContent = "Synthetic map adapter boundary";
               trace.maps.push({
                 center: options.center,
+                canvasVisible: element.getClientRects().length > 0,
                 at: performance.now(),
               });
             }
@@ -242,6 +285,8 @@ export async function installEmbeddedFixture(page, options = {}) {
       locationDelay: options.locationDelay ?? 40,
       locationStatus: options.locationStatus ?? "ok",
       holdLocation: options.holdLocation ?? false,
+      nativeNullAddress: options.nativeNullAddress ?? false,
+      standalone: options.standalone ?? false,
     },
   );
   const outlet = {
@@ -411,7 +456,8 @@ export async function installEmbeddedFixture(page, options = {}) {
           "base64",
         ),
       });
-    if (url.pathname === "/api/v1/customer/location/reverse")
+    if (url.pathname === "/api/v1/customer/location/reverse") {
+      await delayed.get("reverse")?.promise;
       return respond({
         data: {
           formattedAddress: "1 Example Street, Kota Kinabalu, Sabah",
@@ -424,6 +470,7 @@ export async function installEmbeddedFixture(page, options = {}) {
           longitude: body.longitude,
         },
       });
+    }
     if (url.pathname === "/api/v1/customer/location/search")
       return respond({
         data: {
@@ -471,6 +518,8 @@ export async function installEmbeddedFixture(page, options = {}) {
       stage === "location"
         ? page.evaluate(() => window.__releaseLocation())
         : delayed.get(stage)?.release(),
+    setLocationStatus: (status) =>
+      page.evaluate((value) => window.__setLocationStatus(value), status),
     snapshot: async () => ({
       ...trace,
       embedded: await page.evaluate(() => window.__embeddedTrace),

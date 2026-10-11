@@ -84,13 +84,14 @@ export function CheckoutProvider({
       controller,
       customer.selectedAddress(),
       catalogue.state.assignment,
-      catalogue.refreshing,
+      catalogue.refreshing || catalogue.state.renewing,
     );
   }, [
     controller,
     customer,
     catalogue.state.assignment,
     catalogue.refreshing,
+    catalogue.state.renewing,
     customerContext.state.selectedId,
     customerContext.state.revision,
   ]);
