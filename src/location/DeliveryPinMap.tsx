@@ -146,7 +146,11 @@ export function DeliveryPinMap({
 }) {
   const canvas = useRef<HTMLDivElement>(null);
   const instance = useRef<PinMapInstance | null>(null);
-  const [status, setStatus] = useState<MapStatus>("loading");
+  const [mapState, setMapState] = useState<{
+    initial: PinCoordinate;
+    status: MapStatus;
+  }>({ initial, status: "loading" });
+  const status = mapState.initial === initial ? mapState.status : "loading";
   const [recentering, setRecentering] = useState(false);
   const onCandidateRef = useRef(onCandidate);
   const onMoveRef = useRef(onMove);
@@ -161,7 +165,7 @@ export function DeliveryPinMap({
     let active = true;
     const update = (next: MapStatus) => {
       if (!active) return;
-      setStatus(next);
+      setMapState({ initial, status: next });
       onStatusRef.current(next);
     };
     update("loading");
@@ -193,32 +197,36 @@ export function DeliveryPinMap({
 
   return (
     <div className="delivery-pin-map">
-      {status === "unavailable" ? (
+      {status === "unavailable" && (
         <p role="alert" className="delivery-pin-map__error">
           We couldn't load the map right now.
         </p>
-      ) : (
-        <div className="delivery-pin-map__viewport">
-          <div
-            ref={canvas}
-            className="delivery-pin-map__canvas"
-            aria-label="Map"
-          />
-          {status === "loading" && (
-            <div className="delivery-pin-map__loading" role="status">
-              Loading map…
-            </div>
-          )}
-          {status === "ready" && (
-            <span
-              className="delivery-pin-map__pin"
-              aria-label="Centered delivery pin"
-            >
-              <span />
-            </span>
-          )}
-        </div>
       )}
+      {/* Keep the canvas owned across failure; only an explicit new initial
+          selection restarts mounting. Visibility does not own its lifetime. */}
+      <div
+        className="delivery-pin-map__viewport"
+        hidden={status === "unavailable"}
+      >
+        <div
+          ref={canvas}
+          className="delivery-pin-map__canvas"
+          aria-label="Map"
+        />
+        {status === "loading" && (
+          <div className="delivery-pin-map__loading" role="status">
+            Loading map…
+          </div>
+        )}
+        {status === "ready" && (
+          <span
+            className="delivery-pin-map__pin"
+            aria-label="Centered delivery pin"
+          >
+            <span />
+          </span>
+        )}
+      </div>
       {status === "ready" && (
         <button
           type="button"

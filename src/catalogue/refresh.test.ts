@@ -85,6 +85,57 @@ async function setup(scenario = "shopping-success") {
     },
   };
 }
+it("automatic renewal uses the real authenticated parser and invalidates authentication on backend 401", async () => {
+  vi.useFakeTimers();
+  const s = await setup();
+  s.requests.mockImplementation(async (url, init) =>
+    String(url).endsWith("/outlet-assignment")
+      ? new Response(
+          JSON.stringify({ error: { code: "CUSTOMER_SESSION_INVALID" } }),
+          { status: 401 },
+        )
+      : s.transport.fetch(url, init),
+  );
+  s.catalogue.setBrowsingActive(true);
+  await vi.advanceTimersByTimeAsync(270000);
+  expect(s.session.getSnapshot().phase).not.toBe("authenticated");
+  expect(s.catalogue.getSnapshot()).toMatchObject({
+    phase: "session-expired",
+    assignment: null,
+  });
+  await vi.advanceTimersByTimeAsync(300000);
+  expect(s.count("/outlet-assignment")).toBe(2);
+});
+it("automatic renewal sends authenticated address authority and validates the new context before keeping Browse", async () => {
+  vi.useFakeTimers();
+  const s = await setup();
+  await s.catalogue.search("rice");
+  s.catalogue.setBrowsingActive(true);
+  await vi.advanceTimersByTimeAsync(270000);
+  const a = s.catalogue.getSnapshot().assignment!;
+  expect(s.catalogue.getSnapshot()).toMatchObject({
+    phase: "ready",
+    q: "rice",
+    renewalError: null,
+  });
+  expect(s.count("/outlet-assignment")).toBe(2);
+  expect(Date.parse(a.expiresAt)).toBeGreaterThan(Date.now());
+  expect(
+    s.catalogue.getSnapshot().products?.meta.assignmentContextExpiresAt,
+  ).toBe(a.expiresAt);
+  const assignments = s.requests.mock.calls.filter(([url]) =>
+    String(url).endsWith("/outlet-assignment"),
+  );
+  expect(assignments[1][1]).toMatchObject({
+    method: "POST",
+    credentials: "include",
+    cache: "no-store",
+  });
+  expect(JSON.parse(String(assignments[1][1]?.body))).toEqual({
+    customerAddressId: a.customerAddressId,
+    addressRowVersion: a.addressRowVersion,
+  });
+});
 it("refreshes customer and the full catalogue once while preserving a valid assignment", async () => {
   const s = await setup();
   expect(s.catalogue.getSnapshot().phase).toBe("ready");

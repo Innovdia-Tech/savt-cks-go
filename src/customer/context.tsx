@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -12,6 +13,7 @@ import type { DevelopmentDataAdapter } from "./development";
 import type { LocationSearchPort } from "../location/api";
 import type { CurrentLocationPort } from "../location/contracts";
 import type { PinMapAdapter } from "../location/DeliveryPinMap";
+import { useDeliveryBack } from "./delivery-back";
 const Context = createContext<{
   controller: CustomerDataController;
   development?: DevelopmentDataAdapter;
@@ -20,6 +22,7 @@ const Context = createContext<{
   pinMapAdapter?: PinMapAdapter;
   setDirty: (dirty: boolean) => void;
   guardNavigation: (action: () => void) => void;
+  navigationPending: boolean;
 } | null>(null);
 export function CustomerDataProvider({
   controller,
@@ -56,6 +59,18 @@ export function CustomerDataProvider({
     window.addEventListener("beforeunload", beforeUnload);
     return () => window.removeEventListener("beforeunload", beforeUnload);
   }, []);
+  const modalBackOwner = useMemo(() => ({}), [controller, pending]);
+  useDeliveryBack(
+    () => {
+      if (!pending) return false;
+      dialog.current?.close();
+      setPending(null);
+      return true;
+    },
+    Boolean(pending),
+    true,
+    modalBackOwner,
+  );
   return (
     <Context.Provider
       value={{
@@ -71,6 +86,7 @@ export function CustomerDataProvider({
           if (dirty.current) setPending(() => action);
           else action();
         },
+        navigationPending: Boolean(pending),
       }}
     >
       {children}

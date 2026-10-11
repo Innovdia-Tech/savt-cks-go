@@ -9,12 +9,14 @@ import { DataFeedback } from "./components";
 import { useCustomer } from "./context";
 import { DeliveryLocationSetup } from "./DeliveryLocationSetup";
 import { hasDeliveryCoordinates } from "./delivery-readiness";
+import { useDeliveryBack } from "./delivery-back";
 
 type Action =
   | {
       kind: "location";
       address: Address | null;
       mode: "choose" | "search" | "current" | "confirm";
+      returnToEdit?: boolean;
     }
   | { kind: "edit"; address: Address }
   | null;
@@ -32,27 +34,53 @@ export function DeliveryAddressPicker({
   initialAdd?: boolean;
   embeddedHost?: boolean;
 }) {
-  const { state, controller } = useCustomer();
+  const { state, controller, guardNavigation, navigationPending } =
+    useCustomer();
   const checkout = useCheckout();
   const [action, setAction] = useState<Action>(
     initialAdd ? { kind: "location", address: null, mode: "choose" } : null,
   );
   const [checkingId, setCheckingId] = useState<string | null>(null);
-  const [confirmationId, setConfirmationId] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<{
+    addressId: string;
+    outletId: string | null;
+  } | null>(null);
   const [error, setError] = useState("");
+  const [currentLocationError, setCurrentLocationError] = useState("");
   const selected = controller.selectedAddress();
   const active = state.addresses.filter(
     (address) => address.status === "ACTIVE",
   );
   const blocked = state.readOnly || state.busy || checkout.state.paymentFrozen;
+  const backFromEdit = () => {
+    if (action?.kind !== "edit") return false;
+    guardNavigation(() => setAction(null));
+    return true;
+  };
+  useDeliveryBack(
+    backFromEdit,
+    action?.kind === "edit" && !navigationPending,
+    false,
+    action,
+  );
 
   useEffect(() => {
-    if (confirmationId && checkout.state.transitionPhase === "idle") {
-      setConfirmationId(null);
-      if (state.selectedId === confirmationId) onDone();
+    if (confirmation && checkout.state.transitionPhase === "idle") {
+      setConfirmation(null);
+      const committed = checkout.state.assignment;
+      const matches =
+        confirmation.outletId === null
+          ? committed === null && checkout.state.lines.length === 0
+          : committed?.customerAddressId === confirmation.addressId &&
+            committed.outletId === confirmation.outletId;
+      // A cancelled switch can have the SAME selected address ID. Completion
+      // also requires the reviewed outlet authority to have been committed.
+      if (state.selectedId === confirmation.addressId && matches) onDone();
     }
   }, [
-    confirmationId,
+    confirmation,
+    checkout.state.assignment,
+    checkout.state.lines.length,
     checkout.state.transitionPhase,
     state.selectedId,
     onDone,
@@ -61,6 +89,7 @@ export function DeliveryAddressPicker({
   const choose = async (address: Address) => {
     if (blocked || checkingId) return;
     setError("");
+    setCurrentLocationError("");
     if (!hasDeliveryCoordinates(address)) {
       setAction({ kind: "location", address, mode: "choose" });
       return;
@@ -72,7 +101,12 @@ export function DeliveryAddressPicker({
       onDone();
     } else if (result === "confirmation") {
       setCheckingId(null);
-      setConfirmationId(address.id);
+      setConfirmation({
+        addressId: address.id,
+        outletId:
+          checkout.controller.getSnapshot().pendingAddress?.assignment
+            ?.outletId ?? null,
+      });
     } else if (result === "error") {
       setCheckingId(null);
       setError(
@@ -84,10 +118,27 @@ export function DeliveryAddressPicker({
   if (action?.kind === "location")
     return (
       <DeliveryLocationSetup
+        backOwner={action}
         address={action.address}
         initialMode={action.mode}
         onDone={onDone}
-        onCancel={() => setAction(null)}
+        onCancel={() =>
+          setAction(
+            action.returnToEdit && action.address
+              ? { kind: "edit", address: action.address }
+              : null,
+          )
+        }
+        onCurrentLocationError={
+          action.mode === "current"
+            ? () => {
+                setAction(null);
+                setCurrentLocationError(
+                  "We couldn’t get your current location. Try again or search for an address.",
+                );
+              }
+            : undefined
+        }
       />
     );
   if (action?.kind === "edit")
@@ -96,7 +147,7 @@ export function DeliveryAddressPicker({
         <button
           type="button"
           className="delivery-flow__back"
-          onClick={() => setAction(null)}
+          onClick={backFromEdit}
         >
           ← Back to addresses
         </button>
@@ -111,6 +162,7 @@ export function DeliveryAddressPicker({
               kind: "location",
               address: action.address,
               mode: "confirm",
+              returnToEdit: true,
             })
           }
         />
@@ -131,9 +183,10 @@ export function DeliveryAddressPicker({
       <button
         type="button"
         className="delivery-flow__search-entry"
-        onClick={() =>
-          setAction({ kind: "location", address: null, mode: "search" })
-        }
+        onClick={() => {
+          setCurrentLocationError("");
+          setAction({ kind: "location", address: null, mode: "search" });
+        }}
         disabled={blocked}
       >
         <SearchIcon className="h-5 w-5" /> Search building, street or postcode
@@ -141,13 +194,19 @@ export function DeliveryAddressPicker({
       <button
         type="button"
         className="delivery-flow__current"
-        onClick={() =>
-          setAction({ kind: "location", address: null, mode: "current" })
-        }
+        onClick={() => {
+          setCurrentLocationError("");
+          setAction({ kind: "location", address: null, mode: "current" });
+        }}
         disabled={blocked}
       >
         <PinIcon className="h-5 w-5" /> Use my current location
       </button>
+      {currentLocationError && (
+        <p role="alert" className="delivery-picker__feedback">
+          {currentLocationError}
+        </p>
+      )}
       <section
         className="delivery-picker__saved"
         aria-labelledby="saved-addresses-title"

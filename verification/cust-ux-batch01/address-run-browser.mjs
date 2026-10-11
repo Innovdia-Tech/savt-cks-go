@@ -12,6 +12,12 @@ import {
 const baseline = process.argv.includes("--baseline");
 const firstOnly = process.argv.includes("--first-only");
 const development = process.argv.includes("--development");
+const outputDirectoryArgument = process.argv.find((argument) =>
+  argument.startsWith("--output-directory="),
+);
+const outputDirectory = outputDirectoryArgument
+  ? path.resolve(process.cwd(), outputDirectoryArgument.split("=", 2)[1])
+  : directory;
 const report = {
   task: "CUST-UX-BATCH01 address",
   phase: baseline ? "BASELINE" : "GREEN",
@@ -36,7 +42,7 @@ const check = async (name, run) => {
     if (currentPage && !currentPage.isClosed())
       await currentPage.screenshot({
         path: path.join(
-          directory,
+          outputDirectory,
           `address-${development ? "development-" : ""}${baseline ? "baseline-" : ""}failure-${report.checks.length}.png`,
         ),
         fullPage: true,
@@ -66,7 +72,7 @@ const setup = async (options = {}, width = 390) => {
 const snapshot = async (page, fixture, name) => {
   await page.screenshot({
     path: path.join(
-      directory,
+      outputDirectory,
       `address-${baseline ? "baseline-" : ""}${name}.png`,
     ),
     fullPage: true,
@@ -78,6 +84,7 @@ const snapshot = async (page, fixture, name) => {
   return evidence;
 };
 try {
+  await fs.mkdir(outputDirectory, { recursive: true });
   process.env.CKS_GO_BROWSER_FIXTURE_CACHE = development
     ? "address-development"
     : "address-production";
@@ -94,7 +101,7 @@ try {
     await check(
       `Home address entry and one successful location request at ${width}`,
       async () => {
-        const { page, fixture } = await setup({}, width);
+        const { page, fixture } = await setup({ holdLocation: true }, width);
         await home(page).click();
         await page
           .getByRole("heading", { name: "Delivery address", exact: true })
@@ -109,6 +116,32 @@ try {
         await page
           .getByRole("button", { name: "Use my current location", exact: true })
           .click();
+        await page
+          .getByRole("button", { name: "Finding your location…", exact: true })
+          .waitFor();
+        assert.equal(
+          await page
+            .getByRole("heading", { name: "Delivery address", exact: true })
+            .count(),
+          1,
+        );
+        assert.equal(
+          await page
+            .getByRole("heading", {
+              name: "Set delivery location",
+              exact: true,
+            })
+            .count(),
+          0,
+        );
+        await page.screenshot({
+          path: path.join(
+            outputDirectory,
+            `address-${baseline ? "baseline-" : ""}direct-gps-pending-${width}.png`,
+          ),
+          fullPage: true,
+        });
+        await fixture.release("location");
         await page
           .getByRole("button", { name: "Confirm this location", exact: true })
           .waitFor();
@@ -137,10 +170,199 @@ try {
             () => document.documentElement.scrollWidth <= window.innerWidth,
           ),
         );
-        return snapshot(page, fixture, `one-request-${width}`);
+        assert.equal(
+          await page
+            .getByRole("heading", {
+              name: "Set delivery location",
+              exact: true,
+            })
+            .count(),
+          0,
+        );
+        await page.screenshot({
+          path: path.join(
+            outputDirectory,
+            `address-${baseline ? "baseline-" : ""}direct-gps-map-${width}.png`,
+          ),
+          fullPage: true,
+        });
+        await page
+          .getByRole("button", { name: "Confirm this location", exact: true })
+          .click();
+        await page
+          .getByRole("heading", { name: "Delivery details", exact: true })
+          .waitFor();
+        return snapshot(page, fixture, `direct-gps-details-${width}`);
       },
     );
   if (!firstOnly) {
+    await check(
+      "Direct GPS map Back returns to Delivery Address and Search another opens Search",
+      async () => {
+        const { page, fixture } = await setup({
+          holdLocation: true,
+          searchSuggestions: true,
+        });
+        await home(page).click();
+        await page
+          .getByRole("button", { name: "Use my current location", exact: true })
+          .click();
+        await page
+          .getByRole("button", { name: "Finding your location…", exact: true })
+          .waitFor();
+        await page
+          .getByRole("button", { name: "Go back", exact: true })
+          .click();
+        await page
+          .getByRole("heading", { name: "Delivery address", exact: true })
+          .waitFor();
+        await fixture.release("location");
+        await page.waitForFunction(
+          () => window.__embeddedTrace.replies.length === 1,
+        );
+        await page.waitForTimeout(60);
+        assert.equal(await page.getByRole("alert").count(), 0);
+        assert.equal(
+          await page
+            .getByRole("heading", {
+              name: "Set delivery location",
+              exact: true,
+            })
+            .count(),
+          0,
+        );
+        await page
+          .getByRole("button", { name: "Use my current location", exact: true })
+          .click();
+        await page.waitForFunction(
+          () =>
+            window.__embeddedTrace.native.filter(
+              ({ message }) => message.type === "location-current",
+            ).length === 2,
+        );
+        await fixture.release("location");
+        await page
+          .getByRole("button", { name: "Confirm this location", exact: true })
+          .waitFor();
+        await page.waitForFunction(
+          () => !document.querySelector(".delivery-setup__primary")?.disabled,
+        );
+        await page
+          .getByRole("button", { name: "Go back", exact: true })
+          .click();
+        await page
+          .getByRole("heading", { name: "Delivery address", exact: true })
+          .waitFor();
+        assert.equal(
+          await page
+            .getByRole("heading", {
+              name: "Set delivery location",
+              exact: true,
+            })
+            .count(),
+          0,
+        );
+        await page.screenshot({
+          path: path.join(outputDirectory, "address-direct-gps-back.png"),
+          fullPage: true,
+        });
+        await page
+          .getByRole("button", { name: "Use my current location", exact: true })
+          .click();
+        await page.waitForFunction(
+          () =>
+            window.__embeddedTrace.native.filter(
+              ({ message }) => message.type === "location-current",
+            ).length === 3,
+        );
+        await fixture.release("location");
+        await page
+          .getByRole("button", { name: "Search another location", exact: true })
+          .waitFor();
+        await page
+          .getByRole("button", { name: "Search another location", exact: true })
+          .click();
+        await page
+          .getByRole("heading", { name: "Search location", exact: true })
+          .waitFor();
+        await page
+          .getByRole("textbox", {
+            name: "Search building, street or postcode",
+            exact: true,
+          })
+          .fill("New address");
+        await page
+          .getByRole("button", { name: /Fixture search location/ })
+          .click();
+        await page
+          .getByRole("button", { name: "Confirm this location", exact: true })
+          .waitFor();
+        await page.waitForFunction(
+          () => !document.querySelector(".delivery-setup__primary")?.disabled,
+        );
+        await page
+          .getByRole("button", { name: "Go back", exact: true })
+          .click();
+        await page
+          .getByRole("heading", { name: "Delivery address", exact: true })
+          .waitFor();
+        assert.equal(
+          await page
+            .getByRole("heading", {
+              name: "Set delivery location",
+              exact: true,
+            })
+            .count(),
+          0,
+        );
+        return snapshot(page, fixture, "direct-gps-search");
+      },
+    );
+    await check(
+      "A GPS failure from Search in the direct shortcut returns to Delivery Address",
+      async () => {
+        const { page, fixture } = await setup({ holdLocation: true });
+        await home(page).click();
+        await page
+          .getByRole("button", { name: "Use my current location", exact: true })
+          .click();
+        await fixture.release("location");
+        await page
+          .getByRole("button", { name: "Search another location", exact: true })
+          .waitFor();
+        await page
+          .getByRole("button", { name: "Search another location", exact: true })
+          .click();
+        await fixture.setLocationStatus("unavailable");
+        await page
+          .getByRole("button", { name: "Use my current location", exact: true })
+          .click();
+        await fixture.release("location");
+        await page
+          .getByRole("alert")
+          .filter({
+            hasText:
+              "We couldn’t get your current location. Try again or search for an address.",
+          })
+          .waitFor();
+        assert.equal(
+          await page
+            .getByRole("heading", { name: "Delivery address", exact: true })
+            .count(),
+          1,
+        );
+        assert.equal(
+          await page
+            .getByRole("heading", {
+              name: "Set delivery location",
+              exact: true,
+            })
+            .count(),
+          0,
+        );
+        return snapshot(page, fixture, "direct-gps-search-failure");
+      },
+    );
     await check(
       "Previously failed checkout address check does not appear on fresh address entry",
       async () => {
@@ -167,7 +389,7 @@ try {
         const text = await page.locator("main.delivery-picker").innerText();
         await page.screenshot({
           path: path.join(
-            directory,
+            outputDirectory,
             `address-${baseline ? "baseline-" : ""}fresh-entry-after-error.png`,
           ),
           fullPage: true,
@@ -299,40 +521,68 @@ try {
           );
         },
       );
-    await check(
-      "A genuine current-location failure remains visible without an automatic retry",
-      async () => {
-        const { page, fixture } = await setup({
-          locationStatus: "unavailable",
-        });
-        await home(page).click();
-        await page
-          .getByRole("button", { name: "Use my current location", exact: true })
-          .click();
-        await page
-          .getByRole("alert")
-          .filter({ hasText: "We couldn’t get your current location." })
-          .waitFor();
-        const evidence = await fixture.snapshot();
-        assert.equal(
-          evidence.embedded.native.filter(
-            ({ message }) => message.type === "location-current",
-          ).length,
-          1,
-        );
-        assert.equal(evidence.embedded.maps.length, 0);
-        assert.equal(
+    for (const locationStatus of ["unavailable", "denied"])
+      await check(
+        `A ${locationStatus} direct GPS failure returns to Delivery Address with recovery actions`,
+        async () => {
+          const { page, fixture } = await setup({ locationStatus });
+          await home(page).click();
           await page
             .getByRole("button", {
               name: "Use my current location",
               exact: true,
             })
-            .isEnabled(),
-          true,
-        );
-        return snapshot(page, fixture, "genuine-current-error");
-      },
-    );
+            .click();
+          await page
+            .getByRole("alert")
+            .filter({
+              hasText:
+                "We couldn’t get your current location. Try again or search for an address.",
+            })
+            .waitFor();
+          assert.equal(
+            await page
+              .getByRole("heading", { name: "Delivery address", exact: true })
+              .count(),
+            1,
+          );
+          assert.equal(
+            await page
+              .getByRole("heading", {
+                name: "Set delivery location",
+                exact: true,
+              })
+              .count(),
+            0,
+          );
+          const evidence = await fixture.snapshot();
+          assert.equal(
+            evidence.embedded.native.filter(
+              ({ message }) => message.type === "location-current",
+            ).length,
+            1,
+          );
+          assert.equal(evidence.embedded.maps.length, 0);
+          assert.equal(
+            await page
+              .getByRole("button", {
+                name: "Use my current location",
+                exact: true,
+              })
+              .isEnabled(),
+            true,
+          );
+          assert.equal(
+            await page
+              .getByRole("button", {
+                name: /Search building, street or postcode/,
+              })
+              .isEnabled(),
+            true,
+          );
+          return snapshot(page, fixture, `direct-gps-${locationStatus}-error`);
+        },
+      );
     await check(
       "Typing a newer search during a GPS request keeps search usable",
       async () => {
@@ -548,7 +798,7 @@ try {
   };
   await fs.writeFile(
     path.join(
-      directory,
+      outputDirectory,
       `address-${process.argv.includes("--development") ? "development-" : ""}${baseline ? "baseline-" : ""}report.json`,
     ),
     JSON.stringify(report, null, 2) + "\n",

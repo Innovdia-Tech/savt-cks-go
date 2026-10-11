@@ -313,7 +313,11 @@ describe("trusted quote lifecycle", () => {
     vi.stubGlobal("crypto", webCrypto);
     try {
       const create = vi.fn(async () => parseQuote(quoteEnvelope()));
-      const controller = new CartController({ create }, { assign: vi.fn() });
+      const controller = new CartController(
+        { create },
+        { assign: vi.fn() },
+        () => Date.parse(assignmentA.resolvedAt),
+      );
       controller.syncAssignment(addressA, assignmentA);
       controller.add(product(), assignmentA);
       await controller.requestQuote();

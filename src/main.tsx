@@ -46,6 +46,9 @@ async function start() {
       ? new DevelopmentCustomerApi(production)
       : new CustomerApiClient(config.apiOrigin);
     const embeddedHost = Boolean(window.SavtCksGoBridge);
+    document.documentElement.dataset.cksGoHost = embeddedHost
+      ? "native"
+      : "browser";
     const initialPaymentIntentId = consumePaymentRecoveryFragment(
       embeddedHost,
       window.location,
