@@ -666,7 +666,7 @@ export function AddressChangeDialog({
       <h2 id="cart-switch-title">
         {pending.assignment
           ? "Clear basket and switch address?"
-          : "Change delivery address?"}
+          : "Delivery isn't available here yet"}
       </h2>
       <div id="cart-switch-description">
         <p>
@@ -676,22 +676,17 @@ export function AddressChangeDialog({
         </p>
         <p>
           {pending.assignment
-            ? `Delivery to this address is from ${pending.assignment.outletDisplayName}. Your basket belongs to another store.`
-            : "This address has been saved, but we are not delivering there yet."}
-        </p>
-        <p>
-          Keep your current delivery address and basket, or use this address and
-          clear the basket and reviewed total. This address remains saved for
-          later if you keep your current delivery address.
+            ? "This address uses a different CKS outlet. Switching will clear your basket."
+            : "This address is saved, but we don't deliver here yet. Switching will clear your basket."}
         </p>
       </div>
       <div className="cart-dialog-actions">
         <button
           autoFocus
-          className="customer-button"
+          className="customer-button customer-primary"
           onClick={() => controller.cancelAddressChange()}
         >
-          Keep current delivery address
+          Keep current address
         </button>
         <button
           className="customer-button customer-danger"
@@ -700,7 +695,7 @@ export function AddressChangeDialog({
             if (addressId) onCommit(addressId);
           }}
         >
-          Use this address &amp; clear basket
+          Switch &amp; clear basket
         </button>
       </div>
     </dialog>

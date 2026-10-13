@@ -454,6 +454,14 @@
   color: var(--color-text-muted);
   line-height: 1.5;
 }
+.delivery-flow__resolution-error {
+  margin-top: 20px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+.delivery-flow__resolution-error p {
+  margin-bottom: 12px;
+}
 .delivery-flow__results {
   margin-top: 20px;
   border: 1px solid var(--color-border);

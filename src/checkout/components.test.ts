@@ -288,10 +288,12 @@ describe("real cart and trusted quote presentation", () => {
     expect(html).toContain("saved");
     expect(html).toContain("Lot 88 Jalan Example");
     expect(html).toContain("Tuaran, Sabah");
-    expect(html).toContain("remains saved for later");
-    expect(html).toContain("Keep current delivery address");
-    expect(html).toContain("Use this address &amp; clear basket");
-    expect(html).not.toContain("Delivery isn&#x27;t available here yet");
+    expect(html).toContain(
+      "This address is saved, but we don&#x27;t deliver here yet. Switching will clear your basket.",
+    );
+    expect(html).toContain("Keep current address");
+    expect(html).toContain("Switch &amp; clear basket");
+    expect(html).toContain("Delivery isn&#x27;t available here yet");
   });
   it("uses accepted checkout rows and server totals with ordinary data", () => {
     const quote = parseQuote(quoteEnvelope());
@@ -603,9 +605,11 @@ describe("real cart and trusted quote presentation", () => {
       } as never),
     );
     expect(html).toContain("Clear basket and switch address?");
-    expect(html).toContain("Suburb outlet");
-    expect(html).toContain("Keep current delivery address");
-    expect(html).toContain("Use this address &amp; clear basket");
+    expect(html).toContain(
+      "This address uses a different CKS outlet. Switching will clear your basket.",
+    );
+    expect(html).toContain("Keep current address");
+    expect(html).toContain("Switch &amp; clear basket");
   });
 
   it.each([

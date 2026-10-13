@@ -90,6 +90,8 @@ export function DeliveryLocationSetup({
   const [composing, setComposing] = useState(false);
   const [searchPhase, setSearchPhase] = useState<SearchPhase>("initial");
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [failedSuggestion, setFailedSuggestion] =
+    useState<PlaceSuggestion | null>(null);
   const [location, setLocation] = useState<DeliveryLocation | null>(() =>
     initialMode === "confirm" && selected && hasDeliveryCoordinates(selected)
       ? {
@@ -177,6 +179,15 @@ export function DeliveryLocationSetup({
     if (stage === "search") input.current?.focus();
   }, [stage]);
 
+  const clearResolution = () => {
+    if (resolveAbort.current) {
+      resolveAbort.current.abort();
+      resolveAbort.current = null;
+      setBusy(false);
+    }
+    setFailedSuggestion(null);
+  };
+
   const openSearch = (
     backTarget: SearchBack = stage === "confirm"
       ? "confirm"
@@ -199,6 +210,7 @@ export function DeliveryLocationSetup({
       setMapInitial(candidate);
     }
     ++generation.current;
+    clearResolution();
     invalidatePin();
     token.current = crypto.randomUUID();
     setSearchBack(backTarget);
@@ -214,7 +226,7 @@ export function DeliveryLocationSetup({
   const closeSearch = () => {
     ++generation.current;
     searchAbort.current?.abort();
-    resolveAbort.current?.abort();
+    clearResolution();
     reverseAbort.current?.abort();
     token.current = null;
     if (searchBack === "confirm" && location && mapInitial) {
@@ -234,6 +246,7 @@ export function DeliveryLocationSetup({
   const changeQuery = (value: string) => {
     ++generation.current;
     searchAbort.current?.abort();
+    clearResolution();
     setSuggestions([]);
     setSearchPhase(
       !value.trim()
@@ -364,11 +377,19 @@ export function DeliveryLocationSetup({
   }, []);
 
   const selectSuggestion = async (suggestion: PlaceSuggestion) => {
-    if (!locationSearch || !token.current || busy) return;
-    ++generation.current;
+    if (
+      !locationSearch ||
+      !token.current ||
+      busy ||
+      resolveAbort.current ||
+      state.readOnly
+    )
+      return;
+    const requestGeneration = ++generation.current;
     searchAbort.current?.abort();
     const abort = new AbortController();
     resolveAbort.current = abort;
+    setFailedSuggestion(null);
     setBusy(true);
     try {
       const resolved = await locationSearch.resolve(
@@ -376,7 +397,12 @@ export function DeliveryLocationSetup({
         token.current,
         abort.signal,
       );
-      if (abort.signal.aborted) return;
+      if (
+        abort.signal.aborted ||
+        generation.current !== requestGeneration ||
+        !lifecycleActive.current
+      )
+        return;
       invalidatePin();
       setLocation(resolved);
       setMapInitial({
@@ -389,9 +415,17 @@ export function DeliveryLocationSetup({
       token.current = null;
       setStage("confirm");
     } catch {
-      if (!abort.signal.aborted) setSearchPhase("error");
+      if (
+        !abort.signal.aborted &&
+        generation.current === requestGeneration &&
+        lifecycleActive.current
+      )
+        setFailedSuggestion(suggestion);
     } finally {
-      setBusy(false);
+      if (resolveAbort.current === abort) {
+        resolveAbort.current = null;
+        if (lifecycleActive.current) setBusy(false);
+      }
     }
   };
 
@@ -745,6 +779,26 @@ export function DeliveryLocationSetup({
               Address search is temporarily unavailable.
             </p>
           )}
+          {busy && (
+            <p role="status" className="delivery-flow__hint">
+              Loading location…
+            </p>
+          )}
+          {failedSuggestion && (
+            <div className="delivery-flow__resolution-error">
+              <p role="alert">
+                We couldn't load this location. Please try again.
+              </p>
+              <button
+                type="button"
+                className="delivery-setup__secondary"
+                disabled={busy || state.readOnly}
+                onClick={() => void selectSuggestion(failedSuggestion)}
+              >
+                Retry location
+              </button>
+            </div>
+          )}
           {searchPhase === "results" && (
             <section
               className="delivery-flow__results"
@@ -755,7 +809,7 @@ export function DeliveryLocationSetup({
                   <button
                     type="button"
                     key={suggestion.placeId}
-                    disabled={busy}
+                    disabled={busy || state.readOnly}
                     onClick={() => void selectSuggestion(suggestion)}
                   >
                     <PinIcon className="h-5 w-5" />
