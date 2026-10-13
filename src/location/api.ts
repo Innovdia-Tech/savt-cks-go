@@ -1,4 +1,5 @@
 import type { CustomerSessionController } from "../session/controller";
+import { ApiClientError } from "../api/client";
 import { DeliveryLocationError, type DeliveryLocation } from "./contracts";
 
 export type PlaceSuggestion = {
@@ -229,10 +230,16 @@ export class LocationSearchApi implements LocationSearchPort {
             signal: deadline.signal,
           },
         );
+        if (response.status === 401)
+          throw new ApiClientError("expired", "CUSTOMER_SESSION_INVALID");
         if (!response.ok) throw new DeliveryLocationError("unavailable");
         return parse(await response.json());
       } catch (error) {
-        if (error instanceof DeliveryLocationError) throw error;
+        if (
+          error instanceof DeliveryLocationError ||
+          error instanceof ApiClientError
+        )
+          throw error;
         throw new DeliveryLocationError(
           deadline.signal.aborted ? "timeout" : "unavailable",
         );

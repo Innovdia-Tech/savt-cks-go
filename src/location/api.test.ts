@@ -5,7 +5,10 @@ import {
   parseSuggestions,
   LocationSearchApi,
 } from "./api";
-import type { CustomerSessionController } from "../session/controller";
+import { ApiClientError, type CustomerApi } from "../api/client";
+import { CustomerSessionController } from "../session/controller";
+import type { NativeBridgePort } from "../webview/bridge";
+import { DeliveryLocationError } from "./contracts";
 
 const token = "123e4567-e89b-42d3-a456-426614174000";
 const suggestion = {
@@ -30,6 +33,33 @@ const session = {
   withCredentials: <T>(operation: (csrf: string) => Promise<T>) =>
     operation("csrf-fixture"),
 } as CustomerSessionController;
+
+const authenticatedSession = async () => {
+  const unexpectedAuthentication = async (): Promise<never> => {
+    throw new Error("Location failures must not restart authentication.");
+  };
+  const api: CustomerApi = {
+    status: async () => ({
+      authenticated: true,
+      expiresAt: "2026-10-12T12:30:00.000Z",
+      csrfToken: "D".repeat(43),
+    }),
+    bootstrap: unexpectedAuthentication,
+    exchange: unexpectedAuthentication,
+    requestWebOtp: unexpectedAuthentication,
+    authorizeWebOtp: unexpectedAuthentication,
+    logout: unexpectedAuthentication,
+  };
+  const bridge: NativeBridgePort = {
+    requestLaunchCode: unexpectedAuthentication,
+    requestPaymentHandoff: unexpectedAuthentication,
+    notifyLoaded: () => undefined,
+    notifyError: vi.fn(),
+  };
+  const controller = new CustomerSessionController(api, bridge);
+  await controller.start();
+  return { controller, bridge };
+};
 
 describe("location search contract", () => {
   it("projects only five closed suggestions", () => {
@@ -124,4 +154,76 @@ describe("location search contract", () => {
       longitude: 116.08,
     });
   });
+
+  it.each([
+    ["search", "json"],
+    ["search", "malformed"],
+    ["resolve", "json"],
+    ["resolve", "malformed"],
+  ] as const)(
+    "expires the existing session for a confirmed %s 401 with a %s body",
+    async (route, body) => {
+      const { controller, bridge } = await authenticatedSession();
+      const response =
+        body === "json"
+          ? Response.json(
+              {
+                error: {
+                  code: "CUSTOMER_SESSION_INVALID",
+                  message: "Session expired.",
+                },
+              },
+              { status: 401 },
+            )
+          : new Response("invalid", { status: 401 });
+      const fetcher = vi.fn<typeof fetch>().mockResolvedValue(response);
+      const api = new LocationSearchApi(
+        "https://example.test",
+        controller,
+        fetcher,
+      );
+      const request = () =>
+        route === "search"
+          ? api.search("ITCC", token, new AbortController().signal)
+          : api.resolve("ChIJplace123", token, new AbortController().signal);
+      const failure = request();
+
+      await expect(failure).rejects.toBeInstanceOf(ApiClientError);
+      await expect(failure).rejects.toMatchObject({
+        category: "expired",
+        code: "CUSTOMER_SESSION_INVALID",
+      });
+      expect(controller.getSnapshot()).toEqual({ phase: "expired" });
+      expect(bridge.notifyError).toHaveBeenCalledExactlyOnceWith(
+        "CUSTOMER_SESSION_INVALID",
+      );
+      await expect(request()).rejects.toMatchObject({ category: "expired" });
+      expect(fetcher).toHaveBeenCalledOnce();
+    },
+  );
+
+  it.each(["search", "resolve"] as const)(
+    "keeps the session authenticated and does not retry a %s 503",
+    async (route) => {
+      const { controller, bridge } = await authenticatedSession();
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(new Response("unavailable", { status: 503 }));
+      const api = new LocationSearchApi(
+        "https://example.test",
+        controller,
+        fetcher,
+      );
+      const failure =
+        route === "search"
+          ? api.search("ITCC", token, new AbortController().signal)
+          : api.resolve("ChIJplace123", token, new AbortController().signal);
+
+      await expect(failure).rejects.toBeInstanceOf(DeliveryLocationError);
+      await expect(failure).rejects.toMatchObject({ kind: "unavailable" });
+      expect(controller.getSnapshot().phase).toBe("authenticated");
+      expect(bridge.notifyError).not.toHaveBeenCalled();
+      expect(fetcher).toHaveBeenCalledOnce();
+    },
+  );
 });

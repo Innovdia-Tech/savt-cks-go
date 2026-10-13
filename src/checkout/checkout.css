@@ -525,6 +525,14 @@
   background: #881337;
   color: white;
 }
+.cart-dialog-actions .customer-danger {
+  background: transparent;
+  color: #9f1239;
+}
+.cart-dialog-actions .customer-danger:hover:not(:disabled) {
+  background: var(--color-background);
+  color: #881337;
+}
 .cart-stack :is(button):focus-visible,
 .payment-card :is(button):focus-visible,
 .cart-dialog :is(button):focus-visible {
