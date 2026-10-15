@@ -160,6 +160,55 @@ describe("small order fee presentation from the frozen quote", () => {
 
 describe("real cart and trusted quote presentation", () => {
   it.each([
+    [0, 490, null],
+    [200, 290, "Delivery promotion"],
+    [490, 0, "Free delivery promotion"],
+  ] as const)(
+    "itemizes the frozen delivery base and %i promotion without inventing savings",
+    (deliveryDiscountMinor, finalDeliveryChargeMinor, promotionLabel) => {
+      const envelope = quoteEnvelope();
+      Object.assign(envelope.data, {
+        deliveryDiscountMinor,
+        finalDeliveryChargeMinor,
+        processingFeeBasisMinor: 900 + finalDeliveryChargeMinor,
+        grandTotalMinor: 942 + finalDeliveryChargeMinor,
+      });
+      const html = feeMarkup(parseQuote(envelope));
+      expect(html).toMatch(/<dt>Standard delivery<\/dt><dd>RM[^<]*4\.90<\/dd>/);
+      expect(html).toMatch(
+        new RegExp(
+          `<dt[^>]*>Delivery charged</dt><dd[^>]*>RM[^<]*${(finalDeliveryChargeMinor / 100).toFixed(2).replace(".", "\\.")}</dd>`,
+        ),
+      );
+      if (promotionLabel) {
+        expect(html).toContain(promotionLabel);
+        expect(html).toMatch(
+          new RegExp(
+            `−RM[^<]*${(deliveryDiscountMinor / 100).toFixed(2).replace(".", "\\.")}`,
+          ),
+        );
+      } else
+        expect(html).not.toMatch(
+          /Free delivery promotion|Delivery promotion|Saved RM/,
+        );
+      expect(html).not.toContain("Legacy Free Delivery");
+    },
+  );
+
+  it("shows the merchandise discount that contributes to the frozen payable total", () => {
+    const envelope = quoteEnvelope();
+    Object.assign(envelope.data, {
+      discountAmountMinor: 100,
+      netItemsTotalMinor: 800,
+      processingFeeBasisMinor: 1290,
+      grandTotalMinor: 1332,
+    });
+    const html = feeMarkup(parseQuote(envelope));
+    expect(html).toMatch(/Items discount<\/dt><dd[^>]*>−RM[^<]*1\.00<\/dd>/);
+    expect(html).toMatch(/Total<\/dt><dd[^>]*>RM[^<]*13\.32<\/dd>/);
+  });
+
+  it.each([
     "PENDING",
     "FAILED",
     "PAID_PROCESSING",
@@ -412,7 +461,8 @@ describe("real cart and trusted quote presentation", () => {
       "Order summary",
       "Rice",
       "Items subtotal",
-      "Delivery fee",
+      "Standard delivery",
+      "Delivery charged",
       "Processing fee",
       "Total",
       "Estimated delivery",
@@ -429,7 +479,8 @@ describe("real cart and trusted quote presentation", () => {
     );
     for (const [label, amount] of [
       ["Items subtotal", "9.00"],
-      ["Delivery fee", "4.90"],
+      ["Standard delivery", "4.90"],
+      ["Delivery charged", "4.90"],
       ["Processing fee", "0.42"],
       ["Total", "14.32"],
     ]) {

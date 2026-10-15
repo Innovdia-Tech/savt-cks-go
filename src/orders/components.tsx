@@ -314,11 +314,15 @@ const progressTimes = (detail: OrderDetail) => [
   detail.milestones.deliveredAt ?? detail.delivery.deliveredAt,
 ];
 
-export async function saveReceipt(controller: Actions, paymentReceipt = false) {
+export async function saveReceipt(
+  controller: Actions,
+  paymentReceipt = false,
+  withDeliveryBreakdown = false,
+) {
   const embedded = hasDocumentSaveBridge();
   const result = await (paymentReceipt
-    ? controller.downloadPaymentReceipt(embedded)
-    : controller.downloadReceipt(embedded));
+    ? controller.downloadPaymentReceipt(embedded, withDeliveryBreakdown)
+    : controller.downloadReceipt(embedded, withDeliveryBreakdown));
   if (!result) return;
   let url: string | undefined;
   let link: HTMLAnchorElement | undefined;
@@ -343,6 +347,41 @@ export async function saveReceipt(controller: Actions, paymentReceipt = false) {
     // Give the browser/WebView time to consume the attachment before releasing it.
     if (url) setTimeout(() => URL.revokeObjectURL(url!), 60_000);
   }
+}
+
+function DeliveryBreakdownDownload({
+  available,
+  busy,
+  final = false,
+  onDownload,
+}: {
+  available: boolean;
+  busy: boolean;
+  final?: boolean;
+  onDownload: () => void;
+}) {
+  if (!available) return null;
+  return (
+    <div className="order-document">
+      <p>
+        The receipt amounts stay the same. This copy itemizes delivery savings.
+      </p>
+      <button
+        type="button"
+        className="customer-button"
+        disabled={busy}
+        aria-busy={busy}
+        aria-label={
+          final
+            ? "Download Final Sales Receipt with delivery breakdown"
+            : "Download receipt with delivery breakdown"
+        }
+        onClick={onDownload}
+      >
+        {busy ? "Preparing receipt…" : "Download with delivery breakdown"}
+      </button>
+    </div>
+  );
 }
 
 function OrderDocumentsSection({
@@ -401,6 +440,13 @@ function OrderDocumentsSection({
                 ? "Preparing receipt…"
                 : "Download Receipt"}
             </button>
+            <DeliveryBreakdownDownload
+              available={Boolean(
+                state.documents?.paymentReceipt?.presentationDownloadUrl,
+              )}
+              busy={state.paymentReceiptPhase === "downloading"}
+              onDownload={() => void saveReceipt(controller, true, true)}
+            />
             {state.paymentReceiptPhase === "error" && (
               <p className="order-action-error" role="alert">
                 We couldn’t download your receipt. Please try again.
@@ -420,16 +466,26 @@ function OrderDocumentsSection({
           <h3 id="order-final-receipt-title">Final Sales Receipt</h3>
           <p>Final fulfilled-order record</p>
           {finalAvailable && (
-            <button
-              className="customer-button"
-              disabled={state.receiptPhase === "downloading"}
-              aria-busy={state.receiptPhase === "downloading"}
-              onClick={() => void saveReceipt(controller)}
-            >
-              {state.receiptPhase === "downloading"
-                ? "Preparing Final Sales Receipt…"
-                : "Download Final Sales Receipt"}
-            </button>
+            <>
+              <button
+                className="customer-button"
+                disabled={state.receiptPhase === "downloading"}
+                aria-busy={state.receiptPhase === "downloading"}
+                onClick={() => void saveReceipt(controller)}
+              >
+                {state.receiptPhase === "downloading"
+                  ? "Preparing Final Sales Receipt…"
+                  : "Download Final Sales Receipt"}
+              </button>
+              <DeliveryBreakdownDownload
+                available={Boolean(
+                  state.detail?.receipt.presentationDownloadUrl,
+                )}
+                busy={state.receiptPhase === "downloading"}
+                final
+                onDownload={() => void saveReceipt(controller, false, true)}
+              />
+            </>
           )}
           {!finalAvailable && (
             <p role="status">Your Final Sales Receipt is being prepared.</p>
@@ -556,13 +612,38 @@ export function OrderDetailScreen({
           <dd>{money(order.money.itemsSubtotalMinor)}</dd>
           {order.money.discountAmountMinor > 0 && (
             <>
-              <dt>Discount</dt>
-              <dd>−{money(order.money.discountAmountMinor)}</dd>
+              <dt>Items discount</dt>
+              <dd className="order-saving">
+                −{money(order.money.discountAmountMinor)}
+              </dd>
             </>
           )}
-          <dt>Delivery</dt>
+          {order.money.baseDeliveryFeeMinor !== undefined &&
+            order.money.deliveryDiscountMinor !== undefined && (
+              <>
+                <dt>Standard delivery</dt>
+                <dd>{money(order.money.baseDeliveryFeeMinor)}</dd>
+                {order.money.deliveryDiscountMinor > 0 && (
+                  <>
+                    <dt className="order-saving">
+                      {order.money.finalDeliveryChargeMinor === 0
+                        ? "Free delivery promotion"
+                        : "Delivery promotion"}
+                    </dt>
+                    <dd className="order-saving">
+                      −{money(order.money.deliveryDiscountMinor)}
+                    </dd>
+                  </>
+                )}
+              </>
+            )}
+          <dt>Delivery charged</dt>
           <dd>{money(order.money.finalDeliveryChargeMinor)}</dd>
-          <dt>Processing fee</dt>
+          <dt>
+            {order.money.processingFee?.feeType === "SMALL_ORDER_TIERS"
+              ? "Small order fee"
+              : "Processing fee"}
+          </dt>
           <dd>{money(order.money.processingFeeMinor)}</dd>
           <dt className="order-grand">Grand total</dt>
           <dd className="order-grand">{money(order.money.grandTotalMinor)}</dd>

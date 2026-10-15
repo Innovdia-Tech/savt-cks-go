@@ -23,6 +23,7 @@ type OrdersPort = {
 type SessionPort = {
   getSnapshot(): { phase: string };
   subscribe(listener: () => void): () => void;
+  resume?(): Promise<boolean>;
 };
 type Phase = "idle" | "loading" | "ready" | "error" | "session-expired";
 export type OrdersState = {
@@ -109,7 +110,10 @@ export class OrdersController {
     const generation = ++this.listGeneration;
     this.update({ listPhase: "loading", listError: null });
     try {
-      const result = await this.api.list(page, pageSize, abort.signal);
+      const result = await this.readAfterRevalidation(
+        () => this.api.list(page, pageSize, abort.signal),
+        () => generation === this.listGeneration,
+      );
       if (generation !== this.listGeneration) return;
       this.update({ listPhase: "ready", page: result, listError: null });
     } catch (error) {
@@ -161,7 +165,10 @@ export class OrdersController {
       paymentReceiptError: null,
     });
     try {
-      const result = await this.api.detail(orderId, abort.signal);
+      const result = await this.readAfterRevalidation(
+        () => this.api.detail(orderId, abort.signal),
+        () => generation === this.detailGeneration,
+      );
       if (generation !== this.detailGeneration) return;
       if (result.orderId !== orderId) throw new OrdersError("INVALID_RESPONSE");
       this.update({ detailPhase: "ready", detail: result, detailError: null });
@@ -213,7 +220,10 @@ export class OrdersController {
       paymentReceiptError: null,
     });
     try {
-      const documents = await this.api.documents(orderId, abort.signal);
+      const documents = await this.readAfterRevalidation(
+        () => this.api.documents(orderId, abort.signal),
+        () => generation === this.documentsGeneration,
+      );
       if (
         generation !== this.documentsGeneration ||
         this.state.detail?.orderId !== orderId
@@ -239,16 +249,21 @@ export class OrdersController {
 
   async downloadPaymentReceipt(
     awaitSave = false,
+    withDeliveryBreakdown = false,
   ): Promise<ReceiptDownload | null> {
     const detail = this.state.detail;
     const documents = this.state.documents;
     const receipt = documents?.paymentReceipt;
+    const path = withDeliveryBreakdown
+      ? receipt?.presentationDownloadUrl
+      : receipt?.downloadPath;
     if (
       !detail ||
       this.state.documentsPhase !== "ready" ||
       documents?.orderId !== detail.orderId ||
       !documents.paymentReceiptAvailable ||
       !receipt ||
+      !path ||
       this.state.paymentReceiptPhase === "downloading"
     )
       return null;
@@ -263,7 +278,7 @@ export class OrdersController {
     try {
       const blob = await this.api.downloadPaymentReceipt(
         detail.orderId,
-        receipt.downloadPath,
+        path,
         abort.signal,
       );
       if (
@@ -276,9 +291,12 @@ export class OrdersController {
           paymentReceiptPhase: "ready",
           paymentReceiptError: null,
         });
+      const presentationSuffix = withDeliveryBreakdown
+        ? "-Delivery-Breakdown"
+        : "";
       return {
         blob,
-        filename: `CKS-Go-Payment-Receipt-${receipt.receiptReference.replace(/[^A-Za-z0-9_-]/g, "-").slice(0, awaitSave ? 93 : undefined)}.pdf`,
+        filename: `CKS-Go-Payment-Receipt-${receipt.receiptReference.replace(/[^A-Za-z0-9_-]/g, "-").slice(0, awaitSave ? 93 - presentationSuffix.length : undefined)}${presentationSuffix}.pdf`,
         ...(awaitSave
           ? {
               completeSave: this.saveCompletion(
@@ -292,10 +310,18 @@ export class OrdersController {
     } catch (error) {
       if (generation !== this.paymentReceiptGeneration) return null;
       const code = codeOf(error);
-      if (code === "CUSTOMER_SESSION_INVALID") {
+      if (
+        code === "CUSTOMER_SESSION_INVALID" &&
+        !(
+          this.session.getSnapshot().phase === "authenticated" &&
+          this.session.resume
+        )
+      ) {
         this.clearForSessionLoss();
         return null;
       }
+      // The mounted document is gated by native recovery. Keep its tracking
+      // context, but require another explicit click to download after recovery.
       this.update({ paymentReceiptPhase: "error", paymentReceiptError: code });
       return null;
     }
@@ -349,9 +375,14 @@ export class OrdersController {
     this.paymentReceiptAbort?.abort();
   }
 
-  async downloadReceipt(awaitSave = false): Promise<ReceiptDownload | null> {
+  async downloadReceipt(
+    awaitSave = false,
+    withDeliveryBreakdown = false,
+  ): Promise<ReceiptDownload | null> {
     const detail = this.state.detail;
-    const path = detail?.receipt.downloadPath;
+    const path = withDeliveryBreakdown
+      ? detail?.receipt.presentationDownloadUrl
+      : detail?.receipt.downloadPath;
     const reference = detail?.receipt.receiptReference;
     if (
       !detail ||
@@ -379,9 +410,12 @@ export class OrdersController {
         return null;
       if (!awaitSave)
         this.update({ receiptPhase: "ready", receiptError: null });
+      const presentationSuffix = withDeliveryBreakdown
+        ? "-Delivery-Breakdown"
+        : "";
       return {
         blob,
-        filename: `CKS-Go-Receipt-${reference.replace(/[^A-Za-z0-9_-]/g, "-").slice(0, awaitSave ? 101 : undefined)}.pdf`,
+        filename: `CKS-Go-Receipt-${reference.replace(/[^A-Za-z0-9_-]/g, "-").slice(0, awaitSave ? 101 - presentationSuffix.length : undefined)}${presentationSuffix}.pdf`,
         ...(awaitSave
           ? {
               completeSave: this.saveCompletion(
@@ -405,6 +439,32 @@ export class OrdersController {
     this.abortAll();
     this.listeners.clear();
     this.state = empty();
+  }
+
+  private async readAfterRevalidation<T>(
+    read: () => Promise<T>,
+    current: () => boolean,
+  ): Promise<T> {
+    try {
+      return await read();
+    } catch (error) {
+      if (
+        codeOf(error) !== "CUSTOMER_SESSION_INVALID" ||
+        !current() ||
+        this.session.getSnapshot().phase !== "authenticated" ||
+        !this.session.resume
+      )
+        throw error;
+      if (
+        !(await this.session.resume()) ||
+        !current() ||
+        this.session.getSnapshot().phase !== "authenticated"
+      )
+        throw error;
+      // One read only after fresh server authentication; persistent rejection
+      // falls through to the existing expiry handling. Never replay a download.
+      return read();
+    }
   }
 
   private clearForSessionLoss(): void {

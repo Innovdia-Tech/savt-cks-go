@@ -36,6 +36,14 @@ export class DevelopmentCustomerApi implements CustomerApi {
       );
   }
 
+  async capabilities() {
+    return {
+      nativeSessionHandoff: true,
+      browserOtpEnabled: true,
+      paymentCreateEnabled: true,
+    };
+  }
+
   async bootstrap(): Promise<BootstrapData> {
     this.session = undefined;
     this.pendingOtp = undefined;

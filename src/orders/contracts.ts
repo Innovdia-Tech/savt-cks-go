@@ -72,6 +72,8 @@ export type OrderDetail = {
     itemsSubtotalMinor: number;
     discountAmountMinor: number;
     netItemsTotalMinor: number;
+    baseDeliveryFeeMinor?: number;
+    deliveryDiscountMinor?: number;
     finalDeliveryChargeMinor: number;
     processingFeeMinor: number;
     processingFee?: ProcessingFee;
@@ -113,6 +115,7 @@ export type OrderDetail = {
     issuedAt: string | null;
     metadataPath: string | null;
     downloadPath: string | null;
+    presentationDownloadUrl?: string | null;
   };
 };
 export type CancellationResult = {
@@ -355,6 +358,9 @@ export const parseOrderDetail = (value: unknown): OrderDetail => {
     invalid();
   const rawMoney = record(item.money);
   const hasProcessingFee = Object.hasOwn(rawMoney, "processingFee");
+  const hasDeliveryBreakdown =
+    Object.hasOwn(rawMoney, "baseDeliveryFeeMinor") ||
+    Object.hasOwn(rawMoney, "deliveryDiscountMinor");
   const money = exact(rawMoney, [
     "itemsSubtotalMinor",
     "discountAmountMinor",
@@ -363,6 +369,9 @@ export const parseOrderDetail = (value: unknown): OrderDetail => {
     "processingFeeMinor",
     "grandTotalMinor",
     "currency",
+    ...(hasDeliveryBreakdown
+      ? ["baseDeliveryFeeMinor", "deliveryDiscountMinor"]
+      : []),
     ...(hasProcessingFee ? ["processingFee"] : []),
   ]);
   if (
@@ -377,6 +386,44 @@ export const parseOrderDetail = (value: unknown): OrderDetail => {
     money.currency !== "MYR"
   )
     invalid();
+  if (hasDeliveryBreakdown) {
+    const {
+      baseDeliveryFeeMinor,
+      deliveryDiscountMinor,
+      itemsSubtotalMinor,
+      discountAmountMinor,
+      netItemsTotalMinor,
+      finalDeliveryChargeMinor,
+      processingFeeMinor,
+      grandTotalMinor,
+    } = money;
+    if (
+      ![
+        baseDeliveryFeeMinor,
+        deliveryDiscountMinor,
+        itemsSubtotalMinor,
+        discountAmountMinor,
+        netItemsTotalMinor,
+        finalDeliveryChargeMinor,
+        processingFeeMinor,
+        grandTotalMinor,
+      ].every((value) => Number.isSafeInteger(value) && Number(value) >= 0) ||
+      Number(baseDeliveryFeeMinor) - Number(deliveryDiscountMinor) !==
+        finalDeliveryChargeMinor ||
+      Number(itemsSubtotalMinor) - Number(discountAmountMinor) !==
+        netItemsTotalMinor ||
+      !Number.isSafeInteger(
+        Number(netItemsTotalMinor) +
+          Number(finalDeliveryChargeMinor) +
+          Number(processingFeeMinor),
+      ) ||
+      Number(netItemsTotalMinor) +
+        Number(finalDeliveryChargeMinor) +
+        Number(processingFeeMinor) !==
+        grandTotalMinor
+    )
+      invalid();
+  }
   const processingFee = hasProcessingFee
     ? parseProcessingFee(money.processingFee, invalid)
     : undefined;
@@ -426,12 +473,17 @@ export const parseOrderDetail = (value: unknown): OrderDetail => {
       refund.requirementStatus !== "REQUIRED")
   )
     invalid();
+  const hasReceiptPresentation = Object.hasOwn(
+    record(item.receipt),
+    "presentationDownloadUrl",
+  );
   const receipt = exact(item.receipt, [
     "receiptAvailable",
     "receiptReference",
     "issuedAt",
     "metadataPath",
     "downloadPath",
+    ...(hasReceiptPresentation ? ["presentationDownloadUrl"] : []),
   ]);
   if (typeof receipt.receiptAvailable !== "boolean") invalid();
   const metadataPath = `/api/v1/orders/${item.orderId}/receipt`;
@@ -441,14 +493,19 @@ export const parseOrderDetail = (value: unknown): OrderDetail => {
       !text(receipt.receiptReference, 120) ||
       !date(receipt.issuedAt) ||
       receipt.metadataPath !== metadataPath ||
-      receipt.downloadPath !== downloadPath
+      receipt.downloadPath !== downloadPath ||
+      (hasReceiptPresentation &&
+        receipt.presentationDownloadUrl !== null &&
+        receipt.presentationDownloadUrl !==
+          `${downloadPath}?presentationVersion=2`)
     )
       invalid();
   } else if (
     receipt.receiptReference !== null ||
     receipt.issuedAt !== null ||
     receipt.metadataPath !== null ||
-    receipt.downloadPath !== null
+    receipt.downloadPath !== null ||
+    (hasReceiptPresentation && receipt.presentationDownloadUrl !== null)
   )
     invalid();
   return hasProcessingFee
@@ -490,6 +547,7 @@ export type OrderDocument = {
   issuedAt: string;
   metadataPath: string;
   downloadPath: string;
+  presentationDownloadUrl?: string | null;
 };
 export type OrderDocuments = {
   orderId: string;
@@ -519,12 +577,17 @@ export const parseOrderDocuments = (value: unknown): OrderDocuments => {
       if (raw !== null) invalid();
       return;
     }
+    const hasPresentation = Object.hasOwn(
+      record(raw),
+      "presentationDownloadUrl",
+    );
     const document = exact(raw, [
       "kind",
       "receiptReference",
       "issuedAt",
       "metadataPath",
       "downloadPath",
+      ...(hasPresentation ? ["presentationDownloadUrl"] : []),
     ]);
     const path = `/api/v1/orders/${item.orderId}/${suffix}`;
     if (
@@ -532,7 +595,11 @@ export const parseOrderDocuments = (value: unknown): OrderDocuments => {
       !text(document.receiptReference, 120) ||
       !date(document.issuedAt) ||
       document.metadataPath !== path ||
-      document.downloadPath !== `${path}/download`
+      document.downloadPath !== `${path}/download` ||
+      (hasPresentation &&
+        document.presentationDownloadUrl !== null &&
+        document.presentationDownloadUrl !==
+          `${path}/download?presentationVersion=2`)
     )
       invalid();
   };

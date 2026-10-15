@@ -1,4 +1,5 @@
 import {
+  parseSessionCapabilitiesEnvelope,
   parseApiErrorEnvelope,
   parseBootstrapEnvelope,
   parseSessionEnvelope,
@@ -6,6 +7,7 @@ import {
   parseWebOtpRequestEnvelope,
   type BootstrapData,
   type SessionData,
+  type SessionCapabilities,
   type WebOtpAuthorizeBody,
   type WebOtpAuthorizeData,
   type WebOtpRequestBody,
@@ -29,6 +31,7 @@ export class ApiClientError extends Error {
 }
 
 export interface CustomerApi {
+  capabilities?(): Promise<SessionCapabilities>;
   bootstrap(): Promise<BootstrapData>;
   requestWebOtp(body: WebOtpRequestBody): Promise<WebOtpRequestData>;
   authorizeWebOtp(body: WebOtpAuthorizeBody): Promise<WebOtpAuthorizeData>;
@@ -55,6 +58,17 @@ export class CustomerApiClient implements CustomerApi {
       globalThis.fetch(input, init),
     private readonly timeoutMs = 15_000,
   ) {}
+
+  capabilities(): Promise<SessionCapabilities> {
+    return this.jsonRequest(
+      "/api/v1/customer/session/capabilities",
+      parseSessionCapabilitiesEnvelope,
+      {
+        method: "GET",
+        cache: "no-store",
+      },
+    );
+  }
 
   bootstrap(): Promise<BootstrapData> {
     return this.jsonRequest(

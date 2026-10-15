@@ -138,14 +138,12 @@ export function PaymentPanel({
           This usually takes a moment. Your order will appear once payment is
           confirmed. Return to CKS Go later to check again.
         </p>
-        {isLocalPaymentSimulatorBrowserEnabled() && (
-          <button
-            className={action}
-            onClick={() => void controller.checkStatus()}
-          >
-            Check payment status
-          </button>
-        )}
+        <button
+          className={action}
+          onClick={() => void controller.checkStatus()}
+        >
+          Check payment status
+        </button>
       </section>
     );
   if (state.phase === "handoff-error")
@@ -188,6 +186,30 @@ export function PaymentPanel({
         title="Session expired"
         message="Return to Savt and reopen CKS Go before checking payment again."
       />
+    );
+  if (state.error === "CHECKOUT_PAYMENT_CREATE_DISABLED")
+    return (
+      <section className="payment-card payment-warning" role="alert">
+        <h2>Payments are disabled in this QA environment</h2>
+        <p>
+          {state.paymentIntentId
+            ? "New payments are unavailable. Your earlier payment may still be processing. Check its status before paying again."
+            : "Checkout is temporarily unavailable. Your basket is kept. Review your basket, or try checkout again when QA payments are available."}
+        </p>
+        {state.paymentIntentId ? (
+          <button
+            className={action}
+            onClick={() => void controller.checkStatus()}
+          >
+            Check payment status
+          </button>
+        ) : (
+          <button className={action} onClick={() => controller.restart()}>
+            Review basket
+          </button>
+        )}
+        {support}
+      </section>
     );
   if (state.error === "CHECKOUT_PAYMENT_RETRY_VOUCHER_UNSUPPORTED")
     return (

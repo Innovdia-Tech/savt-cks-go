@@ -7,6 +7,25 @@ afterEach(() => {
   vi.useRealTimers();
 });
 describe("browser receipt attachment", () => {
+  it.each([true, false])(
+    "passes the explicit delivery-breakdown choice to payment=%s without saving another document",
+    async (payment) => {
+      const downloadPaymentReceipt = vi.fn(async () => null);
+      const downloadReceipt = vi.fn(async () => null);
+      await components.saveReceipt(
+        { downloadPaymentReceipt, downloadReceipt } as never,
+        payment,
+        true,
+      );
+      expect(
+        payment ? downloadPaymentReceipt : downloadReceipt,
+      ).toHaveBeenCalledExactlyOnceWith(false, true);
+      expect(
+        payment ? downloadReceipt : downloadPaymentReceipt,
+      ).not.toHaveBeenCalled();
+    },
+  );
+
   it("downloads a credential-free object URL and releases it after the browser can consume it", async () => {
     vi.useFakeTimers();
     let clicked = false;

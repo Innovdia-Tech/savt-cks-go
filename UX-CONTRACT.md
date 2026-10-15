@@ -1,6 +1,18 @@
 # Customer UI contract
 
+## CKSGO-IDLE-RESUME01 Android session recovery
+
+An embedded foreground return validates the existing CKS session. A valid session keeps its document, route, Basket and pending payment. An expired CKS session requires an explicit same-document native grant before a new bootstrap, native Savt authorization and one-use exchange. The backend's 15-minute idle policy is unchanged; a 401 alone does not distinguish idle expiry from revocation. Savt authorization remains native-only.
+
+During validation/recovery the existing authenticated tree stays mounted, hidden and inert. Credentials are gated; no interrupted quote, order, address or payment mutation is replayed. A pending payment is observed only through authoritative status reads after validation. Reauthentication refreshes customer data and obtains a fresh browsing assignment while retaining filters/detail and Basket. Logout/account replacement retain hard cleanup.
+
+One automatic native grant is allowed per failure episode. A later successful status observation closes the episode. Ordinary offline resume recovers on reconnect before consuming a grant. A network failure after a grant retains the document and requires explicit connection retry to start one fresh episode; it does not reuse bootstrap IDs or consumed codes. Invalid/revoked authentication gives a safe blocked/sign-in state. Back and Close remain native controls.
+
+The additive bridge messages are `session-recovery-request` (UUID, optional explicit `retry:true`), `session-validated`, and `session-recovery-failed` (matching request UUID, safe network/invalid-session code). Native dispatches only owned foreground `savt-cks-go-session` events: resume, recovery-granted and recovery-failed. No bearer token, payment status assertion, quote or order payload is included.
+
 ## CKSGO-BRAND01 branding override
+
+R1 order-read recovery: when an order list, tracking detail or document-metadata GET encounters customer-session expiry inside an authenticated embedded document, it awaits the existing native/server revalidation and repeats that same read at most once. Denied revalidation or a second rejection keeps the existing safe expiry behavior. Close, newer navigation, logout and account replacement fence the pending read. Receipt-download expiry retains tracking context inside the gated document and requires a new explicit download after revalidation. Receipt downloads/saves, payments and other mutations are never replayed by this recovery.
 
 The approved 7 October 2026 handoff replaces historical CKS-red commerce accents and the soft-green page background with `CKSGO-BRAND01-tokens-v1`: light blue `#8ECBE2`, working action blue `#0C74B6`, white primary-action text, dark ink on light-blue selected surfaces, white cards and restrained pale-blue/blue-grey supporting surfaces. `src/styles.css` remains canonical, with values mirrored in `DESIGN.md`. Semantic success, warning, danger and Savt reward colors keep their existing roles. Historical color references below describe prior checkpoints and do not override this migration.
 
@@ -186,3 +198,16 @@ The protected backend document projection at `a37f46d45ccc42082affd0c063c68e843a
 Only the authoritative `milestones.completedAt` enables the secondary **Final Sales Receipt** section, with **Final fulfilled-order record** and **Download Final Sales Receipt** when its existing detail capability is available. It appears separately after the normal Receipt and cannot replace its action. Receipt availability errors show **Receipt temporarily unavailable**, **We couldn’t load your receipt. Please try again.**, and **Try again** through `refreshDocuments`; no final-document card is rendered during that error. Tracking, order detail and payment summary remain readable. Focused receipt presentation, API, controller and browser-save tests own this behavior.
 
 The local simulator's existing explicit status action also covers PAID_PROCESSING under the same development/non-production/loopback allowance. It performs only an explicit status read, without creating or retrying payment or changing production observation/finality rules. See `docs/verification/PAY-RECEIPT-FE01.md` for local browser acceptance, exception evidence and native-host limitations.
+
+## R2 customer access and checkout repairs
+
+Authority: approved 15 October 2026 seven-issue repair request and latest continuous GKash STAGING policy; Phase 1 contract sections 3–6 and 9. Reuse the accepted R1 identity, payment, order and document rules.
+
+- `CustomerSessionController` checks a valid cookie first. Unauthenticated standalone entry reads the no-store session capability contract before offering OTP. Disabled or unverified browser access never requests a phone number or code; offline/transient checks retain their own recovery states. Existing native handoff remains authoritative.
+- A service or network failure during native reauthorization preserves the mounted, gated Basket and payment reference. Only an explicit secure retry can reopen a consumed recovery budget; foreground events cannot loop it. No write, payment or receipt download is replayed. Return uses the existing native header close control, with truthful warning about unsaved Basket state.
+- Order summaries display frozen merchandise discount, standard delivery, negative applied delivery promotion, delivery charged, small order fee and total. Missing legacy delivery breakdowns are never reconstructed. Only the internal display label `Legacy Free Delivery` is mapped to `Free delivery promotion`; campaign identity is preserved.
+- Payment-disabled copy appears only for the authoritative disabled code. Enabled staging checkout retains R1 behavior. A received payment awaiting order processing offers a safe GET-only status check; return navigation never proves success.
+
+Canonical owners remain session/controller and SessionStatus for access/recovery, checkout/components and checkout.css for money presentation, payment/components for payment feedback, and orders/contracts/components for frozen order/document projections. Verification: focused session/API/bridge and commerce tests, strict TypeScript/build, and synthetic before/after screenshots at 320/390/430/1280px. Physical restart/expiry acceptance is grouped with the eventual QA rollout.
+
+R2 receipt compatibility: the original issued PDF remains the default action. An optional, nullable `presentationDownloadUrl` enables an explicit delivery-breakdown copy only when it exactly matches the current owned order and document kind with `?presentationVersion=2`. Extra origins, parameters, another order or another document kind are rejected. Missing capability never silently falls back from the copy action. The same download/save limits and session/navigation generation fences apply; no copy is fetched automatically.

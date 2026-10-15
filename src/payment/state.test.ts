@@ -110,6 +110,35 @@ const fixture = (
 };
 
 describe("PaymentController", () => {
+  it("keeps pending payment until session recovery finishes and observes GET status only", async () => {
+    const { controller, session, api, bridge } = fixture();
+    await controller.restore(paymentIntentId);
+    api.result.mockClear();
+    const ready = deferred<boolean>();
+    Object.assign(session, { resume: () => ready.promise });
+    const returned = controller.handleReturn();
+    expect(api.result).not.toHaveBeenCalled();
+    expect(controller.getSnapshot().paymentIntentId).toBe(paymentIntentId);
+    ready.resolve(true);
+    await returned;
+    expect(api.result).toHaveBeenCalled();
+    expect(api.create).not.toHaveBeenCalled();
+    expect(api.retry).not.toHaveBeenCalled();
+    expect(bridge.requestPaymentHandoff).not.toHaveBeenCalled();
+  });
+
+  it("retains a pending intent on offline return without payment observation or retry", async () => {
+    const { controller, session, api, bridge } = fixture();
+    await controller.restore(paymentIntentId);
+    api.result.mockClear();
+    Object.assign(session, { resume: async () => false });
+    await controller.handleReturn();
+    expect(controller.getSnapshot().paymentIntentId).toBe(paymentIntentId);
+    expect(api.result).not.toHaveBeenCalled();
+    expect(api.create).not.toHaveBeenCalled();
+    expect(api.retry).not.toHaveBeenCalled();
+    expect(bridge.requestPaymentHandoff).not.toHaveBeenCalled();
+  });
   it("retains recovery when stale FAILED follows received payment evidence", async () => {
     const { controller, bridge, api } = fixture();
     const clear = vi.fn();

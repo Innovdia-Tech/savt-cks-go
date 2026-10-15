@@ -119,6 +119,75 @@ const detail = (): OrderDetail => ({
 });
 
 describe("customer order contracts", () => {
+  it.each([
+    null,
+    `/api/v1/orders/${orderId}/receipt/download?presentationVersion=2`,
+  ])(
+    "accepts the optional owned final receipt presentation URL %s",
+    (presentationDownloadUrl) => {
+      const value = detail();
+      value.receipt = {
+        receiptAvailable: true,
+        receiptReference: value.orderNumber,
+        issuedAt: at,
+        metadataPath: `/api/v1/orders/${orderId}/receipt`,
+        downloadPath: `/api/v1/orders/${orderId}/receipt/download`,
+      };
+      Object.assign(value.receipt, { presentationDownloadUrl });
+      expect(parseOrderDetail({ data: value }).receipt).toEqual(value.receipt);
+    },
+  );
+  it("requires an unavailable final presentation capability to remain null", () => {
+    const value = detail();
+    Object.assign(value.receipt, { presentationDownloadUrl: null });
+    expect(parseOrderDetail({ data: value }).receipt).toEqual(value.receipt);
+    Object.assign(value.receipt, {
+      presentationDownloadUrl: `/api/v1/orders/${orderId}/receipt/download?presentationVersion=2`,
+    });
+    expect(() => parseOrderDetail({ data: value })).toThrow();
+  });
+
+  it("accepts optional frozen delivery breakdown without changing historical order values", () => {
+    const value = detail();
+    Object.assign(value.money, {
+      baseDeliveryFeeMinor: 1490,
+      deliveryDiscountMinor: 500,
+    });
+    expect(parseOrderDetail({ data: value }).money).toEqual(value.money);
+    expect(parseOrderDetail({ data: detail() }).money).not.toHaveProperty(
+      "baseDeliveryFeeMinor",
+    );
+  });
+
+  it.each([
+    { baseDeliveryFeeMinor: 1490 },
+    { deliveryDiscountMinor: 500 },
+    { baseDeliveryFeeMinor: 1490, deliveryDiscountMinor: 501 },
+    { baseDeliveryFeeMinor: 490, deliveryDiscountMinor: 500 },
+    { baseDeliveryFeeMinor: 1490.5, deliveryDiscountMinor: 500 },
+    {
+      baseDeliveryFeeMinor: Number.MAX_SAFE_INTEGER + 1,
+      deliveryDiscountMinor: 500,
+    },
+  ])(
+    "rejects missing or inconsistent frozen delivery fields %#",
+    (addition) => {
+      const value = detail();
+      Object.assign(value.money, addition);
+      expect(() => parseOrderDetail({ data: value })).toThrow();
+    },
+  );
+
+  it("rejects a new breakdown whose merchandise or final total does not reconcile", () => {
+    const value = detail();
+    Object.assign(value.money, {
+      baseDeliveryFeeMinor: 1490,
+      deliveryDiscountMinor: 500,
+      grandTotalMinor: 4591,
+    });
+    expect(() => parseOrderDetail({ data: value })).toThrow();
+  });
+
   it("parses the exact paged order history projection", () => {
     const value = {
       data: [listItem()],

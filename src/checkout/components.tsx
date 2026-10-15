@@ -341,8 +341,32 @@ function QuoteSummary({
       <dl className="quote-totals">
         <dt>Items subtotal</dt>
         <dd>{money(quote.itemsSubtotalMinor)}</dd>
-        <dt>Delivery fee</dt>
-        <dd>{money(quote.finalDeliveryChargeMinor)}</dd>
+        {quote.discountAmountMinor > 0 && (
+          <>
+            <dt>Items discount</dt>
+            <dd className="quote-saving">
+              −{money(quote.discountAmountMinor)}
+            </dd>
+          </>
+        )}
+        <dt>Standard delivery</dt>
+        <dd>{money(quote.baseDeliveryFeeMinor)}</dd>
+        {quote.deliveryDiscountMinor > 0 && (
+          <>
+            <dt className="quote-saving">
+              {quote.finalDeliveryChargeMinor === 0
+                ? "Free delivery promotion"
+                : "Delivery promotion"}
+            </dt>
+            <dd className="quote-saving">
+              −{money(quote.deliveryDiscountMinor)}
+            </dd>
+          </>
+        )}
+        <dt className="quote-delivery-charge">Delivery charged</dt>
+        <dd className="quote-delivery-charge">
+          {money(quote.finalDeliveryChargeMinor)}
+        </dd>
         {quote.processingFee.feeType === "SMALL_ORDER_TIERS" ? (
           <SmallOrderFee
             key={quote.quoteId}

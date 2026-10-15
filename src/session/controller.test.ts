@@ -25,6 +25,13 @@ const session = {
 };
 
 const apiFixture = (): CustomerApi => ({
+  capabilities: vi
+    .fn()
+    .mockResolvedValue({
+      nativeSessionHandoff: true,
+      browserOtpEnabled: true,
+      paymentCreateEnabled: true,
+    }),
   bootstrap: vi.fn().mockResolvedValue(bootstrap),
   requestWebOtp: vi.fn().mockResolvedValue({
     otpRequestId: "O".repeat(43),

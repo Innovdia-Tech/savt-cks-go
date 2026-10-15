@@ -302,6 +302,8 @@
   flex: 0 0 44px;
   width: 44px;
   min-height: 44px;
+  /* Keep the 44px touch target inside the existing row gaps. */
+  margin-block: -8px;
   place-items: center;
   border: 0;
   border-radius: var(--radius-button);
@@ -319,6 +321,33 @@
 }
 .small-order-fee-amount {
   align-self: center;
+}
+.quote-totals .quote-saving {
+  color: var(--color-text);
+  font-weight: 600;
+}
+.quote-card {
+  container-type: inline-size;
+  font-size: var(--text-body);
+}
+@container (max-width: 16em) {
+  .cart-stack--shopping .quote-totals {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 6px;
+  }
+  .quote-totals dt:not(:first-child) {
+    margin-top: 8px;
+  }
+  .quote-totals dd {
+    text-align: left;
+  }
+  .quote-totals dd.quote-grand {
+    border-top: 0;
+    padding-top: 0;
+  }
+}
+.quote-delivery-charge {
+  font-weight: 500;
 }
 .quote-totals .small-order-fee-helper {
   grid-column: 1 / -1;
@@ -698,7 +727,11 @@
   background: var(--color-surface-muted);
 }
 .cart-stack--shopping .cart-quantity button {
+  width: 44px;
   min-height: 44px;
+}
+.cart-stack--shopping .cart-quantity > span {
+  min-width: 0;
 }
 .cart-stack--shopping .cart-line-subtotal {
   grid-column: 2 / -1;
@@ -709,7 +742,7 @@
   flex-wrap: wrap;
   gap: 4px 8px;
   padding-top: 4px;
-  line-height: 20px;
+  line-height: var(--leading-body);
 }
 .cart-stack--shopping .cart-line-subtotal span {
   display: inline;

@@ -148,6 +148,44 @@ const progressStep = (html: string, label: string) => {
 };
 
 describe("customer orders presentation", () => {
+  it("shows frozen delivery savings in the order payment summary", () => {
+    const order = {
+      ...detail,
+      money: {
+        ...detail.money,
+        baseDeliveryFeeMinor: 1490,
+        deliveryDiscountMinor: 500,
+      },
+    };
+    const html = renderToStaticMarkup(
+      createElement(OrderDetailScreen, {
+        state: state({ detail: order, detailPhase: "ready" }),
+        controller,
+        onBack() {},
+      }),
+    );
+    expect(html).toMatch(/Standard delivery<\/dt><dd>RM[^<]*14\.90<\/dd>/);
+    expect(html).toMatch(
+      /Delivery promotion<\/dt><dd[^>]*>−RM[^<]*5\.00<\/dd>/,
+    );
+    expect(html).toMatch(/Delivery charged<\/dt><dd>RM[^<]*9\.90<\/dd>/);
+    expect(html).not.toContain("Legacy Free Delivery");
+  });
+
+  it("does not invent historical delivery savings when the snapshot has no breakdown", () => {
+    const html = renderToStaticMarkup(
+      createElement(OrderDetailScreen, {
+        state: state({ detail, detailPhase: "ready" }),
+        controller,
+        onBack() {},
+      }),
+    );
+    expect(html).toMatch(/Delivery charged<\/dt><dd>RM[^<]*9\.90<\/dd>/);
+    expect(html).not.toMatch(
+      /Standard delivery|Delivery promotion|Free delivery promotion/,
+    );
+  });
+
   it("omits delivery-note display while preserving the order record", () => {
     const html = renderToStaticMarkup(
       createElement(OrderDetailScreen, {
@@ -732,6 +770,41 @@ describe("customer receipt presentation", () => {
       downloadPath: `/api/v1/orders/${orderId}/receipt/download`,
     },
   };
+
+  it("offers separate explicit delivery-breakdown copies without replacing original issued downloads", () => {
+    const capabilities = documents();
+    Object.assign(capabilities.paymentReceipt, {
+      presentationDownloadUrl:
+        capabilities.paymentReceipt.downloadPath + "?presentationVersion=2",
+    });
+    const html = render({
+      detail: {
+        ...completed,
+        receipt: {
+          ...completed.receipt,
+          presentationDownloadUrl:
+            completed.receipt.downloadPath + "?presentationVersion=2",
+        },
+      },
+      documents: capabilities,
+    });
+    expect(html).toContain("Download Receipt</button>");
+    expect(html).toContain("Download Final Sales Receipt</button>");
+    expect(html).toContain("Download receipt with delivery breakdown");
+    expect(html).toContain(
+      "Download Final Sales Receipt with delivery breakdown",
+    );
+    expect(html).toContain(
+      "The receipt amounts stay the same. This copy itemizes delivery savings.",
+    );
+    expect(html).not.toContain("presentationVersion");
+  });
+
+  it("does not offer presentation copies on older capability responses", () => {
+    expect(render({ detail: completed })).not.toContain(
+      "with delivery breakdown",
+    );
+  });
 
   it("keeps the normal receipt and adds a separate secondary final document after completion", () => {
     const html = render({ detail: completed });
