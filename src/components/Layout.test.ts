@@ -6,7 +6,31 @@ import {
   HeaderActions,
   BasketSummaryBar,
   RefreshButton,
+  AppShell,
 } from "./Layout";
+
+it.each(["orders", "order/11111111-1111-4111-8111-111111111111"])(
+  "keeps Basket navigation without a floating summary on %s",
+  (screenKey) => {
+    const html = renderToStaticMarkup(
+      createElement(AppShell, {
+        active: "Orders",
+        screenKey,
+        headerContext: "orders",
+        title: "My Orders",
+        embeddedHost: true,
+        cartCount: 1,
+        onNavigate: () => {},
+        basketSummary: { count: 1, subtotal: "RM 0.00", onOpen: () => {} },
+        children: "Order content",
+      }),
+    );
+    expect(html).not.toContain('class="basket-summary"');
+    expect(html).toContain("Order content");
+    expect(html).toContain("Basket, 1 item");
+    expect(html).toContain("Basket</span>");
+  },
+);
 
 it("offers a named keyboard/click refresh alternative and disables it while refreshing", () => {
   const render = (refreshing: boolean) =>

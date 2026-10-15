@@ -1,5 +1,6 @@
 import type { Address } from "../addresses/contracts";
 import type { Assignment, Product } from "../catalogue/contracts";
+import { hasConfiguredSellingPrice } from "../catalogue/contracts";
 import { QuoteError, type QuoteRequest } from "./api";
 import {
   MAX_CART_LINES,
@@ -87,6 +88,7 @@ export type CartState = {
     | "session-expired";
   quote: CheckoutQuote | null;
   error: string | null;
+  affectedOutletProductId?: string | null;
   canRetry: boolean;
   priceChanged: boolean;
   payableTotalChanged: boolean;
@@ -103,6 +105,7 @@ const empty = (): CartState => ({
   quotePhase: "idle",
   quote: null,
   error: null,
+  affectedOutletProductId: null,
   canRetry: false,
   priceChanged: false,
   payableTotalChanged: false,
@@ -167,6 +170,7 @@ export class CartController {
       quote: null,
       quotePhase: "idle",
       error: null,
+      affectedOutletProductId: null,
       canRetry: false,
       priceChanged: false,
       payableTotalChanged: false,
@@ -253,7 +257,8 @@ export class CartController {
       throw new Error("CART_OUTLET_MISMATCH");
     if (
       assignment.outlet.availability !== "AVAILABLE" ||
-      product.availability !== "AVAILABLE"
+      product.availability !== "AVAILABLE" ||
+      !hasConfiguredSellingPrice(product.sellingPriceMinor)
     )
       throw new Error("CART_PRODUCT_UNAVAILABLE");
     const index = this.state.lines.findIndex(
@@ -295,6 +300,11 @@ export class CartController {
     );
     if (!line) return;
     if (quantity === 0) return this.remove(outletProductId);
+    if (
+      quantity > line.quantity &&
+      !hasConfiguredSellingPrice(line.displayedUnitPriceMinor)
+    )
+      throw new Error("CART_PRODUCT_UNAVAILABLE");
     this.assertQuantity(quantity, line.displayedUnitPriceMinor);
     this.invalidateQuote();
     this.update({
@@ -500,6 +510,7 @@ export class CartController {
       quote: null,
       quotePhase: "quoting",
       error: null,
+      affectedOutletProductId: null,
       canRetry: false,
       priceChanged: false,
       payableTotalChanged: false,
@@ -555,6 +566,13 @@ export class CartController {
         quotePhase:
           code === "CUSTOMER_SESSION_INVALID" ? "session-expired" : "error",
         error: code,
+        affectedOutletProductId:
+          error instanceof QuoteError &&
+          this.state.lines.some(
+            (line) => line.outletProductId === error.affectedOutletProductId,
+          )
+            ? error.affectedOutletProductId
+            : null,
         canRetry,
         priceChanged: false,
         payableTotalChanged: false,

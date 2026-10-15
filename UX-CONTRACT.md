@@ -1,5 +1,17 @@
 # Customer UI contract
 
+## Customer demo refinement — 15 October 2026
+
+Authority: the approved customer refinement and eligibility safeguards request for the 16 October demonstration. This section supersedes the earlier R2 separate receipt-copy actions and expanded checkout delivery rows. Existing identity, payment finality, transaction snapshots and save-bridge contracts remain authoritative.
+
+Only a configured positive retail selling price is purchasable; verified discounts may still reduce payable totals to zero. Backend eligibility precedes catalogue pagination/count and is revalidated with stock and pause status at quote creation. Optional `availabilityReason: OUT_OF_STOCK` supplies truthful stock copy without counts; a generic unavailable response retains generic copy. Stale invalid prices cannot be added. Stock-affected baskets remain editable/removable; a validated requested product identifier is resolved to the existing Basket product name in quote errors.
+
+Checkout shows one Delivery fee row using the authoritative payable charge. A real discount adds the struck-through base and payable amount or FREE. The existing native dialog/bottom-sheet foundation owns the accessible fee breakdown, Escape, focus return and body-scroll lock. Small-order fees appear only when charged, with the quoted threshold helper; policy detail stays in their information sheet. One Grand total remains prominent, estimated delivery stays visible and price-validity detail is disclosed. Expired/review quotes offer refresh/acceptance before a payment action.
+
+Order documents expose exactly Payment Receipt and Final Sales Receipt, subject to the existing availability rules. Each action uses its validated presentation download capability when supplied, otherwise the existing original capability. Original PDFs and financial evidence remain intact. Browser download initiation does not claim a confirmed save; the native host must acknowledge the matching save before success. Orders list/detail/document sections suppress the floating Basket bar while retaining Basket navigation and genuine pending state. Fully fulfilled lines omit redundant fulfilment copy; unavailable/refund information remains.
+
+HQ carousel artwork uses its intrinsic ratio at full container width with contain fit, preserving the complete image and existing controls. Synthetic 360/390/430px evidence cannot substitute for inspecting the actual approved uploaded artwork and physical Samsung/OPPO acceptance.
+
 ## CKSGO-IDLE-RESUME01 Android session recovery
 
 An embedded foreground return validates the existing CKS session. A valid session keeps its document, route, Basket and pending payment. An expired CKS session requires an explicit same-document native grant before a new bootstrap, native Savt authorization and one-use exchange. The backend's 15-minute idle policy is unchanged; a 401 alone does not distinguish idle expiry from revocation. Savt authorization remains native-only.

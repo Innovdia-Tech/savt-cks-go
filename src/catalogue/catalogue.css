@@ -118,6 +118,10 @@
 .advertising-carousel__slide--hq .advertising-carousel__artwork {
   object-fit: contain;
 }
+.catalogue-root .advertising-carousel.advertising-carousel--hq-natural {
+  min-height: 0;
+  height: auto;
+}
 .catalogue-featured-actions {
   display: flex;
   justify-content: center;
@@ -503,6 +507,10 @@
   min-height: 3.125rem;
   align-items: flex-end;
   margin-top: 7px;
+}
+.catalogue-stock-label {
+  color: var(--color-text-muted);
+  font-size: var(--text-meta);
 }
 .catalogue-tile-action > .catalogue-add,
 .catalogue-tile-action > .catalogue-tile-quantity {

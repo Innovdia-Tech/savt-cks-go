@@ -105,6 +105,8 @@ describe("closed R2 projections", () => {
   );
 
   it.each([
+    { sellingPriceMinor: 0 },
+    { sellingPriceMinor: null },
     { sellingPriceMinor: 1.25 },
     { sellingPriceMinor: "1234" },
     { sellingPriceMinor: -1 },
@@ -122,6 +124,57 @@ describe("closed R2 projections", () => {
       parseProducts({ data: [{ ...product, ...patch }], meta }),
     ).toThrow(),
   );
+  it("rejects unpriced direct product detail", () => {
+    expect(() =>
+      parseDetail({
+        data: {
+          ...product,
+          sellingPriceMinor: 0,
+          description: null,
+          storageType: "AMBIENT",
+        },
+        meta: { outlet, asOf: time, assignmentContextExpiresAt: expiry },
+      }),
+    ).toThrow();
+  });
+  it("accepts a stock-safe unavailable reason without exposing stock levels", () => {
+    expect(
+      parseProducts({
+        data: [
+          {
+            ...product,
+            availability: "UNAVAILABLE",
+            availabilityReason: "OUT_OF_STOCK",
+          },
+        ],
+        meta,
+      }).data[0],
+    ).toMatchObject({
+      availability: "UNAVAILABLE",
+      availabilityReason: "OUT_OF_STOCK",
+    });
+    expect(
+      parseDetail({
+        data: {
+          ...product,
+          availability: "UNAVAILABLE",
+          availabilityReason: "OUT_OF_STOCK",
+          description: null,
+          storageType: "AMBIENT",
+        },
+        meta: { outlet, asOf: time, assignmentContextExpiresAt: expiry },
+      }).data.availabilityReason,
+    ).toBe("OUT_OF_STOCK");
+  });
+  it.each([
+    { availability: "AVAILABLE", availabilityReason: "OUT_OF_STOCK" },
+    { availability: "UNAVAILABLE", availabilityReason: "PAUSED" },
+    { availability: "UNAVAILABLE", stockQuantity: 0 },
+  ])("rejects inconsistent or private stock projection %j", (patch) => {
+    expect(() =>
+      parseProducts({ data: [{ ...product, ...patch }], meta }),
+    ).toThrow();
+  });
   it("rejects extra envelope/meta fields and inconsistent pagination", () => {
     expect(() =>
       parseAssignment({ ...assignment, requestId: "extra" }),

@@ -132,7 +132,7 @@ export function AppShell({
           {children}
         </div>
         {sticky}
-        {basketSummary && active !== "Basket" && (
+        {basketSummary && active !== "Basket" && active !== "Orders" && (
           <BasketSummaryBar
             key={`${basketSummary.count}-${basketSummary.subtotal}`}
             {...basketSummary}

@@ -715,15 +715,15 @@ describe("customer receipt presentation", () => {
 
   it("offers the paid-order receipt with its authoritative total immediately", () => {
     const html = render();
-    expect(html).toContain(">Receipt</h3>");
+    expect(html).toContain(">Payment Receipt</h3>");
     expect(html).toContain("Payment received");
     const receipt = html.match(
       /<section[^>]*aria-labelledby="order-receipt-title"[\s\S]*?<\/section>/,
     )?.[0];
     expect(receipt).toMatch(/RM\s*45\.90/);
     expect(receipt).not.toMatch(/RM\s*35\.00/);
-    expect(html).toContain("Download Receipt");
-    expect(html).not.toContain("Payment Receipt");
+    expect(html).toContain("Download Payment Receipt");
+    expect(html).toContain("Payment Receipt");
     expect(html).not.toContain("Final Receipt");
     expect(html).not.toContain("Final Sales Receipt");
     expect(html).not.toContain("Available after your order is completed");
@@ -752,7 +752,7 @@ describe("customer receipt presentation", () => {
           },
         },
       });
-      expect(html).toContain("Download Receipt");
+      expect(html).toContain("Download Payment Receipt");
       expect(html).not.toContain("Final Sales Receipt");
       expect(html).not.toContain("Final Receipt");
     },
@@ -771,7 +771,7 @@ describe("customer receipt presentation", () => {
     },
   };
 
-  it("offers separate explicit delivery-breakdown copies without replacing original issued downloads", () => {
+  it("offers exactly two canonical document actions when delivery breakdowns are available", () => {
     const capabilities = documents();
     Object.assign(capabilities.paymentReceipt, {
       presentationDownloadUrl:
@@ -788,16 +788,49 @@ describe("customer receipt presentation", () => {
       },
       documents: capabilities,
     });
-    expect(html).toContain("Download Receipt</button>");
+    expect(html).toContain("Download Payment Receipt</button>");
     expect(html).toContain("Download Final Sales Receipt</button>");
-    expect(html).toContain("Download receipt with delivery breakdown");
-    expect(html).toContain(
-      "Download Final Sales Receipt with delivery breakdown",
-    );
-    expect(html).toContain(
+    expect(html).not.toContain("with delivery breakdown");
+    expect(html).not.toContain(
       "The receipt amounts stay the same. This copy itemizes delivery savings.",
     );
+    expect([
+      ...html.matchAll(/<button[^>]*>Download [^<]*Receipt<\/button>/g),
+    ]).toHaveLength(2);
     expect(html).not.toContain("presentationVersion");
+  });
+
+  it("keeps fully fulfilled items concise and shows unavailable quantities with refund information", () => {
+    const fulfilled = {
+      ...completed,
+      fulfilment: { fulfilmentConfirmed: true, confirmedAt: at },
+      items: [
+        { ...detail.items[0], fulfilledQuantity: 2, unavailableQuantity: 0 },
+      ],
+    };
+    const full = render({ detail: fulfilled });
+    expect(full).toContain("Apples");
+    expect(full).toContain("Quantity 2");
+    expect(full).toMatch(/RM\s*35\.00/);
+    expect(full).not.toContain("Fulfilled 2");
+    expect(full).not.toContain("unavailable 0");
+    const partial = render({
+      detail: {
+        ...fulfilled,
+        items: [
+          { ...detail.items[0], fulfilledQuantity: 1, unavailableQuantity: 1 },
+        ],
+        refund: {
+          ...detail.refund,
+          refundRequired: true,
+          requiredAmountMinor: 1750,
+          totalRequiredAmountMinor: 1750,
+        },
+      },
+    });
+    expect(partial).toContain("Fulfilled 1; unavailable 1");
+    expect(partial).toContain("Refund required");
+    expect(partial).toMatch(/RM\s*17\.50/);
   });
 
   it("does not offer presentation copies on older capability responses", () => {
@@ -808,20 +841,20 @@ describe("customer receipt presentation", () => {
 
   it("keeps the normal receipt and adds a separate secondary final document after completion", () => {
     const html = render({ detail: completed });
-    expect(html).toContain(">Receipt</h3>");
+    expect(html).toContain(">Payment Receipt</h3>");
     expect(html).toContain("Payment received");
-    expect(html).toContain("Download Receipt");
+    expect(html).toContain("Download Payment Receipt");
     expect(html).toContain(">Final Sales Receipt</h3>");
     expect(html).toContain("Final fulfilled-order record");
     expect(html).toContain("Download Final Sales Receipt");
-    expect(html.indexOf("Download Receipt")).toBeLessThan(
+    expect(html.indexOf("Download Payment Receipt")).toBeLessThan(
       html.indexOf("Final Sales Receipt"),
     );
   });
 
   it("leaves the normal receipt downloadable while the completed-order final document is being prepared", () => {
     const html = render({ detail: { ...completed, receipt: detail.receipt } });
-    expect(html).toContain("Download Receipt");
+    expect(html).toContain("Download Payment Receipt");
     expect(html).toContain("Final Sales Receipt");
     expect(html).not.toContain("Download Final Sales Receipt");
   });
@@ -837,7 +870,7 @@ describe("customer receipt presentation", () => {
     });
     expect(html).toContain("Receipt temporarily unavailable");
     expect(html).toContain("Try again");
-    expect(html).not.toContain("Download Receipt");
+    expect(html).not.toContain("Download Payment Receipt");
     expect(html).not.toContain("Final Sales Receipt");
   });
 
@@ -860,7 +893,7 @@ describe("customer receipt presentation", () => {
       expect(html).toContain('role="status">Receipt saved');
       expect(html).toContain("Where your order is");
       expect(html).toContain("Grand total");
-      expect(html).toContain("Download Receipt");
+      expect(html).toContain("Download Payment Receipt");
       expect(html).toContain("Download Final Sales Receipt");
       expect(html).not.toContain("Preparing receipt…");
     },
@@ -871,7 +904,7 @@ describe("customer receipt presentation", () => {
       paymentReceiptPhase: "error",
       paymentReceiptError: "PAYMENT_RECEIPT_INTEGRITY_FAILED",
     });
-    expect(html).toContain("Download Receipt");
+    expect(html).toContain("Download Payment Receipt");
     expect(html).toContain(
       "We couldn’t download your receipt. Please try again.",
     );
@@ -886,7 +919,7 @@ describe("customer receipt presentation", () => {
       expect(html).toContain(
         documentsPhase === "loading" ? "Loading your receipt…" : "Try again",
       );
-      expect(html).not.toContain("Download Receipt");
+      expect(html).not.toContain("Download Payment Receipt");
       expect(html).not.toContain("Final Sales Receipt");
     },
   );

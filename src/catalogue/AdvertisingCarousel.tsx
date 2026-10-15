@@ -118,6 +118,9 @@ export function AdvertisingCarousel({
   const swipe = useRef(new AdvertisingSwipeGuard());
   const [failedIds, setFailedIds] = useState<ReadonlySet<string>>(new Set());
   const [current, setCurrent] = useState(0);
+  const [artworkRatios, setArtworkRatios] = useState<Record<string, number>>(
+    {},
+  );
   const [manuallyPaused, setManuallyPaused] = useState(false);
   const [hoverPaused, setHoverPaused] = useState(false);
   const [focusPaused, setFocusPaused] = useState(false);
@@ -202,6 +205,20 @@ export function AdvertisingCarousel({
 
   if (renderableSlides.length === 0) return null;
 
+  const activeSlide = renderableSlides[current];
+  const artworkRatio =
+    activeSlide?.bannerAction && activeSlide.imageUrl
+      ? artworkRatios[activeSlide.imageUrl]
+      : undefined;
+  const rememberArtworkRatio = (image: HTMLImageElement) => {
+    if (!image.naturalWidth || !image.naturalHeight) return;
+    const source = image.getAttribute("src") ?? image.src;
+    const ratio = image.naturalWidth / image.naturalHeight;
+    setArtworkRatios((previous) =>
+      previous[source] === ratio ? previous : { ...previous, [source]: ratio },
+    );
+  };
+
   const show = (index: number) => {
     setManuallyPaused(true);
     setCurrent(index);
@@ -231,7 +248,8 @@ export function AdvertisingCarousel({
   return (
     <section
       ref={root}
-      className="advertising-carousel"
+      className={`advertising-carousel${artworkRatio ? " advertising-carousel--hq-natural" : ""}`}
+      style={artworkRatio ? { aspectRatio: artworkRatio } : undefined}
       aria-label={label}
       aria-roledescription="carousel"
       onMouseEnter={() => setHoverPaused(true)}
@@ -287,6 +305,9 @@ export function AdvertisingCarousel({
                       alt={slide.altText ?? ""}
                       referrerPolicy="no-referrer"
                       draggable={false}
+                      onLoad={(event) =>
+                        rememberArtworkRatio(event.currentTarget)
+                      }
                       onError={() =>
                         setFailedIds((ids) => new Set(ids).add(slide.id))
                       }
@@ -299,6 +320,9 @@ export function AdvertisingCarousel({
                     alt={slide.altText ?? ""}
                     referrerPolicy="no-referrer"
                     draggable={false}
+                    onLoad={(event) =>
+                      rememberArtworkRatio(event.currentTarget)
+                    }
                     onError={() =>
                       setFailedIds((ids) => new Set(ids).add(slide.id))
                     }

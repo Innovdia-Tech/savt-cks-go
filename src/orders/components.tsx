@@ -317,7 +317,7 @@ const progressTimes = (detail: OrderDetail) => [
 export async function saveReceipt(
   controller: Actions,
   paymentReceipt = false,
-  withDeliveryBreakdown = false,
+  withDeliveryBreakdown?: boolean,
 ) {
   const embedded = hasDocumentSaveBridge();
   const result = await (paymentReceipt
@@ -349,41 +349,6 @@ export async function saveReceipt(
   }
 }
 
-function DeliveryBreakdownDownload({
-  available,
-  busy,
-  final = false,
-  onDownload,
-}: {
-  available: boolean;
-  busy: boolean;
-  final?: boolean;
-  onDownload: () => void;
-}) {
-  if (!available) return null;
-  return (
-    <div className="order-document">
-      <p>
-        The receipt amounts stay the same. This copy itemizes delivery savings.
-      </p>
-      <button
-        type="button"
-        className="customer-button"
-        disabled={busy}
-        aria-busy={busy}
-        aria-label={
-          final
-            ? "Download Final Sales Receipt with delivery breakdown"
-            : "Download receipt with delivery breakdown"
-        }
-        onClick={onDownload}
-      >
-        {busy ? "Preparing receipt…" : "Download with delivery breakdown"}
-      </button>
-    </div>
-  );
-}
-
 function OrderDocumentsSection({
   state,
   controller,
@@ -409,7 +374,9 @@ function OrderDocumentsSection({
         aria-labelledby="order-receipt-title"
       >
         <h3 id="order-receipt-title">
-          {receiptUnavailable ? "Receipt temporarily unavailable" : "Receipt"}
+          {receiptUnavailable
+            ? "Receipt temporarily unavailable"
+            : "Payment Receipt"}
         </h3>
         {(state.documentsPhase === "idle" ||
           state.documentsPhase === "loading") && (
@@ -438,15 +405,8 @@ function OrderDocumentsSection({
             >
               {state.paymentReceiptPhase === "downloading"
                 ? "Preparing receipt…"
-                : "Download Receipt"}
+                : "Download Payment Receipt"}
             </button>
-            <DeliveryBreakdownDownload
-              available={Boolean(
-                state.documents?.paymentReceipt?.presentationDownloadUrl,
-              )}
-              busy={state.paymentReceiptPhase === "downloading"}
-              onDownload={() => void saveReceipt(controller, true, true)}
-            />
             {state.paymentReceiptPhase === "error" && (
               <p className="order-action-error" role="alert">
                 We couldn’t download your receipt. Please try again.
@@ -477,14 +437,6 @@ function OrderDocumentsSection({
                   ? "Preparing Final Sales Receipt…"
                   : "Download Final Sales Receipt"}
               </button>
-              <DeliveryBreakdownDownload
-                available={Boolean(
-                  state.detail?.receipt.presentationDownloadUrl,
-                )}
-                busy={state.receiptPhase === "downloading"}
-                final
-                onDownload={() => void saveReceipt(controller, false, true)}
-              />
             </>
           )}
           {!finalAvailable && (
@@ -593,12 +545,13 @@ export function OrderDetailScreen({
               <div>
                 <strong>{item.productName}</strong>
                 <span>Quantity {item.orderedQuantity}</span>
-                {order.fulfilment.fulfilmentConfirmed && (
-                  <span>
-                    Fulfilled {item.fulfilledQuantity ?? 0}; unavailable{" "}
-                    {item.unavailableQuantity ?? 0}
-                  </span>
-                )}
+                {order.fulfilment.fulfilmentConfirmed &&
+                  (item.unavailableQuantity ?? 0) > 0 && (
+                    <span>
+                      Fulfilled {item.fulfilledQuantity ?? 0}; unavailable{" "}
+                      {item.unavailableQuantity ?? 0}
+                    </span>
+                  )}
               </div>
               <strong>{money(item.lineTotalMinor)}</strong>
             </li>

@@ -16,6 +16,7 @@ import {
 } from "../components/Icons";
 import { useProductArtworkUrl } from "../catalogue/reference-match/useArtwork";
 import { addressLocationText } from "../addresses/presentation";
+import { hasConfiguredSellingPrice } from "../catalogue/contracts";
 
 const money = (minor: number) =>
   new Intl.NumberFormat("en-MY", { style: "currency", currency: "MYR" }).format(
@@ -52,6 +53,10 @@ const quoteErrors: Record<string, [string, string]> = {
   CHECKOUT_OUTLET_PRODUCT_UNAVAILABLE: [
     "Product unavailable",
     "One item is no longer available. Remove it to continue.",
+  ],
+  CHECKOUT_OUTLET_PRODUCT_PRICE_UNAVAILABLE: [
+    "Price unavailable",
+    "This item doesn't have a confirmed price. Remove it to continue.",
   ],
   CHECKOUT_INSUFFICIENT_STOCK: [
     "Stock changed",
@@ -208,9 +213,6 @@ function SmallOrderFee({
             {helper}
           </p>
         )}
-        {fee.outcome === "CHARGED" && (
-          <p>Based on items total after discounts. Delivery is excluded.</p>
-        )}
         {open && (
           <dialog
             ref={dialog}
@@ -259,6 +261,107 @@ function SmallOrderFee({
                 className="customer-button customer-primary"
                 autoFocus
                 onClick={close}
+              >
+                Got it
+              </button>
+            </div>
+          </dialog>
+        )}
+      </dd>
+    </>
+  );
+}
+
+function DeliveryFee({
+  base,
+  discount,
+  charged,
+}: {
+  base: number;
+  discount: number;
+  charged: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  useEffect(() => {
+    const element = dialog.current;
+    if (!open || !element) return;
+    syncDialog(element, true);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const returnFocus = trigger.current;
+    return () => {
+      syncDialog(element, false);
+      document.body.style.overflow = previousOverflow;
+      if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+    };
+  }, [open]);
+  return (
+    <>
+      <dt className="small-order-fee-label">
+        Delivery fee
+        <button
+          ref={trigger}
+          type="button"
+          className="small-order-fee-info"
+          aria-label="About delivery fee"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          onClick={() => setOpen(true)}
+        >
+          <span aria-hidden="true">ⓘ</span>
+        </button>
+      </dt>
+      <dd className="quote-delivery-charge">
+        {discount > 0 && (
+          <s aria-label={`Standard delivery ${money(base)}`}>{money(base)}</s>
+        )}
+        <strong>
+          {discount > 0 && charged === 0 ? "FREE" : money(charged)}
+        </strong>
+        {open && (
+          <dialog
+            ref={dialog}
+            className="ui-bottom-sheet small-order-fee-sheet"
+            aria-labelledby={titleId}
+            onClose={() => setOpen(false)}
+            onCancel={(event) => {
+              event.preventDefault();
+              setOpen(false);
+            }}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) setOpen(false);
+            }}
+          >
+            <div className="ui-bottom-sheet__panel">
+              <header>
+                <h2 id={titleId}>Delivery fee</h2>
+              </header>
+              <dl className="small-order-fee-details">
+                <dt>Standard delivery</dt>
+                <dd>{money(base)}</dd>
+                {discount > 0 && (
+                  <>
+                    <dt>
+                      {charged === 0
+                        ? "Free delivery promotion"
+                        : "Delivery promotion"}
+                    </dt>
+                    <dd>−{money(discount)}</dd>
+                  </>
+                )}
+                <dt>Delivery charged</dt>
+                <dd>
+                  <strong>{money(charged)}</strong>
+                </dd>
+              </dl>
+              <button
+                type="button"
+                className="customer-button customer-primary"
+                autoFocus
+                onClick={() => setOpen(false)}
               >
                 Got it
               </button>
@@ -349,47 +452,38 @@ function QuoteSummary({
             </dd>
           </>
         )}
-        <dt>Standard delivery</dt>
-        <dd>{money(quote.baseDeliveryFeeMinor)}</dd>
-        {quote.deliveryDiscountMinor > 0 && (
-          <>
-            <dt className="quote-saving">
-              {quote.finalDeliveryChargeMinor === 0
-                ? "Free delivery promotion"
-                : "Delivery promotion"}
-            </dt>
-            <dd className="quote-saving">
-              −{money(quote.deliveryDiscountMinor)}
-            </dd>
-          </>
-        )}
-        <dt className="quote-delivery-charge">Delivery charged</dt>
-        <dd className="quote-delivery-charge">
-          {money(quote.finalDeliveryChargeMinor)}
-        </dd>
-        {quote.processingFee.feeType === "SMALL_ORDER_TIERS" ? (
-          <SmallOrderFee
-            key={quote.quoteId}
-            fee={quote.processingFee}
-            chargedMinor={quote.processingFeeMinor}
-          />
-        ) : (
-          <>
-            <dt>Processing fee</dt>
-            <dd>{money(quote.processingFeeMinor)}</dd>
-          </>
-        )}
-        <dt className="quote-grand">Total</dt>
+        <DeliveryFee
+          key={quote.quoteId}
+          base={quote.baseDeliveryFeeMinor}
+          discount={quote.deliveryDiscountMinor}
+          charged={quote.finalDeliveryChargeMinor}
+        />
+        {quote.processingFeeMinor > 0 &&
+          (quote.processingFee.feeType === "SMALL_ORDER_TIERS" ? (
+            <SmallOrderFee
+              key={quote.quoteId}
+              fee={quote.processingFee}
+              chargedMinor={quote.processingFeeMinor}
+            />
+          ) : (
+            <>
+              <dt>Processing fee</dt>
+              <dd>{money(quote.processingFeeMinor)}</dd>
+            </>
+          ))}
+        <dt className="quote-grand">Grand total</dt>
         <dd className="quote-grand">{money(quote.grandTotalMinor)}</dd>
       </dl>
+      <p className="quote-delivery-estimate">
+        Estimated delivery{" "}
+        <strong>{quote.estimatedTotalOrderMinutes} minutes</strong>
+      </p>
       <details className="quote-evidence-details">
         <summary>
           Delivery details
           <ChevronDownIcon className="h-6 w-6" />
         </summary>
         <dl className="quote-evidence">
-          <dt>Estimated delivery</dt>
-          <dd>{quote.estimatedTotalOrderMinutes} minutes</dd>
           <dt>Prices valid until</dt>
           <dd>{malaysiaTime(quote.quoteExpiresAt)} (Malaysia time)</dd>
         </dl>
@@ -418,7 +512,7 @@ function QuoteSummary({
           Prices and fees confirmed
         </p>
       )}
-      {payment?.state.phase === "ready" && (
+      {state.quotePhase === "ready" && payment?.state.phase === "ready" && (
         <PaymentPanel {...payment} acceptedTotalMinor={quote.grandTotalMinor} />
       )}
     </section>
@@ -487,6 +581,9 @@ export function CartScreen({
         "Check your basket and try again.",
       ])
     : null;
+  const affectedProduct = state.lines.find(
+    (line) => line.outletProductId === state.affectedOutletProductId,
+  );
   const paymentStatus =
     payment && payment.state.phase !== "ready" ? (
       <PaymentPanel
@@ -550,6 +647,10 @@ export function CartScreen({
                 minimum={0}
                 maximum={MAX_LINE_QUANTITY}
                 disabled={state.paymentFrozen}
+                incrementDisabled={
+                  !hasConfiguredSellingPrice(line.displayedUnitPriceMinor) ||
+                  line.outletProductId === state.affectedOutletProductId
+                }
                 onDecrement={() =>
                   controller.setQuantity(
                     line.outletProductId,
@@ -633,7 +734,10 @@ export function CartScreen({
       {error && (
         <section className="quote-error" role="alert">
           <h2>{error[0]}</h2>
-          <p>{error[1]}</p>
+          <p>
+            {affectedProduct ? `${affectedProduct.product.name}: ` : ""}
+            {error[1]}
+          </p>
           {state.canRetry && (
             <button
               className="customer-button customer-primary"

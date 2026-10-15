@@ -280,6 +280,26 @@
   font-size: 12px;
   line-height: 1.25;
 }
+.quote-delivery-charge {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.quote-delivery-charge s {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+.quote-delivery-estimate {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 0;
+  font-size: var(--text-meta);
+  color: var(--color-text-muted);
+}
 .quote-totals dd,
 .quote-evidence dd {
   min-width: 0;
@@ -340,6 +360,9 @@
   }
   .quote-totals dd {
     text-align: left;
+  }
+  .quote-totals .quote-delivery-charge {
+    justify-content: flex-start;
   }
   .quote-totals dd.quote-grand {
     border-top: 0;

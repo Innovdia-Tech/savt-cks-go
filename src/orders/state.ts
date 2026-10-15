@@ -249,14 +249,17 @@ export class OrdersController {
 
   async downloadPaymentReceipt(
     awaitSave = false,
-    withDeliveryBreakdown = false,
+    withDeliveryBreakdown?: boolean,
   ): Promise<ReceiptDownload | null> {
     const detail = this.state.detail;
     const documents = this.state.documents;
     const receipt = documents?.paymentReceipt;
-    const path = withDeliveryBreakdown
-      ? receipt?.presentationDownloadUrl
-      : receipt?.downloadPath;
+    const path =
+      withDeliveryBreakdown === undefined
+        ? (receipt?.presentationDownloadUrl ?? receipt?.downloadPath)
+        : withDeliveryBreakdown
+          ? receipt?.presentationDownloadUrl
+          : receipt?.downloadPath;
     if (
       !detail ||
       this.state.documentsPhase !== "ready" ||
@@ -377,12 +380,16 @@ export class OrdersController {
 
   async downloadReceipt(
     awaitSave = false,
-    withDeliveryBreakdown = false,
+    withDeliveryBreakdown?: boolean,
   ): Promise<ReceiptDownload | null> {
     const detail = this.state.detail;
-    const path = withDeliveryBreakdown
-      ? detail?.receipt.presentationDownloadUrl
-      : detail?.receipt.downloadPath;
+    const path =
+      withDeliveryBreakdown === undefined
+        ? (detail?.receipt.presentationDownloadUrl ??
+          detail?.receipt.downloadPath)
+        : withDeliveryBreakdown
+          ? detail?.receipt.presentationDownloadUrl
+          : detail?.receipt.downloadPath;
     const reference = detail?.receipt.receiptReference;
     if (
       !detail ||

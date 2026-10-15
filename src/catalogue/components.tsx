@@ -17,7 +17,7 @@ import { hasDeliveryCoordinates } from "../customer/delivery-readiness";
 import type { Address } from "../addresses/contracts";
 import { useCustomer } from "../customer/context";
 import { useCatalogue } from "./context";
-import type { Product } from "./contracts";
+import { hasConfiguredSellingPrice, type Product } from "./contracts";
 import type { CatalogueState } from "./state";
 import { homeCategories, homeCategoryArtwork } from "./shopping";
 import type { Screen } from "../types";
@@ -78,6 +78,10 @@ export const money = (minor: number) =>
   new Intl.NumberFormat("en-MY", { style: "currency", currency: "MYR" }).format(
     minor / 100,
   );
+const unavailableLabel = (product: Product) =>
+  product.availabilityReason === "OUT_OF_STOCK"
+    ? "Out of stock"
+    : "Unavailable";
 export function ProductImage({
   url,
   name,
@@ -126,6 +130,7 @@ export function ProductTile({
   orderingDisabled?: boolean;
   variant?: "grid" | "list";
 }) {
+  if (!hasConfiguredSellingPrice(product.sellingPriceMinor)) return null;
   const canAdd =
     product.availability === "AVAILABLE" &&
     !orderingDisabled &&
@@ -153,11 +158,13 @@ export function ProductTile({
         onClick={onAdd}
         aria-label={
           product.availability === "UNAVAILABLE"
-            ? `${product.name} unavailable`
+            ? `${product.name}: ${unavailableLabel(product)}`
             : `Add ${product.name} to basket`
         }
       >
-        {product.availability === "UNAVAILABLE" ? "Unavailable" : "Add"}
+        {product.availability === "UNAVAILABLE"
+          ? unavailableLabel(product)
+          : "Add"}
       </Button>
     );
   return (
@@ -174,7 +181,11 @@ export function ProductTile({
             <strong className="catalogue-price">
               {money(product.sellingPriceMinor)}
             </strong>
-            <StatusBadge status={product.availability} />
+            {product.availabilityReason === "OUT_OF_STOCK" ? (
+              <span className="catalogue-stock-label">Out of stock</span>
+            ) : (
+              <StatusBadge status={product.availability} />
+            )}
           </span>
         )}
       </button>
@@ -184,6 +195,11 @@ export function ProductTile({
             <strong className="catalogue-price">
               {money(product.sellingPriceMinor)}
             </strong>
+            {quantity !== null && product.availability === "UNAVAILABLE" && (
+              <span className="catalogue-stock-label">
+                {unavailableLabel(product)}
+              </span>
+            )}
           </div>
         </>
       )}
@@ -211,27 +227,32 @@ export function ProductDetailPurchase({
   onAdd: () => void;
   onSetQuantity: (quantity: number) => void;
 }) {
+  const priced = hasConfiguredSellingPrice(product.sellingPriceMinor);
+  const unavailable = !priced || product.availability !== "AVAILABLE";
+  const label = unavailableLabel(product);
   return (
     <div className="catalogue-detail-purchase catalogue-detail-purchase--shopping">
-      <strong>{money(product.sellingPriceMinor)}</strong>
+      <strong>
+        {priced ? money(product.sellingPriceMinor) : "Unavailable"}
+      </strong>
       {quantity === null ? (
         <Button
           className="catalogue-add"
-          disabled={orderingDisabled || paymentFrozen}
+          disabled={orderingDisabled || paymentFrozen || unavailable}
           onClick={onAdd}
         >
-          Add to Basket
+          {unavailable ? label : "Add to Basket"}
         </Button>
       ) : (
         <div className="catalogue-detail-quantity">
-          <span>In your basket</span>
+          <span>{unavailable ? label : "In your basket"}</span>
           <QuantitySelector
             label={`Quantity for ${product.name}`}
             quantity={quantity}
             minimum={0}
             maximum={MAX_LINE_QUANTITY}
             disabled={paymentFrozen}
-            incrementDisabled={orderingDisabled}
+            incrementDisabled={orderingDisabled || unavailable}
             onDecrement={() => onSetQuantity(quantity - 1)}
             onIncrement={() => onSetQuantity(quantity + 1)}
           />
@@ -1315,8 +1336,14 @@ export function CatalogueApp({
                       <ProductImage url={p.imageUrl} name={p.name} />
                       <div className="catalogue-detail-info">
                         <h2>{p.name}</h2>
-                        <strong>{money(p.sellingPriceMinor)}</strong>
-                        {p.availability !== "AVAILABLE" && <p>Unavailable</p>}
+                        <strong>
+                          {hasConfiguredSellingPrice(p.sellingPriceMinor)
+                            ? money(p.sellingPriceMinor)
+                            : "Unavailable"}
+                        </strong>
+                        {p.availability !== "AVAILABLE" && (
+                          <p>{unavailableLabel(p)}</p>
+                        )}
                         <section
                           className="catalogue-detail-metadata"
                           aria-label="Product information"

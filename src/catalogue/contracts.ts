@@ -33,6 +33,7 @@ export type Product = {
   sellingPriceMinor: number;
   currency: "MYR";
   availability: Availability;
+  availabilityReason?: "OUT_OF_STOCK";
 };
 export type Detail = Product & {
   description: string | null;
@@ -66,6 +67,8 @@ const integer = (
   max = Number.MAX_SAFE_INTEGER,
 ): v is number =>
   typeof v === "number" && Number.isSafeInteger(v) && v >= min && v <= max;
+export const hasConfiguredSellingPrice = (value: unknown): value is number =>
+  integer(value, 1, 999999999999);
 const available = (v: unknown): v is Availability =>
   v === "AVAILABLE" || v === "UNAVAILABLE";
 export const contextId = (v: unknown): v is string =>
@@ -139,7 +142,12 @@ const productKeys = [
 ];
 function product(v: unknown, detail = false): Product | Detail {
   const cks = record(v) && Object.hasOwn(v, "barcode");
-  const keys = [...productKeys, ...(cks ? ["barcode"] : [])];
+  const hasReason = record(v) && Object.hasOwn(v, "availabilityReason");
+  const keys = [
+    ...productKeys,
+    ...(cks ? ["barcode"] : []),
+    ...(hasReason ? ["availabilityReason"] : []),
+  ];
   const d = obj(v, detail ? [...keys, "description", "storageType"] : keys);
   const u = cks && d.uom === null ? null : obj(d.uom, ["code", "name"]);
   if (
@@ -150,9 +158,12 @@ function product(v: unknown, detail = false): Product | Detail {
     (cks && !(d.barcode === null || str(d.barcode, 80))) ||
     (u !== null && (!str(u.code, 40) || !str(u.name, 120))) ||
     !(d.packSize === null || str(d.packSize, 120, true)) ||
-    !integer(d.sellingPriceMinor, 0, 999999999999) ||
+    !hasConfiguredSellingPrice(d.sellingPriceMinor) ||
     d.currency !== "MYR" ||
-    !available(d.availability)
+    !available(d.availability) ||
+    (hasReason &&
+      (d.availability !== "UNAVAILABLE" ||
+        d.availabilityReason !== "OUT_OF_STOCK"))
   )
     return fail();
   if (

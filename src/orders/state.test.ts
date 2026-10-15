@@ -722,7 +722,7 @@ describe("paid order documents", () => {
   );
 
   it.each(["payment", "final"] as const)(
-    "keeps the original %s receipt default and fetches the presentation copy only by explicit choice",
+    "selects the canonical %s presentation by default and retains explicit original download",
     async (kind) => {
       const order = detailWithReceipt();
       const path = `/api/v1/orders/${orderId}/${kind === "payment" ? "payment-receipt" : "receipt"}/download`;
@@ -750,16 +750,16 @@ describe("paid order documents", () => {
       );
       await controller.open(orderId);
       expect(calls).toEqual([]);
-      const original = await (kind === "payment"
+      const canonical = await (kind === "payment"
         ? controller.downloadPaymentReceipt()
         : controller.downloadReceipt());
-      expect(calls).toEqual([path]);
+      expect(calls).toEqual([presentationDownloadUrl]);
+      expect(canonical?.filename).not.toContain("Delivery-Breakdown");
+      const original = await (kind === "payment"
+        ? controller.downloadPaymentReceipt(false, false)
+        : controller.downloadReceipt(false, false));
+      expect(calls).toEqual([presentationDownloadUrl, path]);
       expect(original?.filename).not.toContain("Delivery-Breakdown");
-      const presentation = await (kind === "payment"
-        ? controller.downloadPaymentReceipt(false, true)
-        : controller.downloadReceipt(false, true));
-      expect(calls).toEqual([path, presentationDownloadUrl]);
-      expect(presentation?.filename).toContain("-Delivery-Breakdown.pdf");
     },
   );
   it.each(["payment", "final"] as const)(
