@@ -62,6 +62,16 @@ Source: the CUSTOMER-UX-POLISH01 customer journey brief, starting at accepted fr
 - AMBIENT is presented as Room temperature; CHILLED and FROZEN remain Chilled and Frozen. Wire taxonomy and product data remain unchanged.
 - Current orders, Order history and the four customer tracking stages retain their existing mappings. Browse search-clear controls are explicitly excluded and untouched.
 
+## Saved Basket V1 — management requirement, 15 October 2026
+
+The existing Basket retains its design, navigation and explicit outlet-change dialog. `src/basket/api.ts` owns the authenticated draft contract; `src/basket/persistence.ts` owns account-fenced restoration, ordered autosave and recovery. Server confirmation alone establishes saved state; routine successful saves are visually silent. Saving has a screen-reader status without reserving a visible row. A failed save retains edits and its mutation identity; save/restore failures and revision conflicts remain persistent, visible recovery prompts. A revision conflict requires an explicit reload instead of overwriting another device. Loading or failed restoration must never masquerade as an empty saved Basket.
+
+The approved Basket polish uses `AppShell`'s existing action slot above bottom navigation for the unchanged explicit Checkout action. Its eligibility, quote request and disabled conditions remain unchanged; an existing quote continues to own review/payment actions. Embedded Basket omits the redundant web title strip because Flutter owns Back/Close/CKS Go chrome; the accessible route heading and active Basket navigation remain. Standalone retains safe web navigation. No payment, quote, draft, retry, ownership or server contract changes accompany this presentation.
+
+Drafts contain product/outlet identity, quantity and non-authoritative display snapshots. No session credential, quote token, payment intent or payment attempt is saved in a Basket. Logout immediately removes in-memory lines and quote state while leaving the server draft. Current product/price/stock issues are marked with an obvious review action; customers can reduce or remove affected lines. Checkout still requires a new authoritative quote after confirmed draft save.
+
+Payment recovery runs first on cold return. Pending, failed and uncertain outcomes retain the draft and existing recovery actions. Only authoritative paid order creation consumes its quote-bound purchased quantities on the server; the client then reloads the remainder. Fake development catalogue mode has no durable server and does not pretend to save baskets; focused loopback browser fixtures exercise this contract with the real adapter/controllers.
+
 ## Canonical UI Map
 
 | Capability     | Canonical owner                                                 | Source of truth                  | Allowed variants                                                                   | Verification                            |

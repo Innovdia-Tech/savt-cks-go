@@ -9,6 +9,25 @@ import {
   AppShell,
 } from "./Layout";
 
+it("lets the native header own Basket chrome while keeping navigation", () => {
+  const html = renderToStaticMarkup(
+    createElement(AppShell, {
+      active: "Basket",
+      screenKey: "cart",
+      headerContext: "basket",
+      title: "Your basket (2)",
+      embeddedHost: true,
+      cartCount: 2,
+      onNavigate: () => {},
+      children: "Basket content",
+    }),
+  );
+  expect(html).not.toContain("Your basket (2)");
+  expect(html).not.toContain("app-header--embedded");
+  expect(html).toContain("Basket content");
+  expect(html).toContain('aria-label="Primary navigation"');
+});
+
 it.each(["orders", "order/11111111-1111-4111-8111-111111111111"])(
   "keeps Basket navigation without a floating summary on %s",
   (screenKey) => {

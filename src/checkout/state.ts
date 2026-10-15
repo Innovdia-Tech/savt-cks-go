@@ -2,6 +2,7 @@ import type { Address } from "../addresses/contracts";
 import type { Assignment, Product } from "../catalogue/contracts";
 import { hasConfiguredSellingPrice } from "../catalogue/contracts";
 import { QuoteError, type QuoteRequest } from "./api";
+import type { SavedBasket } from "../basket/api";
 import {
   MAX_CART_LINES,
   MAX_LINE_QUANTITY,
@@ -36,6 +37,13 @@ export type CartLine = {
   quantity: number;
   displayedUnitPriceMinor: number;
   currency: "MYR";
+  issue?:
+    | "UNAVAILABLE"
+    | "OUT_OF_STOCK"
+    | "PRICE_UNAVAILABLE"
+    | "QUANTITY_EXCEEDS_STOCK"
+    | null;
+  priceChanged?: boolean;
 };
 export function cartMerchandiseSummary(
   lines: Pick<CartLine, "quantity" | "displayedUnitPriceMinor">[],
@@ -94,6 +102,16 @@ export type CartState = {
   payableTotalChanged: boolean;
   previousPayableTotalMinor: number | null;
   paymentFrozen: boolean;
+  basketPhase:
+    | "disabled"
+    | "loading"
+    | "saving"
+    | "saved"
+    | "save-error"
+    | "restore-error"
+    | "conflict";
+  basketRevision: number | null;
+  basketReview: boolean;
 };
 
 const empty = (): CartState => ({
@@ -111,6 +129,9 @@ const empty = (): CartState => ({
   payableTotalChanged: false,
   previousPayableTotalMinor: null,
   paymentFrozen: false,
+  basketPhase: "disabled",
+  basketRevision: null,
+  basketReview: false,
 });
 const safeAssignment = (
   address: Pick<Address, "id" | "label" | "rowVersion">,
@@ -140,6 +161,11 @@ export class CartController {
   private quoteAbort?: AbortController;
   private quoteTimer?: ReturnType<typeof setTimeout>;
   private attempt: QuoteAttempt | null = null;
+  private persistence?: {
+    flush(): Promise<boolean>;
+    retry(): Promise<void>;
+    reload(): Promise<void>;
+  };
 
   constructor(
     private readonly quoteApi: QuotePort,
@@ -190,6 +216,92 @@ export class CartController {
 
   private assertMutable() {
     if (this.state.paymentFrozen) throw new Error("CART_PAYMENT_FROZEN");
+    if (
+      ["loading", "restore-error", "conflict"].includes(this.state.basketPhase)
+    )
+      throw new Error("BASKET_NOT_READY");
+  }
+
+  connectPersistence(port: typeof this.persistence) {
+    this.persistence = port;
+  }
+  releaseView() {
+    if (!this.persistence) this.dispose();
+  }
+  setBasketStatus(
+    basketPhase: CartState["basketPhase"],
+    basketRevision = this.state.basketRevision,
+  ) {
+    this.update({ basketPhase, basketRevision });
+  }
+  retryBasket() {
+    return this.persistence?.retry();
+  }
+  reloadBasket() {
+    return this.persistence?.reload();
+  }
+  resetSessionBasket() {
+    ++this.transitionGeneration;
+    this.transitionAbort?.abort();
+    this.cancelQuoteWork();
+    this.attempt = null;
+    this.update(empty());
+  }
+  restoreSavedBasket(saved: SavedBasket) {
+    this.cancelQuoteWork();
+    this.attempt = null;
+    this.update({
+      ...empty(),
+      lines: saved.lines.map((line) => ({
+        ...line,
+        product: { ...line.product },
+      })),
+      assignment:
+        this.state.assignment?.outletId === saved.outletId
+          ? this.state.assignment
+          : null,
+      basketPhase: "saved",
+      basketRevision: saved.revision,
+      basketReview: saved.lines.some(
+        (line) => Boolean(line.issue) || line.priceChanged,
+      ),
+    });
+  }
+  setPaymentRecoveryLocked(locked: boolean) {
+    if (this.state.paymentFrozen !== locked)
+      this.update({ paymentFrozen: locked });
+  }
+  revalidateSavedLines(
+    saved: SavedBasket,
+    submitted: Array<{
+      outletProductId: string;
+      quantity: number;
+      displayedUnitPriceMinor: number;
+    }>,
+  ) {
+    const lines = this.state.lines.map((line) => {
+      const input = submitted.find(
+        (item) => item.outletProductId === line.outletProductId,
+      );
+      const confirmed = saved.lines.find(
+        (item) => item.outletProductId === line.outletProductId,
+      );
+      return input &&
+        confirmed &&
+        input.quantity === line.quantity &&
+        input.displayedUnitPriceMinor === line.displayedUnitPriceMinor
+        ? {
+            ...confirmed,
+            priceChanged: Boolean(line.priceChanged || confirmed.priceChanged),
+          }
+        : line;
+    });
+    this.update({
+      lines,
+      basketReview: lines.some(
+        (line) => Boolean(line.issue) || line.priceChanged,
+      ),
+    });
   }
 
   bindSelectedAddress(address?: Address) {
@@ -265,6 +377,7 @@ export class CartController {
       (line) => line.outletProductId === product.outletProductId,
     );
     const current = index < 0 ? undefined : this.state.lines[index];
+    if (current?.issue) throw new Error("CART_PRODUCT_UNAVAILABLE");
     const quantity = (current?.quantity ?? 0) + 1;
     this.assertQuantity(quantity, product.sellingPriceMinor);
     if (!current && this.state.lines.length >= MAX_CART_LINES)
@@ -302,7 +415,8 @@ export class CartController {
     if (quantity === 0) return this.remove(outletProductId);
     if (
       quantity > line.quantity &&
-      !hasConfiguredSellingPrice(line.displayedUnitPriceMinor)
+      (!hasConfiguredSellingPrice(line.displayedUnitPriceMinor) ||
+        Boolean(line.issue))
     )
       throw new Error("CART_PRODUCT_UNAVAILABLE");
     this.assertQuantity(quantity, line.displayedUnitPriceMinor);
@@ -469,6 +583,8 @@ export class CartController {
 
   async requestQuote(): Promise<void> {
     if (this.state.paymentFrozen) return;
+    if (this.persistence && !(await this.persistence.flush())) return;
+    if (this.state.paymentFrozen) return;
     const assignment = this.state.assignment;
     if (
       !assignment ||
@@ -484,6 +600,9 @@ export class CartController {
         outletProductId: line.outletProductId,
         quantity: line.quantity,
       })),
+      ...(this.state.basketRevision === null
+        ? {}
+        : { basketRevision: this.state.basketRevision }),
     };
     this.attempt = { request, key: this.uuid() };
     return this.executeQuote(this.attempt);
@@ -565,6 +684,9 @@ export class CartController {
         quote: null,
         quotePhase:
           code === "CUSTOMER_SESSION_INVALID" ? "session-expired" : "error",
+        ...(code === "BASKET_REVISION_CONFLICT"
+          ? { basketPhase: "conflict" as const }
+          : {}),
         error: code,
         affectedOutletProductId:
           error instanceof QuoteError &&
@@ -648,6 +770,7 @@ export class CartController {
     const quote = this.state.quote;
     if (
       !quote ||
+      (this.persistence && this.state.basketPhase !== "saved") ||
       quote.quoteId !== quoteId ||
       this.state.quotePhase !== "ready" ||
       Date.parse(quote.quoteExpiresAt) <= this.now()
@@ -661,8 +784,8 @@ export class CartController {
   }
 
   recoverBasketAfterPayment() {
-    if (!this.state.paymentFrozen || !this.state.quote) return;
-    const previousPayableTotalMinor = this.state.quote.grandTotalMinor;
+    if (!this.state.paymentFrozen) return;
+    const previousPayableTotalMinor = this.state.quote?.grandTotalMinor ?? null;
     this.cancelQuoteWork();
     this.attempt = null;
     this.update({

@@ -23,7 +23,7 @@ import { homeCategories, homeCategoryArtwork } from "./shopping";
 import type { Screen } from "../types";
 import { useCheckout } from "../checkout/context";
 import { cartMerchandiseSummary } from "../checkout/state";
-import { CartScreen } from "../checkout/components";
+import { BasketCheckoutAction, CartScreen } from "../checkout/components";
 import { MAX_LINE_QUANTITY } from "../checkout/contracts";
 import { QuantitySelector } from "../components/QuantitySelector";
 import { usePayment } from "../payment/context";
@@ -574,6 +574,11 @@ export function CatalogueApp({
   const supportWhatsApp = suppliedSupportWhatsApp ?? configuredSupportWhatsApp;
   const { state, controller, controls, refresh, refreshing } = useCatalogue();
   const checkout = useCheckout();
+  const basketControlsDisabled =
+    checkout.state.paymentFrozen ||
+    ["loading", "restore-error", "conflict"].includes(
+      checkout.state.basketPhase,
+    );
   const payment = usePayment();
   const orders = useOrders();
   const customer = useCustomer();
@@ -888,7 +893,7 @@ export function CatalogueApp({
         !state.assignment ||
         checkout.state.assignment?.outletId !== state.assignment.outlet.id
       }
-      paymentFrozen={checkout.state.paymentFrozen}
+      paymentFrozen={basketControlsDisabled}
       onAdd={() => addProduct(p)}
       onSetQuantity={(quantity) =>
         checkout.controller.setQuantity(p.outletProductId, quantity)
@@ -929,7 +934,9 @@ export function CatalogueApp({
         ? "browse"
         : route === "orders" || orderDetailId
           ? "orders"
-          : "transaction";
+          : route === "cart" && payment.state.phase !== "paid"
+            ? "basket"
+            : "transaction";
   if (needsDeliverySetup) {
     return (
       <div className="mx-auto max-w-[430px]">
@@ -1034,7 +1041,17 @@ export function CatalogueApp({
                 : "home",
         )
       }
-      sticky={detailId ? detailPurchase : undefined}
+      sticky={
+        detailId ? (
+          detailPurchase
+        ) : route === "cart" ? (
+          <BasketCheckoutAction
+            state={checkout.state}
+            controller={checkout.controller}
+            placement="shell"
+          />
+        ) : undefined
+      }
       outlet={state.assignment?.outlet}
       restoreScrollTop={scrollPositions.current.get(route) ?? 0}
       embeddedHost={embeddedHost}
@@ -1135,6 +1152,7 @@ export function CatalogueApp({
             )}
             {route === "cart" ? (
               <CartScreen
+                checkoutActionPlacement="shell"
                 state={checkout.state}
                 controller={checkout.controller}
                 payment={{
@@ -1383,7 +1401,7 @@ export function CatalogueApp({
                               line.outletProductId === product.outletProductId,
                           )?.quantity ?? null
                         }
-                        paymentFrozen={checkout.state.paymentFrozen}
+                        paymentFrozen={basketControlsDisabled}
                         onSetQuantity={(quantity) =>
                           checkout.controller.setQuantity(
                             product.outletProductId,
@@ -1395,7 +1413,7 @@ export function CatalogueApp({
                           state.readOnly ||
                           state.renewing ||
                           Boolean(state.renewalError) ||
-                          checkout.state.paymentFrozen ||
+                          basketControlsDisabled ||
                           !state.assignment ||
                           checkout.state.assignment?.outletId !==
                             state.assignment.outlet.id
@@ -1435,7 +1453,7 @@ export function CatalogueApp({
                                   product.outletProductId,
                               )?.quantity ?? null
                             }
-                            paymentFrozen={checkout.state.paymentFrozen}
+                            paymentFrozen={basketControlsDisabled}
                             onSetQuantity={(quantity) =>
                               checkout.controller.setQuantity(
                                 product.outletProductId,
@@ -1448,7 +1466,7 @@ export function CatalogueApp({
                               state.readOnly ||
                               state.renewing ||
                               Boolean(state.renewalError) ||
-                              checkout.state.paymentFrozen ||
+                              basketControlsDisabled ||
                               !state.assignment ||
                               checkout.state.assignment?.outletId !==
                                 state.assignment.outlet.id

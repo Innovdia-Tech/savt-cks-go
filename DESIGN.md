@@ -85,6 +85,8 @@ CUST-UX04R3 refines only Basket item rows. A single white Your items surface use
 
 ## Colors
 
+The approved 15 October Basket polish removes the permanent saved-success row and the redundant embedded “Your basket” title strip. Delivery and item cards lead the content beneath the existing native chrome. The unchanged Checkout action occupies the shell's existing action slot directly above bottom navigation, outside the content scroller; white surface, shared border/spacing tokens and a 48px action keep it reachable without covering content. Successful background saves remain quiet; restore/loading, failed-save and conflict recovery retain their existing honest states. Existing brand, money hierarchy, payment presentation and controller ownership stay unchanged.
+
 CUST-HELP01R uses compact support rows with 14px/600 CKS-blue text, a small outline help icon, a transparent tertiary action and a minimum 44px target. The muted prompt is “Need help?” on Home/payment errors and “Need help with your delivery address?” after delivery controls. Order detail retains its light section with the heading “Need help with this order?”. Support stays in document flow; address/payment recovery retains visual priority. Missing/invalid config hides the action; launch failures use restrained status text. The four navigation items and accepted commerce styling remain unchanged.
 
 - CKS Action Blue is the primary commerce/action role: Add to basket, checkout, payment, order actions, active customer navigation and Basket emphasis.

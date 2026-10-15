@@ -453,7 +453,7 @@ function QuoteSummary({
           </>
         )}
         <DeliveryFee
-          key={quote.quoteId}
+          key={`delivery-${quote.quoteId}`}
           base={quote.baseDeliveryFeeMinor}
           discount={quote.deliveryDiscountMinor}
           charged={quote.finalDeliveryChargeMinor}
@@ -461,7 +461,7 @@ function QuoteSummary({
         {quote.processingFeeMinor > 0 &&
           (quote.processingFee.feeType === "SMALL_ORDER_TIERS" ? (
             <SmallOrderFee
-              key={quote.quoteId}
+              key={`small-order-${quote.quoteId}`}
               fee={quote.processingFee}
               chargedMinor={quote.processingFeeMinor}
             />
@@ -542,6 +542,100 @@ function CartProductImage({ url, name }: { url: string | null; name: string }) {
   );
 }
 
+function SavedBasketNotice({
+  state,
+  controller,
+}: {
+  state: CartState;
+  controller: CartController;
+}) {
+  const phase = state.basketPhase;
+  if (!phase || phase === "disabled") return null;
+  if (phase === "loading")
+    return (
+      <p className="quote-loading" role="status">
+        Loading your saved basket…
+      </p>
+    );
+  if (
+    phase === "restore-error" ||
+    phase === "save-error" ||
+    phase === "conflict"
+  )
+    return (
+      <section className="quote-warning" role="alert">
+        <p>
+          {phase === "restore-error"
+            ? "We couldn't load your saved basket. Try again before adding groceries."
+            : phase === "conflict"
+              ? "Your basket changed on another device. Reload the saved basket to continue."
+              : "Your latest changes aren't saved yet. Keep CKS Go open and try again."}
+        </p>
+        <button
+          className="customer-button"
+          onClick={() =>
+            void (phase === "conflict"
+              ? controller.reloadBasket()
+              : controller.retryBasket())
+          }
+        >
+          {phase === "conflict"
+            ? "Reload saved basket"
+            : phase === "save-error"
+              ? "Try saving again"
+              : "Try again"}
+        </button>
+      </section>
+    );
+  if (phase === "saving")
+    return (
+      <p className="sr-only" role="status">
+        Saving basket…
+      </p>
+    );
+  return null;
+}
+
+export function BasketCheckoutAction({
+  state,
+  controller,
+  placement = "inline",
+}: {
+  state: CartState;
+  controller: CartController;
+  placement?: "inline" | "shell";
+}) {
+  if (
+    !state.lines.length ||
+    state.quote ||
+    (state.quotePhase !== "idle" && state.quotePhase !== "quoting")
+  )
+    return null;
+  const basketReadOnly = ["loading", "restore-error", "conflict"].includes(
+    state.basketPhase,
+  );
+  return (
+    <div
+      className={`basket-checkout-action${placement === "shell" ? " basket-checkout-action--shell" : ""}`}
+    >
+      {state.quotePhase === "idle" ? (
+        <button
+          type="button"
+          className="customer-button customer-primary quote-action"
+          disabled={!state.assignment || state.paymentFrozen || basketReadOnly}
+          onClick={() => void controller.requestQuote()}
+        >
+          Checkout
+        </button>
+      ) : (
+        <p className="quote-loading" role="status">
+          Checking prices and delivery…
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function CartScreen({
   state,
   controller,
@@ -549,6 +643,7 @@ export function CartScreen({
   onBrowse,
   deliveryAddress,
   onChangeAddress,
+  checkoutActionPlacement = "inline",
 }: {
   state: CartState;
   controller: CartController;
@@ -556,17 +651,29 @@ export function CartScreen({
   onBrowse: () => void;
   deliveryAddress?: string;
   onChangeAddress?: () => void;
+  checkoutActionPlacement?: "inline" | "shell";
 }) {
   if (!state.lines.length && payment?.state.paymentIntentId) {
     return (
       <div className="cart-stack cart-stack--shopping">
         <PaymentPanel {...payment} />
+        <SavedBasketNotice state={state} controller={controller} />
       </div>
     );
   }
+  if (
+    !state.lines.length &&
+    ["loading", "restore-error", "conflict"].includes(state.basketPhase)
+  )
+    return (
+      <div className="cart-stack">
+        <SavedBasketNotice state={state} controller={controller} />
+      </div>
+    );
   if (!state.lines.length)
     return (
       <section className="catalogue-state cart-empty" role="status">
+        <SavedBasketNotice state={state} controller={controller} />
         <h2>Your basket is empty</h2>
         <p>Browse products and add groceries to your basket.</p>
         <button className="customer-button customer-primary" onClick={onBrowse}>
@@ -575,6 +682,9 @@ export function CartScreen({
       </section>
     );
   const subtotal = cartMerchandiseSummary(state.lines).subtotalMinor;
+  const basketReadOnly = ["loading", "restore-error", "conflict"].includes(
+    state.basketPhase,
+  );
   const error = state.error
     ? (quoteErrors[state.error] ?? [
         "We couldn’t refresh your total.",
@@ -593,6 +703,26 @@ export function CartScreen({
     ) : null;
   return (
     <div className="cart-stack cart-stack--shopping">
+      <SavedBasketNotice state={state} controller={controller} />
+      {state.basketReview && (
+        <section className="quote-warning" role="status">
+          <p>
+            Some prices or availability changed. Review the marked items below
+            before checkout.
+          </p>
+          <button
+            type="button"
+            className="customer-button mt-2 min-h-11"
+            onClick={() => {
+              document
+                .getElementById("cart-review-items")
+                ?.scrollIntoView({ block: "start", behavior: "auto" });
+            }}
+          >
+            Review items
+          </button>
+        </section>
+      )}
       {state.paymentFrozen && paymentStatus}
       {state.assignment && (
         <section
@@ -620,7 +750,11 @@ export function CartScreen({
           </p>
         </section>
       )}
-      <section className="cart-lines" aria-labelledby="cart-lines-title">
+      <section
+        id="cart-review-items"
+        className="cart-lines"
+        aria-labelledby="cart-lines-title"
+      >
         <div className="cart-section-heading">
           <h2 id="cart-lines-title">Your items</h2>
         </div>
@@ -634,6 +768,22 @@ export function CartScreen({
               <CartProductImage url={line.product.imageUrl} name={name} />
               <div className="cart-line-copy">
                 <h3>{name}</h3>
+                {line.issue && (
+                  <p className="catalogue-caption">
+                    {line.issue === "OUT_OF_STOCK"
+                      ? "Out of stock — remove this item."
+                      : line.issue === "QUANTITY_EXCEEDS_STOCK"
+                        ? "Stock changed — reduce the quantity or remove this item."
+                        : line.issue === "PRICE_UNAVAILABLE"
+                          ? "Price unavailable — remove this item."
+                          : "Unavailable — remove this item."}
+                  </p>
+                )}
+                {line.priceChanged && !line.issue && (
+                  <p className="catalogue-caption">
+                    Price updated. Confirm the latest total at checkout.
+                  </p>
+                )}
                 <strong>
                   {money(
                     accepted?.unitPriceMinor ?? line.displayedUnitPriceMinor,
@@ -646,9 +796,10 @@ export function CartScreen({
                 quantity={line.quantity}
                 minimum={0}
                 maximum={MAX_LINE_QUANTITY}
-                disabled={state.paymentFrozen}
+                disabled={state.paymentFrozen || basketReadOnly}
                 incrementDisabled={
                   !hasConfiguredSellingPrice(line.displayedUnitPriceMinor) ||
+                  Boolean(line.issue) ||
                   line.outletProductId === state.affectedOutletProductId
                 }
                 onDecrement={() =>
@@ -667,7 +818,7 @@ export function CartScreen({
               <button
                 className="cart-remove"
                 aria-label={`Remove ${name}`}
-                disabled={state.paymentFrozen}
+                disabled={state.paymentFrozen || basketReadOnly}
                 onClick={() => controller.remove(line.outletProductId)}
               >
                 <TrashIcon className="h-4 w-4" />
@@ -715,19 +866,8 @@ export function CartScreen({
               )}
             </p>
           )}
-          {state.quotePhase === "idle" && (
-            <button
-              className="customer-button customer-primary quote-action"
-              disabled={!state.assignment || state.paymentFrozen}
-              onClick={() => void controller.requestQuote()}
-            >
-              Checkout
-            </button>
-          )}
-          {state.quotePhase === "quoting" && (
-            <p className="quote-loading" role="status">
-              Checking prices and delivery…
-            </p>
+          {checkoutActionPlacement === "inline" && (
+            <BasketCheckoutAction state={state} controller={controller} />
           )}
         </section>
       )}

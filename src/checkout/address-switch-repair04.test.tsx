@@ -53,6 +53,9 @@ const state: CartState = {
   payableTotalChanged: false,
   previousPayableTotalMinor: null,
   paymentFrozen: false,
+  basketPhase: "disabled",
+  basketRevision: null,
+  basketReview: false,
 };
 const controller = new CartController(
   { create: async () => parseQuote(quoteEnvelope()) },

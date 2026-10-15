@@ -14,6 +14,7 @@ export type QuoteRequest = {
   customerAddressId: string;
   deliveryType: "NOW";
   items: Array<{ outletProductId: string; quantity: number }>;
+  basketRevision?: number;
 };
 
 const safeCodes = new Set([
@@ -41,6 +42,8 @@ const safeCodes = new Set([
   "CHECKOUT_ROUTE_DURATION_UNAVAILABLE",
   "CHECKOUT_SCHEDULED_DEFERRED",
   "CHECKOUT_MONEY_UNSAFE",
+  "BASKET_REVISION_CONFLICT",
+  "BASKET_QUOTE_MISMATCH",
   "CHECKOUT_FEE_CONTRACT_UPGRADE_REQUIRED",
   "CHECKOUT_PROCESSING_FEE_UNCONFIGURED",
   "CHECKOUT_PROCESSING_FEE_INVALID",

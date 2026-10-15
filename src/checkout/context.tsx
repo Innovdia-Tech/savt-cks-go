@@ -21,13 +21,30 @@ export function syncCheckoutBinding(
   assignment: Assignment | null,
   refreshing: boolean,
 ) {
-  if (refreshing) return;
+  if (
+    refreshing ||
+    ["loading", "restore-error", "conflict"].includes(
+      controller.getSnapshot().basketPhase,
+    )
+  )
+    return;
   if (
     address &&
     assignment &&
     assignment.customerAddressId === address.id &&
     assignment.addressRowVersion === address.rowVersion
   ) {
+    const basket = controller.getSnapshot();
+    if (
+      basket.basketPhase !== "disabled" &&
+      basket.lines.length &&
+      basket.lines[0]?.outletId !== assignment.outlet.id &&
+      !basket.paymentFrozen
+    ) {
+      if (basket.transitionPhase === "idle")
+        void controller.requestAddress(address);
+      return;
+    }
     controller.syncAssignment(address, assignment);
     return;
   }
@@ -39,6 +56,12 @@ export async function requestAddressSelection(
   customer: CustomerDataController,
   addressId: string,
 ): Promise<"committed" | "confirmation" | "error"> {
+  const basket = controller.getSnapshot?.();
+  if (
+    basket &&
+    ["loading", "restore-error", "conflict"].includes(basket.basketPhase)
+  )
+    return "error";
   const address = customer
     .getSnapshot()
     .addresses.find(
@@ -94,8 +117,10 @@ export function CheckoutProvider({
     catalogue.state.renewing,
     customerContext.state.selectedId,
     customerContext.state.revision,
+    state.basketPhase === "saved",
+    state.paymentFrozen,
   ]);
-  useEffect(() => () => controller.dispose(), [controller]);
+  useEffect(() => () => controller.releaseView(), [controller]);
   return (
     <Context.Provider value={{ controller, selectAddress }}>
       {children}
