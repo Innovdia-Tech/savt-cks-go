@@ -144,7 +144,7 @@ it("opens an already-paid empty-postcode order and reaches its eligible server r
     const html = renderToStaticMarkup(
       createElement(OrderDetailScreen, { state, controller, onBack() {} }),
     );
-    expect(html).toContain("Download Receipt");
+    expect(html).toContain("Download Payment Receipt");
     expect(html).not.toContain("Order unavailable");
     expect(html).not.toContain("Download Final Sales Receipt");
     const receipt = await controller.downloadPaymentReceipt();

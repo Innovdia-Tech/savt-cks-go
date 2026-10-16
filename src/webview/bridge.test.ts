@@ -28,6 +28,7 @@ const handoff = (overrides: Partial<HandoffDetail> = {}): HandoffDetail => ({
 
 const fixture = () => {
   let listener: ((detail: unknown) => void) | undefined;
+  const sessionListeners = new Set<(detail: unknown) => void>();
   const postMessage = vi.fn();
   const environment: BridgeEnvironment = {
     channel: { postMessage },
@@ -37,17 +38,128 @@ const fixture = () => {
     removeHandoffListener: (next) => {
       if (listener === next) listener = undefined;
     },
+    addSessionListener: (next) => {
+      sessionListeners.add(next);
+    },
+    removeSessionListener: (next) => {
+      sessionListeners.delete(next);
+    },
   };
   return {
     environment,
     postMessage,
     emit: (detail: unknown) => listener?.(detail),
+    emitSession: (detail: unknown) =>
+      sessionListeners.forEach((next) => next(detail)),
+    sessionListeners,
   };
 };
 
 describe("FlutterBridgeAdapter", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
+
+  it("does not send a new status message to an older host before native resume support is observed", () => {
+    const host = fixture();
+    const bridge = new FlutterBridgeAdapter(host.environment);
+    bridge.notifySessionValidated();
+    expect(host.postMessage).not.toHaveBeenCalled();
+    bridge.notifySessionValidated(true);
+    expect(JSON.parse(host.postMessage.mock.calls[0]![0])).toEqual({
+      type: "session-validated",
+    });
+  });
+
+  it("waits for its exact native recovery grant before enabling fresh launch", async () => {
+    const host = fixture();
+    const bridge = new FlutterBridgeAdapter(host.environment);
+    const grant = bridge.requestSessionRecovery();
+    expect(bridge.requestSessionRecovery()).toBe(grant);
+    const request = JSON.parse(host.postMessage.mock.calls[0]![0]);
+    expect(request.type).toBe("session-recovery-request");
+    host.emitSession({ type: "recovery-granted", requestId: "stale" });
+    expect(host.sessionListeners.size).toBe(1);
+    host.emitSession({
+      type: "recovery-granted",
+      requestId: request.requestId,
+      extra: true,
+    });
+    expect(host.sessionListeners.size).toBe(1);
+    host.emitSession({
+      type: "recovery-granted",
+      requestId: request.requestId,
+    });
+    await grant;
+    expect(host.sessionListeners.size).toBe(1);
+    const launch = bridge.requestLaunchCode(bootstrap);
+    host.emit(handoff());
+    expect(await launch).toEqual(handoff());
+    bridge.notifyLoaded();
+    expect(host.sessionListeners.size).toBe(0);
+  });
+
+  it.each([
+    ["network", "network"],
+    ["sign-in-required", "sign-in-required"],
+    ["invalid-session", "invalid"],
+  ])(
+    "surfaces owned recovery failure %s without replaying launch",
+    async (code, kind) => {
+      const host = fixture();
+      const bridge = new FlutterBridgeAdapter(host.environment);
+      const grant = bridge.requestSessionRecovery();
+      const request = JSON.parse(host.postMessage.mock.calls[0]![0]);
+      host.emitSession({
+        type: "recovery-granted",
+        requestId: request.requestId,
+      });
+      await grant;
+      const launch = bridge.requestLaunchCode(bootstrap);
+      host.emitSession({ type: "recovery-failed", requestId: "stale", code });
+      host.emitSession({
+        type: "recovery-failed",
+        requestId: request.requestId,
+        code,
+      });
+      await expect(launch).rejects.toMatchObject({ kind });
+      expect(host.postMessage).toHaveBeenCalledTimes(2);
+      bridge.notifySessionRecoveryFailed("network");
+      bridge.notifySessionValidated();
+      expect(host.sessionListeners.size).toBe(0);
+    },
+  );
+
+  it("times out an absent grant and removes its listener", async () => {
+    const host = fixture();
+    const grant = new FlutterBridgeAdapter(
+      host.environment,
+      100,
+    ).requestSessionRecovery();
+    const rejection = expect(grant).rejects.toMatchObject({ kind: "timeout" });
+    await vi.advanceTimersByTimeAsync(100);
+    await rejection;
+    expect(host.sessionListeners.size).toBe(0);
+    expect(host.postMessage).toHaveBeenCalledOnce();
+  });
+
+  it("reoffers the same unacknowledged request once when native foreground becomes ready", async () => {
+    const host = fixture();
+    const grant = new FlutterBridgeAdapter(
+      host.environment,
+    ).requestSessionRecovery();
+    const message = host.postMessage.mock.calls[0]![0];
+    host.emitSession({ type: "resume" });
+    host.emitSession({ type: "resume" });
+    expect(host.postMessage.mock.calls.map((call) => call[0])).toEqual([
+      message,
+      message,
+    ]);
+    host.emitSession({
+      type: "recovery-granted",
+      requestId: JSON.parse(message).requestId,
+    });
+    await grant;
+  });
 
   it("posts the exact protocol-v1 bootstrap message and accepts one matching handoff", async () => {
     const host = fixture();

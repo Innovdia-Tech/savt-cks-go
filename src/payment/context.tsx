@@ -54,7 +54,8 @@ export function PaymentProvider({
     () => installPaymentReturnObservers(document, controller),
     [controller],
   );
-  useEffect(() => () => controller.dispose(), [controller]);
+  // The application owns this controller across authentication and StrictMode
+  // view remounts. Its session observer clears sensitive state on session loss.
   return <Context.Provider value={controller}>{children}</Context.Provider>;
 }
 

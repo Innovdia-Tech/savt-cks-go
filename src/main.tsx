@@ -35,6 +35,8 @@ import "./orders/orders.css";
 import { LocationSearchApi } from "./location/api";
 import { googlePinMapAdapter } from "./location/DeliveryPinMap";
 import { SupportProvider } from "./support/context";
+import { BasketApi } from "./basket/api";
+import { BasketPersistence } from "./basket/persistence";
 
 const root = createRoot(document.getElementById("root")!);
 
@@ -134,11 +136,35 @@ async function start() {
       bridge,
       session,
       (quoteId) => checkout.freezeForPayment(quoteId),
-      (preserveBasket) =>
-        preserveBasket
-          ? checkout.recoverBasketAfterPayment()
-          : checkout.clear(),
+      (preserveBasket) => {
+        if (config.developmentApi && !preserveBasket) checkout.clear();
+        else checkout.recoverBasketAfterPayment();
+      },
     );
+    if (!config.developmentApi)
+      new BasketPersistence(
+        checkout,
+        new BasketApi(config.apiOrigin, session),
+        {
+          current: () =>
+            session.getSnapshot().phase === "authenticated"
+              ? (customer.getSnapshot().profile?.id ?? null)
+              : null,
+          subscribe: (listener) => {
+            const unsubscribeSession = session.subscribe(listener);
+            const unsubscribeCustomer = customer.subscribe(listener);
+            return () => {
+              unsubscribeSession();
+              unsubscribeCustomer();
+            };
+          },
+        },
+        {
+          getSnapshot: payment.getSnapshot,
+          subscribe: payment.subscribe,
+          initialRecovery: Boolean(initialPaymentIntentId),
+        },
+      );
     const orders = new OrdersController(
       new OrdersApi(config.apiOrigin, session, catalogueDevelopment?.fetch),
       session,

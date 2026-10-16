@@ -14,6 +14,7 @@ export type QuoteRequest = {
   customerAddressId: string;
   deliveryType: "NOW";
   items: Array<{ outletProductId: string; quantity: number }>;
+  basketRevision?: number;
 };
 
 const safeCodes = new Set([
@@ -35,11 +36,14 @@ const safeCodes = new Set([
   "CHECKOUT_OUTLET_PRODUCT_NOT_FOUND",
   "CHECKOUT_PRODUCT_INACTIVE",
   "CHECKOUT_OUTLET_PRODUCT_UNAVAILABLE",
+  "CHECKOUT_OUTLET_PRODUCT_PRICE_UNAVAILABLE",
   "CHECKOUT_INSUFFICIENT_STOCK",
   "CHECKOUT_ADDRESS_NOT_SERVICEABLE",
   "CHECKOUT_ROUTE_DURATION_UNAVAILABLE",
   "CHECKOUT_SCHEDULED_DEFERRED",
   "CHECKOUT_MONEY_UNSAFE",
+  "BASKET_REVISION_CONFLICT",
+  "BASKET_QUOTE_MISMATCH",
   "CHECKOUT_FEE_CONTRACT_UPGRADE_REQUIRED",
   "CHECKOUT_PROCESSING_FEE_UNCONFIGURED",
   "CHECKOUT_PROCESSING_FEE_INVALID",
@@ -51,7 +55,10 @@ const safeCodes = new Set([
 ]);
 
 export class QuoteError extends Error {
-  constructor(readonly code: string) {
+  constructor(
+    readonly code: string,
+    readonly affectedOutletProductId?: string,
+  ) {
     super(code);
   }
 }
@@ -126,9 +133,30 @@ export class QuoteApi {
             throw new ApiClientError("expired", "CUSTOMER_SESSION_INVALID");
           if (!response.ok) {
             let code = "INVALID_RESPONSE";
+            let affectedOutletProductId: string | undefined;
             try {
-              const parsed = parseApiErrorEnvelope(await response.json());
+              const body = await response.json();
+              const parsed = parseApiErrorEnvelope(body);
               if (parsed && safeCodes.has(parsed.code)) code = parsed.code;
+              if (
+                parsed &&
+                [
+                  "CHECKOUT_OUTLET_PRODUCT_NOT_FOUND",
+                  "CHECKOUT_PRODUCT_INACTIVE",
+                  "CHECKOUT_OUTLET_PRODUCT_UNAVAILABLE",
+                  "CHECKOUT_OUTLET_PRODUCT_PRICE_UNAVAILABLE",
+                  "CHECKOUT_INSUFFICIENT_STOCK",
+                ].includes(code)
+              ) {
+                const ids = body.error.fieldErrors?.outletProductId;
+                if (
+                  Array.isArray(ids) &&
+                  ids.length === 1 &&
+                  uuid(ids[0]) &&
+                  request.items.some((item) => item.outletProductId === ids[0])
+                )
+                  affectedOutletProductId = ids[0];
+              }
             } catch {
               // Untrusted backend details are intentionally discarded.
             }
@@ -137,7 +165,7 @@ export class QuoteApi {
               code === "CUSTOMER_CSRF_INVALID"
             )
               throw new ApiClientError("expired", code);
-            throw new QuoteError(code);
+            throw new QuoteError(code, affectedOutletProductId);
           }
           try {
             return parseQuote(await response.json());

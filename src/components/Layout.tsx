@@ -39,7 +39,12 @@ type AppShellProps = {
   headerAction?: ReactNode;
 };
 
-export type ShellHeaderContext = "home" | "browse" | "transaction" | "orders";
+export type ShellHeaderContext =
+  | "home"
+  | "browse"
+  | "basket"
+  | "transaction"
+  | "orders";
 
 export function AppShell({
   children,
@@ -132,7 +137,7 @@ export function AppShell({
           {children}
         </div>
         {sticky}
-        {basketSummary && active !== "Basket" && (
+        {basketSummary && active !== "Basket" && active !== "Orders" && (
           <BasketSummaryBar
             key={`${basketSummary.count}-${basketSummary.subtotal}`}
             {...basketSummary}
@@ -224,6 +229,8 @@ export function DeliveryHeader({
   headerAction?: ReactNode;
 }) {
   const shoppingContext = context === "home" || context === "browse";
+
+  if (embeddedHost && context === "basket") return null;
 
   if (embeddedHost) {
     return (

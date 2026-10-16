@@ -40,6 +40,46 @@ const render = (state: PaymentState) =>
   );
 
 describe("customer payment presentation", () => {
+  it("names the explicit QA payment-disabled response and offers basket recovery without a charge retry", () => {
+    const html = render({
+      ...base,
+      phase: "error",
+      error: "CHECKOUT_PAYMENT_CREATE_DISABLED",
+    });
+    expect(html).toContain("Payments are disabled in this QA environment");
+    expect(html).toContain("Your basket is kept");
+    expect(html).toContain("Review basket");
+    expect(html).not.toMatch(
+      /Try Payment Again|Pay RM|Order confirmed|CHECKOUT_PAYMENT_CREATE_DISABLED/,
+    );
+  });
+
+  it("keeps a known payment observable when creation is disabled without declaring a failed charge", () => {
+    const html = render({
+      ...base,
+      phase: "error",
+      error: "CHECKOUT_PAYMENT_CREATE_DISABLED",
+      paymentIntentId: "private-intent",
+    });
+    expect(html).toContain("Check payment status");
+    expect(html).not.toContain("Review basket");
+    expect(html).not.toMatch(
+      /No payment was taken|Payment failed|Order confirmed|private-intent/,
+    );
+  });
+
+  it("offers status-only recovery while a received payment is still being reconciled", () => {
+    const html = render({
+      ...base,
+      phase: "paid-processing",
+      paymentIntentId: "private-intent",
+    });
+    expect(html).toContain("Check payment status");
+    expect(html).not.toMatch(
+      /Try Payment Again|Review basket|Order confirmed|private-intent/,
+    );
+  });
+
   it.each(["REQUEST_TIMEOUT", "NETWORK_ERROR", "INVALID_RESPONSE"])(
     "keeps an uncertain %s payment request safe to retry without claiming it did not start",
     (error) => {
@@ -197,7 +237,7 @@ describe("customer payment presentation", () => {
     expect(html).not.toContain("Payment successful");
   });
 
-  it("keeps unresolved pending and processing states static after bounded observation", () => {
+  it("keeps unresolved states static and exposes only status recovery after a received payment", () => {
     const pending = render({
       ...base,
       phase: "pending",
@@ -208,8 +248,9 @@ describe("customer payment presentation", () => {
       phase: "paid-processing",
       paymentIntentId: "intent-redacted",
     });
+    expect(pending).not.toContain("Check payment status");
+    expect(processing).toContain("Check payment status");
     for (const html of [pending, processing]) {
-      expect(html).not.toContain("Check payment status");
       expect(html).not.toContain("Reopen secure payment");
       expect(html).not.toContain("payment-progress");
       expect(html).not.toMatch(/Pay (?:RM|MYR)/);
@@ -507,7 +548,7 @@ describe("local simulator pending status action", () => {
       vi.stubEnv("PROD", production);
       vi.stubEnv("VITE_CKS_GO_LOCAL_PAYMENT_SIMULATOR_ORIGIN", setting);
       vi.stubGlobal("window", { location: { href } });
-      for (const phase of ["pending", "paid-processing"] as const) {
+      for (const phase of ["pending"] as const) {
         expect(render({ ...pending, phase })).not.toContain(
           "Check payment status",
         );

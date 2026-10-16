@@ -314,11 +314,15 @@ const progressTimes = (detail: OrderDetail) => [
   detail.milestones.deliveredAt ?? detail.delivery.deliveredAt,
 ];
 
-export async function saveReceipt(controller: Actions, paymentReceipt = false) {
+export async function saveReceipt(
+  controller: Actions,
+  paymentReceipt = false,
+  withDeliveryBreakdown?: boolean,
+) {
   const embedded = hasDocumentSaveBridge();
   const result = await (paymentReceipt
-    ? controller.downloadPaymentReceipt(embedded)
-    : controller.downloadReceipt(embedded));
+    ? controller.downloadPaymentReceipt(embedded, withDeliveryBreakdown)
+    : controller.downloadReceipt(embedded, withDeliveryBreakdown));
   if (!result) return;
   let url: string | undefined;
   let link: HTMLAnchorElement | undefined;
@@ -370,7 +374,9 @@ function OrderDocumentsSection({
         aria-labelledby="order-receipt-title"
       >
         <h3 id="order-receipt-title">
-          {receiptUnavailable ? "Receipt temporarily unavailable" : "Receipt"}
+          {receiptUnavailable
+            ? "Receipt temporarily unavailable"
+            : "Payment Receipt"}
         </h3>
         {(state.documentsPhase === "idle" ||
           state.documentsPhase === "loading") && (
@@ -399,7 +405,7 @@ function OrderDocumentsSection({
             >
               {state.paymentReceiptPhase === "downloading"
                 ? "Preparing receipt…"
-                : "Download Receipt"}
+                : "Download Payment Receipt"}
             </button>
             {state.paymentReceiptPhase === "error" && (
               <p className="order-action-error" role="alert">
@@ -420,16 +426,18 @@ function OrderDocumentsSection({
           <h3 id="order-final-receipt-title">Final Sales Receipt</h3>
           <p>Final fulfilled-order record</p>
           {finalAvailable && (
-            <button
-              className="customer-button"
-              disabled={state.receiptPhase === "downloading"}
-              aria-busy={state.receiptPhase === "downloading"}
-              onClick={() => void saveReceipt(controller)}
-            >
-              {state.receiptPhase === "downloading"
-                ? "Preparing Final Sales Receipt…"
-                : "Download Final Sales Receipt"}
-            </button>
+            <>
+              <button
+                className="customer-button"
+                disabled={state.receiptPhase === "downloading"}
+                aria-busy={state.receiptPhase === "downloading"}
+                onClick={() => void saveReceipt(controller)}
+              >
+                {state.receiptPhase === "downloading"
+                  ? "Preparing Final Sales Receipt…"
+                  : "Download Final Sales Receipt"}
+              </button>
+            </>
           )}
           {!finalAvailable && (
             <p role="status">Your Final Sales Receipt is being prepared.</p>
@@ -537,12 +545,13 @@ export function OrderDetailScreen({
               <div>
                 <strong>{item.productName}</strong>
                 <span>Quantity {item.orderedQuantity}</span>
-                {order.fulfilment.fulfilmentConfirmed && (
-                  <span>
-                    Fulfilled {item.fulfilledQuantity ?? 0}; unavailable{" "}
-                    {item.unavailableQuantity ?? 0}
-                  </span>
-                )}
+                {order.fulfilment.fulfilmentConfirmed &&
+                  (item.unavailableQuantity ?? 0) > 0 && (
+                    <span>
+                      Fulfilled {item.fulfilledQuantity ?? 0}; unavailable{" "}
+                      {item.unavailableQuantity ?? 0}
+                    </span>
+                  )}
               </div>
               <strong>{money(item.lineTotalMinor)}</strong>
             </li>
@@ -556,13 +565,38 @@ export function OrderDetailScreen({
           <dd>{money(order.money.itemsSubtotalMinor)}</dd>
           {order.money.discountAmountMinor > 0 && (
             <>
-              <dt>Discount</dt>
-              <dd>−{money(order.money.discountAmountMinor)}</dd>
+              <dt>Items discount</dt>
+              <dd className="order-saving">
+                −{money(order.money.discountAmountMinor)}
+              </dd>
             </>
           )}
-          <dt>Delivery</dt>
+          {order.money.baseDeliveryFeeMinor !== undefined &&
+            order.money.deliveryDiscountMinor !== undefined && (
+              <>
+                <dt>Standard delivery</dt>
+                <dd>{money(order.money.baseDeliveryFeeMinor)}</dd>
+                {order.money.deliveryDiscountMinor > 0 && (
+                  <>
+                    <dt className="order-saving">
+                      {order.money.finalDeliveryChargeMinor === 0
+                        ? "Free delivery promotion"
+                        : "Delivery promotion"}
+                    </dt>
+                    <dd className="order-saving">
+                      −{money(order.money.deliveryDiscountMinor)}
+                    </dd>
+                  </>
+                )}
+              </>
+            )}
+          <dt>Delivery charged</dt>
           <dd>{money(order.money.finalDeliveryChargeMinor)}</dd>
-          <dt>Processing fee</dt>
+          <dt>
+            {order.money.processingFee?.feeType === "SMALL_ORDER_TIERS"
+              ? "Small order fee"
+              : "Processing fee"}
+          </dt>
           <dd>{money(order.money.processingFeeMinor)}</dd>
           <dt className="order-grand">Grand total</dt>
           <dd className="order-grand">{money(order.money.grandTotalMinor)}</dd>

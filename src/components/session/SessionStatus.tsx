@@ -1,5 +1,7 @@
 import {
   useEffect,
+  useLayoutEffect,
+  useRef,
   useState,
   useSyncExternalStore,
   type FormEvent,
@@ -10,6 +12,7 @@ import {
   type CustomerSessionState,
 } from "../../session/controller";
 import { BrandLogo } from "../BrandLogo";
+import { installSessionResumeObservers } from "../../session/resume";
 
 type SessionPhase = CustomerSessionState["phase"];
 type OtpPhase =
@@ -31,6 +34,12 @@ const presentations: Record<
   bridgeUnavailable: {
     title: "Open CKS Go from Savt",
     detail: "Return to Savt and open CKS Go again.",
+    canRetry: true,
+  },
+  browserUnavailable: {
+    title: "Open CKS Go from the Savt QA app",
+    detail:
+      "Browser sign-in is disabled in this QA environment. Open the Savt QA app, sign in, then choose CKS Go from Home.",
     canRetry: true,
   },
   offline: {
@@ -57,7 +66,16 @@ const presentations: Record<
 
 export const sessionPresentation = (state: {
   phase: Exclude<SessionPhase, "authenticated" | OtpPhase>;
-}) => presentations[state.phase];
+  reason?: "disabled" | "unverified";
+}) =>
+  state.phase === "browserUnavailable" && state.reason === "unverified"
+    ? {
+        title: "Browser sign-in cannot be verified",
+        detail:
+          "Open CKS Go from the Savt QA app, or check browser access again. No verification code has been sent.",
+        canRetry: true,
+      }
+    : presentations[state.phase];
 
 const otpErrorMessage = (error: string | undefined): string | undefined => {
   switch (error) {
@@ -302,12 +320,96 @@ export function CustomerSessionBoundary({
     controller.getSnapshot,
     controller.getSnapshot,
   );
+  const recoveryDialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     void controller.start();
   }, [controller]);
+  useEffect(() => {
+    if (embeddedHost)
+      return installSessionResumeObservers(document, window, controller);
+  }, [controller, embeddedHost]);
+  useLayoutEffect(() => {
+    if (state.phase !== "authenticated" || !state.recovery) return;
+    const dialog = recoveryDialog.current;
+    if (dialog && !dialog.open) dialog.showModal();
+  }, [state]);
 
-  if (state.phase === "authenticated") return children;
+  if (state.phase === "authenticated") {
+    const recovery = state.recovery;
+    const pending = recovery === "checking" || recovery === "authorizing";
+    return (
+      <>
+        <div
+          hidden={recovery === "failed" || recovery === "signIn"}
+          inert={Boolean(recovery)}
+          aria-hidden={recovery ? true : undefined}
+          style={recovery ? { visibility: "hidden" } : undefined}
+        >
+          {children}
+        </div>
+        {recovery && (
+          <dialog
+            ref={recoveryDialog}
+            aria-labelledby="cks-session-recovery-title"
+            onCancel={(event) => event.preventDefault()}
+            className="fixed inset-0 z-50 m-0 grid h-dvh w-screen max-h-none max-w-none place-items-center border-0 bg-app-background px-5 text-savt-ink"
+          >
+            <section
+              role="status"
+              aria-live="polite"
+              className="w-full max-w-[390px] rounded-[32px] bg-white p-7 text-center shadow-lift"
+            >
+              <h1 id="cks-session-recovery-title" className="text-xl font-bold">
+                {pending
+                  ? "Restoring CKS Go…"
+                  : recovery === "offline"
+                    ? "You’re offline"
+                    : recovery === "signIn"
+                      ? "Sign in to Savt again"
+                      : "Unable to restore CKS Go"}
+              </h1>
+              <p className="mt-3 text-sm leading-6">
+                Your Basket and payment state are kept in this open session. No
+                payment is retried.{" "}
+                {recovery === "offline"
+                  ? "Reconnect to continue."
+                  : recovery === "signIn"
+                    ? "Return to Savt to sign in."
+                    : recovery === "failed"
+                      ? state.canRetryRecovery
+                        ? "The service could not be reached. Retry securely when it is available."
+                        : "We could not verify your session. Return to Savt to continue securely."
+                      : "Please wait while we check your session."}
+              </p>
+              {(recovery === "offline" || state.canRetryRecovery) &&
+                !pending && (
+                  <button
+                    type="button"
+                    className="customer-button mt-6"
+                    onClick={() =>
+                      void controller.resume({ retry: state.manualRecovery })
+                    }
+                  >
+                    Retry securely
+                  </button>
+                )}
+              {!pending && (
+                <p className="mt-5 text-sm leading-6 text-slate-600">
+                  <strong className="block text-slate-950">
+                    Return to Savt
+                  </strong>
+                  Use the close button (×) at the top of the app. Unsaved Basket
+                  changes may be lost when you close CKS Go. An existing payment
+                  will still need its status checked after you reopen.
+                </p>
+              )}
+            </section>
+          </dialog>
+        )}
+      </>
+    );
+  }
   if (
     state.phase === "awaitingMobile" ||
     state.phase === "requestingOtp" ||
@@ -354,7 +456,9 @@ export function CustomerSessionBoundary({
             onClick={() => void controller.retry()}
             className="mt-6 min-h-12 w-full rounded-control bg-cks-primary px-5 text-sm font-semibold text-white shadow-button"
           >
-            Try again
+            {state.phase === "browserUnavailable"
+              ? "Check access again"
+              : "Try again"}
           </button>
         ) : !loading ? (
           <button

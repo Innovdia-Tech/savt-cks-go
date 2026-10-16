@@ -7,6 +7,12 @@ export type BootstrapData = {
   expiresAt: string;
 };
 
+export type SessionCapabilities = {
+  nativeSessionHandoff: boolean;
+  browserOtpEnabled: boolean;
+  paymentCreateEnabled: boolean;
+};
+
 export type SessionData = {
   authenticated: true;
   expiresAt: string;
@@ -78,6 +84,24 @@ const envelopeData = (value: unknown): Record<string, unknown> => {
   )
     return invalidResponse();
   return value.data;
+};
+
+export const parseSessionCapabilitiesEnvelope = (
+  value: unknown,
+): SessionCapabilities => {
+  const data = envelopeData(value);
+  if (
+    !hasExactKeys(data, [
+      "nativeSessionHandoff",
+      "browserOtpEnabled",
+      "paymentCreateEnabled",
+    ]) ||
+    typeof data.nativeSessionHandoff !== "boolean" ||
+    typeof data.browserOtpEnabled !== "boolean" ||
+    typeof data.paymentCreateEnabled !== "boolean"
+  )
+    return invalidResponse();
+  return data as SessionCapabilities;
 };
 
 export const parseBootstrapEnvelope = (value: unknown): BootstrapData => {

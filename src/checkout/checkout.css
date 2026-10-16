@@ -196,6 +196,23 @@
   width: 100%;
   margin-top: 14px;
 }
+.basket-checkout-action--shell {
+  flex-shrink: 0;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  padding: var(--space-3) var(--space-5);
+}
+.basket-checkout-action--shell .quote-action,
+.basket-checkout-action--shell .quote-loading {
+  min-height: 48px;
+  margin: 0;
+}
+.basket-checkout-action--shell .quote-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3);
+}
 .quote-card .payment-card {
   margin-top: 14px;
   border: 0;
@@ -280,6 +297,26 @@
   font-size: 12px;
   line-height: 1.25;
 }
+.quote-delivery-charge {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.quote-delivery-charge s {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+.quote-delivery-estimate {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 0;
+  font-size: var(--text-meta);
+  color: var(--color-text-muted);
+}
 .quote-totals dd,
 .quote-evidence dd {
   min-width: 0;
@@ -302,6 +339,8 @@
   flex: 0 0 44px;
   width: 44px;
   min-height: 44px;
+  /* Keep the 44px touch target inside the existing row gaps. */
+  margin-block: -8px;
   place-items: center;
   border: 0;
   border-radius: var(--radius-button);
@@ -319,6 +358,36 @@
 }
 .small-order-fee-amount {
   align-self: center;
+}
+.quote-totals .quote-saving {
+  color: var(--color-text);
+  font-weight: 600;
+}
+.quote-card {
+  container-type: inline-size;
+  font-size: var(--text-body);
+}
+@container (max-width: 16em) {
+  .cart-stack--shopping .quote-totals {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 6px;
+  }
+  .quote-totals dt:not(:first-child) {
+    margin-top: 8px;
+  }
+  .quote-totals dd {
+    text-align: left;
+  }
+  .quote-totals .quote-delivery-charge {
+    justify-content: flex-start;
+  }
+  .quote-totals dd.quote-grand {
+    border-top: 0;
+    padding-top: 0;
+  }
+}
+.quote-delivery-charge {
+  font-weight: 500;
 }
 .quote-totals .small-order-fee-helper {
   grid-column: 1 / -1;
@@ -698,7 +767,11 @@
   background: var(--color-surface-muted);
 }
 .cart-stack--shopping .cart-quantity button {
+  width: 44px;
   min-height: 44px;
+}
+.cart-stack--shopping .cart-quantity > span {
+  min-width: 0;
 }
 .cart-stack--shopping .cart-line-subtotal {
   grid-column: 2 / -1;
@@ -709,7 +782,7 @@
   flex-wrap: wrap;
   gap: 4px 8px;
   padding-top: 4px;
-  line-height: 20px;
+  line-height: var(--leading-body);
 }
 .cart-stack--shopping .cart-line-subtotal span {
   display: inline;

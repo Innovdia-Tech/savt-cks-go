@@ -8,7 +8,13 @@ export type OtpFeedback =
 
 export type CustomerSessionState =
   | { phase: "loading" }
-  | { phase: "authenticated"; expiresAt: string }
+  | {
+      phase: "authenticated";
+      expiresAt: string;
+      recovery?: "checking" | "authorizing" | "offline" | "failed" | "signIn";
+      manualRecovery?: true;
+      canRetryRecovery?: true;
+    }
   | { phase: "awaitingMobile"; error?: OtpFeedback; retryAfterSeconds?: number }
   | { phase: "requestingOtp"; resending: boolean }
   | {
@@ -19,6 +25,7 @@ export type CustomerSessionState =
     }
   | { phase: "verifyingOtp" }
   | { phase: "pilotDenied" }
+  | { phase: "browserUnavailable"; reason: "disabled" | "unverified" }
   | { phase: "bridgeUnavailable" }
   | { phase: "offline" }
   | { phase: "expired" }
@@ -37,6 +44,9 @@ export class CustomerSessionController {
   private otpRequestId: string | undefined;
   private resendAt = 0;
   private retryAt = 0;
+  private resumeInFlight: Promise<boolean> | undefined;
+  private recoveryAttempted = false;
+  private nativeResumeSeen = false;
 
   constructor(
     private readonly api: CustomerApi,
@@ -55,6 +65,11 @@ export class CustomerSessionController {
   };
 
   async start(): Promise<void> {
+    // A mounted, authorized native document must use its explicit recovery gate.
+    if (this.state.phase === "authenticated") {
+      await this.resume();
+      return;
+    }
     const generation = ++this.generation;
     this.clearCredentials();
     this.clearOtpContext();
@@ -75,6 +90,33 @@ export class CustomerSessionController {
       }
       if (!(error instanceof ApiClientError) || error.category !== "expired") {
         this.fail(error);
+        return;
+      }
+    }
+
+    if (this.options.entryMode === "standalone") {
+      try {
+        const capability = await this.api.capabilities?.();
+        if (generation !== this.generation) return;
+        if (!capability?.browserOtpEnabled) {
+          this.transition({
+            phase: "browserUnavailable",
+            reason: capability ? "disabled" : "unverified",
+          });
+          return;
+        }
+      } catch (error) {
+        if (generation !== this.generation) return;
+        if (
+          error instanceof ApiClientError &&
+          ["offline", "retryable"].includes(error.category)
+        )
+          this.fail(error);
+        else
+          this.transition({
+            phase: "browserUnavailable",
+            reason: "unverified",
+          });
         return;
       }
     }
@@ -108,6 +150,144 @@ export class CustomerSessionController {
 
   retry(): Promise<void> {
     return this.start();
+  }
+
+  /** Validate once on foreground return; never replay the failed operation. */
+  resume(
+    options: { retry?: boolean; native?: boolean } = {},
+  ): Promise<boolean> {
+    if (options.native) this.nativeResumeSeen = true;
+    if (this.resumeInFlight) return this.resumeInFlight;
+    if (this.state.phase !== "authenticated") return Promise.resolve(false);
+    if (
+      this.options.entryMode !== "embedded" ||
+      !this.bridge.requestSessionRecovery
+    )
+      return Promise.resolve(true);
+    const manualNeeded = this.state.manualRecovery === true;
+    const previousRecovery = this.state.recovery;
+    const canRetryRecovery = this.state.canRetryRecovery === true;
+    const explicitRetry = options.retry === true && manualNeeded;
+    let generation = this.generation;
+    const expiresAt = this.state.expiresAt;
+    this.clearCredentials();
+    this.transition({
+      phase: "authenticated",
+      expiresAt,
+      recovery: "checking",
+    });
+    const current = () =>
+      generation === this.generation && this.state.phase === "authenticated";
+    const recover = async (): Promise<boolean> => {
+      try {
+        const session = await this.api.status();
+        if (!current()) return false;
+        this.recoveryAttempted = false;
+        this.csrfToken = session.csrfToken;
+        this.transition({
+          phase: "authenticated",
+          expiresAt: session.expiresAt,
+        });
+        this.bridge.notifySessionValidated?.(this.nativeResumeSeen);
+        return true;
+      } catch (error) {
+        if (!current()) return false;
+        if (
+          !(error instanceof ApiClientError) ||
+          error.code !== "CUSTOMER_SESSION_INVALID"
+        ) {
+          this.resumeFailure(error, expiresAt);
+          return false;
+        }
+      }
+      generation = ++this.generation;
+      if (this.recoveryAttempted && !explicitRetry) {
+        this.transition({
+          phase: "authenticated",
+          expiresAt,
+          recovery:
+            manualNeeded && previousRecovery === "offline"
+              ? "offline"
+              : "failed",
+          ...(manualNeeded ? { manualRecovery: true as const } : {}),
+          ...(canRetryRecovery ? { canRetryRecovery: true as const } : {}),
+        });
+        return false;
+      }
+      this.recoveryAttempted = true;
+      this.transition({
+        phase: "authenticated",
+        expiresAt,
+        recovery: "authorizing",
+      });
+      try {
+        // The host owns document/handoff generations. Obtain its explicit grant
+        // before bootstrap: a second ordinary launch in this document is forbidden.
+        await this.bridge.requestSessionRecovery!(
+          explicitRetry ? { retry: true } : undefined,
+        );
+        if (!current()) return false;
+        this.bridge.verifySessionRecovery?.();
+        const bootstrap = await this.api.bootstrap();
+        if (!current()) return false;
+        this.bridge.verifySessionRecovery?.();
+        const handoff = await this.bridge.requestLaunchCode({
+          protocolVersion: bootstrap.protocolVersion,
+          launchRequestId: bootstrap.launchRequestId,
+          state: bootstrap.state,
+          codeChallenge: bootstrap.codeChallenge,
+          codeChallengeMethod: bootstrap.codeChallengeMethod,
+        });
+        if (!current()) return false;
+        this.bridge.verifySessionRecovery?.();
+        const session = await this.api.exchange(handoff);
+        if (!current()) return false;
+        this.bridge.verifySessionRecovery?.();
+        this.authenticate(session);
+        // Exchange does not reset the attempt budget. Only a later positive
+        // status observation closes this failure episode.
+        return true;
+      } catch (error) {
+        if (current()) this.resumeFailure(error, expiresAt);
+        return false;
+      }
+    };
+    const pending = recover().finally(() => {
+      if (this.resumeInFlight === pending) this.resumeInFlight = undefined;
+    });
+    this.resumeInFlight = pending;
+    return pending;
+  }
+
+  private resumeFailure(error: unknown, expiresAt: string): void {
+    this.clearCredentials();
+    const retryable =
+      (error instanceof ApiClientError &&
+        ["offline", "retryable"].includes(error.category)) ||
+      (error instanceof BridgeError &&
+        ["network", "timeout"].includes(error.kind));
+    const recovery =
+      (error instanceof ApiClientError && error.category === "offline") ||
+      (error instanceof BridgeError && error.kind === "network")
+        ? "offline"
+        : (error instanceof ApiClientError && error.category === "expired") ||
+            (error instanceof BridgeError && error.kind === "sign-in-required")
+          ? "signIn"
+          : "failed";
+    this.transition({
+      phase: "authenticated",
+      expiresAt,
+      recovery,
+      ...(retryable ? { canRetryRecovery: true as const } : {}),
+      ...(retryable && this.recoveryAttempted
+        ? { manualRecovery: true as const }
+        : {}),
+    });
+    this.bridge.notifySessionRecoveryFailed?.(
+      retryable ? "network" : "invalid-session",
+    );
+    // Keep drafts mounted and gated; reporting a generic bridge launch error
+    // would retire this document and discard the Basket/pending payment.
   }
 
   async requestOtp(rawMobile: string): Promise<void> {
@@ -301,10 +481,16 @@ export class CustomerSessionController {
     operation: (csrfToken: string) => Promise<T>,
   ): Promise<T> {
     const generation = this.generation;
-    if (this.state.phase !== "authenticated" || !this.csrfToken)
+    if (
+      this.state.phase !== "authenticated" ||
+      this.state.recovery ||
+      !this.csrfToken
+    )
       throw new ApiClientError("expired", "CUSTOMER_SESSION_INVALID");
     try {
       const result = await operation(this.csrfToken);
+      if (this.resumeInFlight && !(await this.resumeInFlight))
+        throw new ApiClientError("expired", "CUSTOMER_SESSION_INVALID");
       if (generation !== this.generation)
         throw new ApiClientError("expired", "CUSTOMER_SESSION_INVALID");
       return result;
@@ -314,8 +500,15 @@ export class CustomerSessionController {
         error instanceof ApiClientError &&
         error.category === "expired"
       ) {
-        ++this.generation;
-        this.fail(error);
+        if (
+          this.options.entryMode === "embedded" &&
+          this.bridge.requestSessionRecovery
+        ) {
+          void this.resume();
+        } else {
+          ++this.generation;
+          this.fail(error);
+        }
       }
       throw error;
     }
@@ -378,6 +571,14 @@ export class CustomerSessionController {
   private fail(error: unknown): void {
     this.clearCredentials();
     this.clearOtpContext();
+    if (
+      this.options.entryMode === "standalone" &&
+      error instanceof ApiClientError &&
+      error.code === "CUSTOMER_BROWSER_AUTH_UNAVAILABLE"
+    ) {
+      this.transition({ phase: "browserUnavailable", reason: "disabled" });
+      return;
+    }
     if (error instanceof BridgeError) {
       const phase =
         error.kind === "unavailable" ? "bridgeUnavailable" : "retryableError";

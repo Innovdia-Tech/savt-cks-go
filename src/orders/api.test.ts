@@ -13,6 +13,37 @@ const session = {
 };
 
 describe("OrdersApi", () => {
+  it.each(["receipt", "payment-receipt"] as const)(
+    "downloads only the exact owned %s v2 presentation path",
+    async (kind) => {
+      const calls: string[] = [];
+      const api = new OrdersApi("", session, async (url) => {
+        calls.push(String(url));
+        return new Response("%PDF-1.7", {
+          headers: { "Content-Type": "application/pdf" },
+        });
+      });
+      const download = (path: string) =>
+        kind === "receipt"
+          ? api.downloadReceipt(orderId, path)
+          : api.downloadPaymentReceipt(orderId, path);
+      const path = `/api/v1/orders/${orderId}/${kind}/download?presentationVersion=2`;
+      expect((await download(path)).type).toBe("application/pdf");
+      expect(calls).toEqual([path]);
+      for (const unsafe of [
+        path + "&token=secret",
+        path + "#fragment",
+        path.replace("=2", "=3"),
+        path.replace(orderId, "other"),
+        "https://evil.example" + path,
+      ])
+        await expect(download(unsafe)).rejects.toMatchObject({
+          code: "VALIDATION_FAILED",
+        });
+      expect(calls).toEqual([path]);
+    },
+  );
+
   it("lists the exact customer order page with cookies and no-store", async () => {
     let request: { url: string; init?: RequestInit } | undefined;
     const api = new OrdersApi(

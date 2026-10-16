@@ -99,7 +99,7 @@ describe("small order fee presentation from the frozen quote", () => {
   it("uses only the quoted qualifying amount and threshold for the compact helper", () => {
     const html = feeMarkup(smallOrderQuote());
     expect(html).toMatch(/RM[^<]*7\.80 to go for no small order fee/);
-    expect(html).toContain(
+    expect(html).not.toContain(
       "Based on items total after discounts. Delivery is excluded.",
     );
     expect(html).not.toContain("21.00 to go");
@@ -121,7 +121,8 @@ describe("small order fee presentation from the frozen quote", () => {
         ...smallOrderQuote({ outcome }),
         processingFeeMinor: 0,
       });
-      expect(html).toContain("No small order fee for this order.");
+      expect(html).not.toContain("About small order fee");
+      expect(html).not.toContain("Small order fee</dt>");
       expect(html).not.toContain("to go for no small order fee");
     },
   );
@@ -131,7 +132,8 @@ describe("small order fee presentation from the frozen quote", () => {
       ...smallOrderQuote({ outcome: "DISABLED", enabled: false }),
       processingFeeMinor: 0,
     });
-    expect(html).toContain("Small order fee is currently not applied.");
+    expect(html).not.toContain("About small order fee");
+    expect(html).not.toContain("Small order fee</dt>");
     expect(html).not.toMatch(/saved|reward|to go for no small order fee/i);
   });
 
@@ -159,6 +161,54 @@ describe("small order fee presentation from the frozen quote", () => {
 });
 
 describe("real cart and trusted quote presentation", () => {
+  it.each([
+    [0, 490, null],
+    [200, 290, "Delivery promotion"],
+    [490, 0, "Free delivery promotion"],
+  ] as const)(
+    "itemizes the frozen delivery base and %i promotion without inventing savings",
+    (deliveryDiscountMinor, finalDeliveryChargeMinor, promotionLabel) => {
+      const envelope = quoteEnvelope();
+      Object.assign(envelope.data, {
+        deliveryDiscountMinor,
+        finalDeliveryChargeMinor,
+        processingFeeBasisMinor: 900 + finalDeliveryChargeMinor,
+        grandTotalMinor: 942 + finalDeliveryChargeMinor,
+      });
+      const html = feeMarkup(parseQuote(envelope));
+      expect(html).toContain('aria-label="About delivery fee"');
+      expect(html).not.toContain("Standard delivery</dt>");
+      expect(html).not.toContain("Delivery charged</dt>");
+      expect(html).toMatch(
+        finalDeliveryChargeMinor === 0
+          ? /<strong>FREE<\/strong>/
+          : new RegExp(
+              `<strong>RM[^<]*${(finalDeliveryChargeMinor / 100).toFixed(2).replace(".", "\\.")}<\\/strong>`,
+            ),
+      );
+      if (promotionLabel) {
+        expect(html).toMatch(/<s[^>]*>RM[^<]*4\.90<\/s>/);
+      } else
+        expect(html).not.toMatch(
+          /Free delivery promotion|Delivery promotion|Saved RM/,
+        );
+      expect(html).not.toContain("Legacy Free Delivery");
+    },
+  );
+
+  it("shows the merchandise discount that contributes to the frozen payable total", () => {
+    const envelope = quoteEnvelope();
+    Object.assign(envelope.data, {
+      discountAmountMinor: 100,
+      netItemsTotalMinor: 800,
+      processingFeeBasisMinor: 1290,
+      grandTotalMinor: 1332,
+    });
+    const html = feeMarkup(parseQuote(envelope));
+    expect(html).toMatch(/Items discount<\/dt><dd[^>]*>−RM[^<]*1\.00<\/dd>/);
+    expect(html).toMatch(/Grand total<\/dt><dd[^>]*>RM[^<]*13\.32<\/dd>/);
+  });
+
   it.each([
     "PENDING",
     "FAILED",
@@ -309,7 +359,7 @@ describe("real cart and trusted quote presentation", () => {
     expect(html).toContain("cart-stack--shopping");
     expect(html).toContain("Deliver to");
     expect(html).toContain("Real saved address");
-    expect(html).toContain("Total");
+    expect(html).toContain("Grand total");
     expect(html).toContain("14.32");
     expect(html).not.toContain("1 Example Street");
   });
@@ -414,7 +464,7 @@ describe("real cart and trusted quote presentation", () => {
       "Items subtotal",
       "Delivery fee",
       "Processing fee",
-      "Total",
+      "Grand total",
       "Estimated delivery",
       "Prices valid until",
       "Home",
@@ -429,9 +479,8 @@ describe("real cart and trusted quote presentation", () => {
     );
     for (const [label, amount] of [
       ["Items subtotal", "9.00"],
-      ["Delivery fee", "4.90"],
       ["Processing fee", "0.42"],
-      ["Total", "14.32"],
+      ["Grand total", "14.32"],
     ]) {
       expect(html).toMatch(
         new RegExp(

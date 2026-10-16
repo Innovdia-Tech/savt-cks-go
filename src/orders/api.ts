@@ -117,7 +117,11 @@ export class OrdersApi {
     kind: "receipt" | "payment-receipt",
     external?: AbortSignal,
   ): Promise<Blob> {
-    if (!uuid(orderId) || path !== `/api/v1/orders/${orderId}/${kind}/download`)
+    const ownedPath = `/api/v1/orders/${orderId}/${kind}/download`;
+    if (
+      !uuid(orderId) ||
+      (path !== ownedPath && path !== `${ownedPath}?presentationVersion=2`)
+    )
       throw new OrdersError("VALIDATION_FAILED");
     return this.request(
       path,

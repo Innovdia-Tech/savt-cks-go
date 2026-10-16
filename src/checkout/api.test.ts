@@ -22,6 +22,47 @@ async function setup(fetcher: typeof fetch, timeout = 100) {
 }
 
 describe("trusted quote HTTP boundary", () => {
+  it.each([
+    "CHECKOUT_INSUFFICIENT_STOCK",
+    "CHECKOUT_OUTLET_PRODUCT_UNAVAILABLE",
+    "CHECKOUT_OUTLET_PRODUCT_PRICE_UNAVAILABLE",
+  ])("retains only the requested product identifier for %s", async (code) => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json(
+        {
+          error: {
+            code,
+            message: "Internal stock message is not customer copy",
+            fieldErrors: { outletProductId: [id("2")] },
+          },
+        },
+        { status: 409 },
+      ),
+    );
+    const { api } = await setup(fetcher);
+    await expect(api.create(request, id("7"))).rejects.toMatchObject({
+      code,
+      affectedOutletProductId: id("2"),
+    });
+  });
+  it("discards identifiers outside the requested basket", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json(
+        {
+          error: {
+            code: "CHECKOUT_INSUFFICIENT_STOCK",
+            message: "No stock",
+            fieldErrors: { outletProductId: [id("8")] },
+          },
+        },
+        { status: 409 },
+      ),
+    );
+    const { api } = await setup(fetcher);
+    await expect(api.create(request, id("7"))).rejects.toMatchObject({
+      affectedOutletProductId: undefined,
+    });
+  });
   it("sends authoritative identifiers and quantities with the fee contract, CSRF, and the supplied stable key", async () => {
     const fetcher = vi
       .fn<typeof fetch>()

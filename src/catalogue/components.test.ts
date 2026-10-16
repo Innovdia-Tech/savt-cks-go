@@ -56,6 +56,79 @@ it("uses the shared action slot for an unavailable outlet product", () => {
   expect(html).toContain("catalogue-tile-action");
   expect(html).not.toContain("catalogue-availability-row");
 });
+it("labels an out-of-stock product while retaining image and basic information", () => {
+  const html = renderToStaticMarkup(
+    createElement(ProductTile, {
+      product: {
+        ...product,
+        availability: "UNAVAILABLE",
+        availabilityReason: "OUT_OF_STOCK",
+      },
+      onOpen: () => {},
+      onAdd: () => {},
+    }),
+  );
+  expect(html).toContain("Rice");
+  expect(html).toContain("12.34");
+  expect(html).toContain("Out of stock");
+  expect(html).toMatch(/<button[^>]+disabled[^>]*>Out of stock<\/button>/);
+  expect(html).not.toMatch(/stockQuantity|0 available/);
+});
+it.each([0, -1, NaN, Infinity, 1.5])(
+  "hides stale product tiles with invalid selling price %s",
+  (sellingPriceMinor) => {
+    expect(
+      renderToStaticMarkup(
+        createElement(ProductTile, {
+          product: { ...product, sellingPriceMinor },
+          onOpen: () => {},
+          onAdd: () => {},
+        }),
+      ),
+    ).toBe("");
+  },
+);
+it.each([null, 2])(
+  "detail protects unavailable stock at quantity %s without relying on a parent guard",
+  (quantity) => {
+    const html = renderToStaticMarkup(
+      createElement(ProductDetailPurchase, {
+        product: {
+          ...product,
+          availability: "UNAVAILABLE",
+          availabilityReason: "OUT_OF_STOCK",
+        },
+        quantity,
+        orderingDisabled: false,
+        paymentFrozen: false,
+        onAdd: () => {},
+        onSetQuantity: () => {},
+      }),
+    );
+    expect(html).toContain("Out of stock");
+    if (quantity === null)
+      expect(html).toMatch(/<button[^>]+disabled[^>]*>Out of stock<\/button>/);
+    else {
+      expect(html).toMatch(/aria-label="Increase quantity"[^>]*disabled/);
+      expect(html).toMatch(/aria-label="Decrease quantity"(?![^>]*disabled)/);
+    }
+  },
+);
+it("hides invalid stale detail pricing and blocks purchase", () => {
+  const html = renderToStaticMarkup(
+    createElement(ProductDetailPurchase, {
+      product: { ...product, sellingPriceMinor: 0 },
+      quantity: null,
+      orderingDisabled: false,
+      paymentFrozen: false,
+      onAdd: () => {},
+      onSetQuantity: () => {},
+    }),
+  );
+  expect(html).not.toContain("0.00");
+  expect(html).toContain("Unavailable");
+  expect(html).toMatch(/<button[^>]+disabled/);
+});
 it("does not call a read-only available product unavailable", () => {
   const html = renderToStaticMarkup(
     createElement(ProductTile, {

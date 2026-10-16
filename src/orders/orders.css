@@ -523,6 +523,11 @@
 .order-money dd {
   font-weight: 600;
   text-align: right;
+  white-space: nowrap;
+}
+.order-money .order-saving {
+  color: var(--color-text);
+  font-weight: 600;
 }
 .order-grand {
   border-top: 1px solid #dbe5de;

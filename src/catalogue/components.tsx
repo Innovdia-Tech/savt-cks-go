@@ -17,13 +17,13 @@ import { hasDeliveryCoordinates } from "../customer/delivery-readiness";
 import type { Address } from "../addresses/contracts";
 import { useCustomer } from "../customer/context";
 import { useCatalogue } from "./context";
-import type { Product } from "./contracts";
+import { hasConfiguredSellingPrice, type Product } from "./contracts";
 import type { CatalogueState } from "./state";
 import { homeCategories, homeCategoryArtwork } from "./shopping";
 import type { Screen } from "../types";
 import { useCheckout } from "../checkout/context";
 import { cartMerchandiseSummary } from "../checkout/state";
-import { CartScreen } from "../checkout/components";
+import { BasketCheckoutAction, CartScreen } from "../checkout/components";
 import { MAX_LINE_QUANTITY } from "../checkout/contracts";
 import { QuantitySelector } from "../components/QuantitySelector";
 import { usePayment } from "../payment/context";
@@ -78,6 +78,10 @@ export const money = (minor: number) =>
   new Intl.NumberFormat("en-MY", { style: "currency", currency: "MYR" }).format(
     minor / 100,
   );
+const unavailableLabel = (product: Product) =>
+  product.availabilityReason === "OUT_OF_STOCK"
+    ? "Out of stock"
+    : "Unavailable";
 export function ProductImage({
   url,
   name,
@@ -126,6 +130,7 @@ export function ProductTile({
   orderingDisabled?: boolean;
   variant?: "grid" | "list";
 }) {
+  if (!hasConfiguredSellingPrice(product.sellingPriceMinor)) return null;
   const canAdd =
     product.availability === "AVAILABLE" &&
     !orderingDisabled &&
@@ -153,11 +158,13 @@ export function ProductTile({
         onClick={onAdd}
         aria-label={
           product.availability === "UNAVAILABLE"
-            ? `${product.name} unavailable`
+            ? `${product.name}: ${unavailableLabel(product)}`
             : `Add ${product.name} to basket`
         }
       >
-        {product.availability === "UNAVAILABLE" ? "Unavailable" : "Add"}
+        {product.availability === "UNAVAILABLE"
+          ? unavailableLabel(product)
+          : "Add"}
       </Button>
     );
   return (
@@ -174,7 +181,11 @@ export function ProductTile({
             <strong className="catalogue-price">
               {money(product.sellingPriceMinor)}
             </strong>
-            <StatusBadge status={product.availability} />
+            {product.availabilityReason === "OUT_OF_STOCK" ? (
+              <span className="catalogue-stock-label">Out of stock</span>
+            ) : (
+              <StatusBadge status={product.availability} />
+            )}
           </span>
         )}
       </button>
@@ -184,6 +195,11 @@ export function ProductTile({
             <strong className="catalogue-price">
               {money(product.sellingPriceMinor)}
             </strong>
+            {quantity !== null && product.availability === "UNAVAILABLE" && (
+              <span className="catalogue-stock-label">
+                {unavailableLabel(product)}
+              </span>
+            )}
           </div>
         </>
       )}
@@ -211,27 +227,32 @@ export function ProductDetailPurchase({
   onAdd: () => void;
   onSetQuantity: (quantity: number) => void;
 }) {
+  const priced = hasConfiguredSellingPrice(product.sellingPriceMinor);
+  const unavailable = !priced || product.availability !== "AVAILABLE";
+  const label = unavailableLabel(product);
   return (
     <div className="catalogue-detail-purchase catalogue-detail-purchase--shopping">
-      <strong>{money(product.sellingPriceMinor)}</strong>
+      <strong>
+        {priced ? money(product.sellingPriceMinor) : "Unavailable"}
+      </strong>
       {quantity === null ? (
         <Button
           className="catalogue-add"
-          disabled={orderingDisabled || paymentFrozen}
+          disabled={orderingDisabled || paymentFrozen || unavailable}
           onClick={onAdd}
         >
-          Add to Basket
+          {unavailable ? label : "Add to Basket"}
         </Button>
       ) : (
         <div className="catalogue-detail-quantity">
-          <span>In your basket</span>
+          <span>{unavailable ? label : "In your basket"}</span>
           <QuantitySelector
             label={`Quantity for ${product.name}`}
             quantity={quantity}
             minimum={0}
             maximum={MAX_LINE_QUANTITY}
             disabled={paymentFrozen}
-            incrementDisabled={orderingDisabled}
+            incrementDisabled={orderingDisabled || unavailable}
             onDecrement={() => onSetQuantity(quantity - 1)}
             onIncrement={() => onSetQuantity(quantity + 1)}
           />
@@ -553,6 +574,11 @@ export function CatalogueApp({
   const supportWhatsApp = suppliedSupportWhatsApp ?? configuredSupportWhatsApp;
   const { state, controller, controls, refresh, refreshing } = useCatalogue();
   const checkout = useCheckout();
+  const basketControlsDisabled =
+    checkout.state.paymentFrozen ||
+    ["loading", "restore-error", "conflict"].includes(
+      checkout.state.basketPhase,
+    );
   const payment = usePayment();
   const orders = useOrders();
   const customer = useCustomer();
@@ -867,7 +893,7 @@ export function CatalogueApp({
         !state.assignment ||
         checkout.state.assignment?.outletId !== state.assignment.outlet.id
       }
-      paymentFrozen={checkout.state.paymentFrozen}
+      paymentFrozen={basketControlsDisabled}
       onAdd={() => addProduct(p)}
       onSetQuantity={(quantity) =>
         checkout.controller.setQuantity(p.outletProductId, quantity)
@@ -908,7 +934,9 @@ export function CatalogueApp({
         ? "browse"
         : route === "orders" || orderDetailId
           ? "orders"
-          : "transaction";
+          : route === "cart" && payment.state.phase !== "paid"
+            ? "basket"
+            : "transaction";
   if (needsDeliverySetup) {
     return (
       <div className="mx-auto max-w-[430px]">
@@ -1013,7 +1041,17 @@ export function CatalogueApp({
                 : "home",
         )
       }
-      sticky={detailId ? detailPurchase : undefined}
+      sticky={
+        detailId ? (
+          detailPurchase
+        ) : route === "cart" ? (
+          <BasketCheckoutAction
+            state={checkout.state}
+            controller={checkout.controller}
+            placement="shell"
+          />
+        ) : undefined
+      }
       outlet={state.assignment?.outlet}
       restoreScrollTop={scrollPositions.current.get(route) ?? 0}
       embeddedHost={embeddedHost}
@@ -1114,6 +1152,7 @@ export function CatalogueApp({
             )}
             {route === "cart" ? (
               <CartScreen
+                checkoutActionPlacement="shell"
                 state={checkout.state}
                 controller={checkout.controller}
                 payment={{
@@ -1315,8 +1354,14 @@ export function CatalogueApp({
                       <ProductImage url={p.imageUrl} name={p.name} />
                       <div className="catalogue-detail-info">
                         <h2>{p.name}</h2>
-                        <strong>{money(p.sellingPriceMinor)}</strong>
-                        {p.availability !== "AVAILABLE" && <p>Unavailable</p>}
+                        <strong>
+                          {hasConfiguredSellingPrice(p.sellingPriceMinor)
+                            ? money(p.sellingPriceMinor)
+                            : "Unavailable"}
+                        </strong>
+                        {p.availability !== "AVAILABLE" && (
+                          <p>{unavailableLabel(p)}</p>
+                        )}
                         <section
                           className="catalogue-detail-metadata"
                           aria-label="Product information"
@@ -1356,7 +1401,7 @@ export function CatalogueApp({
                               line.outletProductId === product.outletProductId,
                           )?.quantity ?? null
                         }
-                        paymentFrozen={checkout.state.paymentFrozen}
+                        paymentFrozen={basketControlsDisabled}
                         onSetQuantity={(quantity) =>
                           checkout.controller.setQuantity(
                             product.outletProductId,
@@ -1368,7 +1413,7 @@ export function CatalogueApp({
                           state.readOnly ||
                           state.renewing ||
                           Boolean(state.renewalError) ||
-                          checkout.state.paymentFrozen ||
+                          basketControlsDisabled ||
                           !state.assignment ||
                           checkout.state.assignment?.outletId !==
                             state.assignment.outlet.id
@@ -1408,7 +1453,7 @@ export function CatalogueApp({
                                   product.outletProductId,
                               )?.quantity ?? null
                             }
-                            paymentFrozen={checkout.state.paymentFrozen}
+                            paymentFrozen={basketControlsDisabled}
                             onSetQuantity={(quantity) =>
                               checkout.controller.setQuantity(
                                 product.outletProductId,
@@ -1421,7 +1466,7 @@ export function CatalogueApp({
                               state.readOnly ||
                               state.renewing ||
                               Boolean(state.renewalError) ||
-                              checkout.state.paymentFrozen ||
+                              basketControlsDisabled ||
                               !state.assignment ||
                               checkout.state.assignment?.outletId !==
                                 state.assignment.outlet.id

@@ -9,6 +9,8 @@ export class CatalogueRefreshCoordinator {
   private disposed = false;
   private listeners = new Set<() => void>();
   private readonly unsubscribe: (() => void)[];
+  private authenticatedBinding: object | null = null;
+  private needsRecoveryRefresh = false;
   constructor(
     private readonly catalogue: CatalogueController,
     private readonly customer: CustomerDataController,
@@ -25,8 +27,10 @@ export class CatalogueRefreshCoordinator {
   private binding(): Binding {
     const s = this.session.getSnapshot(),
       c = this.customer.getSnapshot();
+    if (s.phase !== "authenticated") this.authenticatedBinding = null;
+    else this.authenticatedBinding ??= {};
     return {
-      session: s.phase === "authenticated" ? s : null,
+      session: this.authenticatedBinding,
       address: this.customer.selectedAddress(),
       phase:
         c.profilePhase === "error" || c.listPhase === "error"
@@ -38,7 +42,22 @@ export class CatalogueRefreshCoordinator {
     };
   }
   private sync() {
-    if (!this.disposed) void this.catalogue.bind(this.binding());
+    const state = this.session.getSnapshot();
+    if (state.phase !== "authenticated") this.needsRecoveryRefresh = false;
+    if (state.phase === "authenticated" && state.recovery === "authorizing")
+      this.needsRecoveryRefresh = true;
+    if (
+      state.phase === "authenticated" &&
+      !state.recovery &&
+      this.needsRecoveryRefresh
+    ) {
+      const existingTask = this.task;
+      void this.refresh(true);
+      if (!existingTask && this.task) this.needsRecoveryRefresh = false;
+      return;
+    }
+    if (!this.disposed && !(state.phase === "authenticated" && state.recovery))
+      void this.catalogue.bind(this.binding());
   }
   getSnapshot = () => this.refreshing;
   subscribe = (listener: () => void) => {
@@ -51,33 +70,36 @@ export class CatalogueRefreshCoordinator {
     this.refreshing = value;
     this.listeners.forEach((l) => l());
   }
-  refresh = (): Promise<boolean> => {
+  refresh = (forceAssignment = false): Promise<boolean> => {
     if (this.task) return this.task;
+    const sessionState = this.session.getSnapshot();
     if (
       this.disposed ||
-      this.session.getSnapshot().phase !== "authenticated" ||
+      sessionState.phase !== "authenticated" ||
+      sessionState.recovery ||
       this.customer.getSnapshot().busy ||
       this.customer.getSnapshot().canRetryOperation
     )
       return Promise.resolve(false);
     this.task = Promise.resolve()
-      .then(() => this.run())
+      .then(() => this.run(forceAssignment))
       .finally(() => {
         this.task = null;
         if (!this.disposed) {
-          this.sync();
           this.setRefreshing(false);
+          this.sync();
         }
       });
     this.setRefreshing(true);
     return this.task;
   };
-  private async run(): Promise<boolean> {
+  private async run(forceAssignment: boolean): Promise<boolean> {
     const customerReady = await this.customer.refresh();
     if (this.disposed || this.session.getSnapshot().phase !== "authenticated")
       return false;
     const success =
-      customerReady && (await this.catalogue.refresh(this.binding()));
+      customerReady &&
+      (await this.catalogue.refresh(this.binding(), forceAssignment));
     const state = this.catalogue.getSnapshot();
     if (
       !success &&

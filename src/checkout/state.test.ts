@@ -84,6 +84,37 @@ function fixture(
 }
 
 describe("real cart invariants", () => {
+  it.each([0, -1, NaN, Infinity, 1.5, null, undefined])(
+    "rejects stale unconfigured retail price %s without changing basket",
+    (price) => {
+      const { controller } = fixture();
+      expect(() =>
+        controller.add(
+          { ...product(), sellingPriceMinor: price as number },
+          assignmentA,
+        ),
+      ).toThrow("CART_PRODUCT_UNAVAILABLE");
+      expect(controller.getSnapshot().lines).toHaveLength(0);
+    },
+  );
+
+  it("keeps stock-affected lines and associates only an owned product identifier", async () => {
+    const { controller, create } = fixture();
+    controller.add(product(), assignmentA);
+    create.mockRejectedValueOnce(
+      new QuoteError("CHECKOUT_INSUFFICIENT_STOCK", id("2")),
+    );
+    await controller.requestQuote();
+    expect(controller.getSnapshot()).toMatchObject({
+      error: "CHECKOUT_INSUFFICIENT_STOCK",
+      affectedOutletProductId: id("2"),
+      quote: null,
+    });
+    expect(controller.getSnapshot().lines).toHaveLength(1);
+    controller.remove(id("2"));
+    expect(controller.getSnapshot().lines).toHaveLength(0);
+    expect(controller.getSnapshot().affectedOutletProductId).toBeNull();
+  });
   it("merges only identical outletProductId lines and preserves display snapshots", () => {
     const { controller } = fixture();
     controller.add(product(), assignmentA);

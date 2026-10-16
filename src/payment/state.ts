@@ -32,6 +32,7 @@ type PaymentBridgePort = {
 type SessionPort = {
   getSnapshot(): { phase: string };
   subscribe(listener: () => void): () => void;
+  resume?(): Promise<boolean>;
 };
 
 type TrustedQuote = Pick<
@@ -116,6 +117,7 @@ export class PaymentController {
   private generation = 0;
   private readonly unsubscribeSession: () => void;
   private sessionPhase: string;
+  private recoveryObservation: Promise<void> | null = null;
 
   constructor(
     private readonly api: PaymentApiPort,
@@ -238,6 +240,7 @@ export class PaymentController {
     this.returnedToCheckout = true;
     this.returnChecksComplete = false;
     const observe = async () => {
+      if (this.session.resume && !(await this.session.resume())) return;
       for (let index = 0; index < 3; index += 1) {
         if (
           generation !== this.generation ||
@@ -339,6 +342,7 @@ export class PaymentController {
     } catch (error) {
       if (generation !== this.generation) return;
       const code = codeOf(error);
+      if (this.preserveDuringRecovery(code)) return;
       // Keep the exact source intent/key across transport uncertainty and invalid evidence.
       // Invalid evidence offers status checking only; a later valid observation may recover.
       const canRetryPayment =
@@ -417,6 +421,7 @@ export class PaymentController {
     } catch (error) {
       if (generation !== this.generation) return;
       const code = codeOf(error);
+      if (this.preserveDuringRecovery(code)) return;
       const canRetryInitiation = uncertainCreateErrors.has(code);
       if (!canRetryInitiation) {
         this.attempt = null;
@@ -494,6 +499,7 @@ export class PaymentController {
     } catch (error) {
       if (generation !== this.generation) return;
       const code = codeOf(error);
+      if (this.preserveDuringRecovery(code)) return;
       this.update({
         ...empty(
           code === "CUSTOMER_SESSION_INVALID" ? "session-expired" : "error",
@@ -509,6 +515,40 @@ export class PaymentController {
       });
       if (code === "CUSTOMER_SESSION_INVALID") this.clearPayment();
     }
+  }
+
+  private preserveDuringRecovery(code: string): boolean {
+    if (
+      code !== "CUSTOMER_SESSION_INVALID" ||
+      this.session.getSnapshot().phase !== "authenticated" ||
+      !this.session.resume
+    )
+      return false;
+    this.checkoutUrl = null;
+    this.trustedQuote = null;
+    this.update({
+      ...this.state,
+      phase: this.paymentReceived ? "paid-processing" : "error",
+      error: code,
+      canRetryPayment: false,
+      canRetryInitiation: false,
+    });
+    if (this.state.paymentIntentId && !this.recoveryObservation) {
+      const generation = this.generation;
+      const observe = Promise.resolve()
+        .then(async () => {
+          if (!(await this.session.resume!())) return;
+          await this.statusCheck;
+          await this.returnObservation;
+          if (generation === this.generation) await this.handleReturn();
+        })
+        .finally(() => {
+          if (this.recoveryObservation === observe)
+            this.recoveryObservation = null;
+        });
+      this.recoveryObservation = observe;
+    }
+    return true;
   }
 
   private applyResult(result: PaymentResult, paymentIntentId: string): void {

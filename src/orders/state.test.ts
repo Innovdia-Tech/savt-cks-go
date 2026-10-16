@@ -181,6 +181,195 @@ const api = (
 });
 
 describe("OrdersController", () => {
+  it("revalidates once and repeats only the requested order-list read", async () => {
+    let reads = 0;
+    let recoveries = 0;
+    const session = Object.assign(new SessionStub(), {
+      resume: async () => {
+        ++recoveries;
+        return true;
+      },
+    });
+    const controller = new OrdersController(
+      api({
+        list: async (requestedPage, pageSize) => {
+          expect([requestedPage, pageSize]).toEqual([2, 10]);
+          if (++reads === 1) throw new OrdersError("CUSTOMER_SESSION_INVALID");
+          return page(2, 2);
+        },
+      }),
+      session,
+    );
+    await controller.load(2, 10);
+    expect(controller.getSnapshot()).toMatchObject({
+      listPhase: "ready",
+      listError: null,
+      page: { meta: { page: 2 } },
+    });
+    expect([reads, recoveries]).toEqual([2, 1]);
+    controller.dispose();
+  });
+
+  it("restores the requested tracking detail and documents after revalidation", async () => {
+    let reads = 0;
+    const session = Object.assign(new SessionStub(), {
+      resume: async () => true,
+    });
+    const controller = new OrdersController(
+      api({
+        detail: async (requested) => {
+          expect(requested).toBe(orderId);
+          if (++reads === 1) throw new OrdersError("CUSTOMER_SESSION_INVALID");
+          return detail();
+        },
+      }),
+      session,
+    );
+    await controller.open(orderId);
+    expect(controller.getSnapshot()).toMatchObject({
+      detailPhase: "ready",
+      detail: { orderId },
+      documentsPhase: "ready",
+    });
+    expect(reads).toBe(2);
+    controller.dispose();
+  });
+
+  it("refreshes document metadata after expiry without downloading a receipt", async () => {
+    let reads = 0;
+    let downloads = 0;
+    const session = Object.assign(new SessionStub(), {
+      resume: async () => true,
+    });
+    const controller = new OrdersController(
+      api({
+        documents: async (requested) => {
+          if (++reads === 1) throw new OrdersError("CUSTOMER_SESSION_INVALID");
+          return {
+            orderId: requested,
+            paymentReceiptAvailable: false,
+            finalSalesReceiptAvailable: false,
+            paymentReceipt: null,
+            finalSalesReceipt: null,
+          };
+        },
+        downloadReceipt: async () => {
+          ++downloads;
+          return new Blob(["pdf"]);
+        },
+        downloadPaymentReceipt: async () => {
+          ++downloads;
+          return new Blob(["pdf"]);
+        },
+      }),
+      session,
+    );
+    await controller.open(orderId);
+    expect(controller.getSnapshot()).toMatchObject({
+      detailPhase: "ready",
+      detail: { orderId },
+      documentsPhase: "ready",
+      documents: { orderId },
+    });
+    expect([reads, downloads]).toEqual([2, 0]);
+    controller.dispose();
+  });
+
+  it("stops after one revalidated read when the server still rejects the session", async () => {
+    let reads = 0;
+    let recoveries = 0;
+    const session = Object.assign(new SessionStub(), {
+      resume: async () => {
+        ++recoveries;
+        return true;
+      },
+    });
+    const controller = new OrdersController(
+      api({
+        list: async () => {
+          ++reads;
+          throw new OrdersError("CUSTOMER_SESSION_INVALID");
+        },
+      }),
+      session,
+    );
+    await controller.load();
+    expect(controller.getSnapshot()).toMatchObject({
+      listPhase: "session-expired",
+      page: null,
+    });
+    expect([reads, recoveries]).toEqual([2, 1]);
+    controller.dispose();
+  });
+
+  it("does not repeat a read after native revalidation is denied", async () => {
+    let reads = 0;
+    let recoveries = 0;
+    const session = Object.assign(new SessionStub(), {
+      resume: async () => {
+        ++recoveries;
+        return false;
+      },
+    });
+    const controller = new OrdersController(
+      api({
+        list: async () => {
+          ++reads;
+          throw new OrdersError("CUSTOMER_SESSION_INVALID");
+        },
+      }),
+      session,
+    );
+    await controller.load();
+    expect(controller.getSnapshot()).toMatchObject({
+      listPhase: "session-expired",
+      page: null,
+    });
+    expect([reads, recoveries]).toEqual([1, 1]);
+    controller.dispose();
+  });
+
+  it.each(["close", "logout"] as const)(
+    "fences an expired detail read when %s occurs during revalidation",
+    async (action) => {
+      let reads = 0;
+      let resolve!: (valid: boolean) => void;
+      let recoveryStarted!: () => void;
+      const started = new Promise<void>((done) => {
+        recoveryStarted = done;
+      });
+      const pending = new Promise<boolean>((done) => {
+        resolve = done;
+      });
+      const session = Object.assign(new SessionStub(), {
+        resume: () => {
+          recoveryStarted();
+          return pending;
+        },
+      });
+      const controller = new OrdersController(
+        api({
+          detail: async () => {
+            ++reads;
+            throw new OrdersError("CUSTOMER_SESSION_INVALID");
+          },
+        }),
+        session,
+      );
+      const opening = controller.open(orderId);
+      await started;
+      if (action === "close") controller.closeDetail();
+      else session.set("expired");
+      const fenced = controller.getSnapshot();
+      resolve(true);
+      await opening;
+      expect(reads).toBe(1);
+      expect(controller.getSnapshot()).toBe(fenced);
+      expect(controller.getSnapshot().detail).toBeNull();
+      controller.dispose();
+    },
+  );
+
   it("does not expose cancellation commands even for a stale capability", async () => {
     const controller = new OrdersController(api(), new SessionStub());
     await controller.open(orderId);
@@ -463,6 +652,143 @@ const documents = (id = orderId) => ({
 });
 
 describe("paid order documents", () => {
+  it.each(["payment", "final"] as const)(
+    "keeps a %s delivery-breakdown filename within the native save boundary",
+    async (kind) => {
+      const order = detailWithReceipt();
+      Object.assign(order.receipt, {
+        receiptReference: "R".repeat(150),
+        presentationDownloadUrl:
+          order.receipt.downloadPath + "?presentationVersion=2",
+      });
+      const capabilities = documents();
+      Object.assign(capabilities.paymentReceipt, {
+        receiptReference: "R".repeat(150),
+        presentationDownloadUrl:
+          capabilities.paymentReceipt.downloadPath + "?presentationVersion=2",
+      });
+      const controller = new OrdersController(
+        api({ detail: async () => order, documents: async () => capabilities }),
+        new SessionStub(),
+      );
+      await controller.open(orderId);
+      const receipt = await (kind === "payment"
+        ? controller.downloadPaymentReceipt(true, true)
+        : controller.downloadReceipt(true, true));
+      expect(receipt?.filename).toHaveLength(120);
+      expect(receipt?.filename).toMatch(/-Delivery-Breakdown\.pdf$/);
+      expect(receipt?.completeSave).toBeTypeOf("function");
+      controller.dispose();
+    },
+  );
+
+  it.each(["payment", "final"] as const)(
+    "fences a late %s presentation download after session loss",
+    async (kind) => {
+      const pending = deferredReceipt();
+      const session = new SessionStub();
+      const order = detailWithReceipt();
+      Object.assign(order.receipt, {
+        presentationDownloadUrl:
+          order.receipt.downloadPath + "?presentationVersion=2",
+      });
+      const capabilities = documents();
+      Object.assign(capabilities.paymentReceipt, {
+        presentationDownloadUrl:
+          capabilities.paymentReceipt.downloadPath + "?presentationVersion=2",
+      });
+      const download = async () => pending.promise;
+      const controller = new OrdersController(
+        api({
+          detail: async () => order,
+          documents: async () => capabilities,
+          downloadReceipt: download,
+          downloadPaymentReceipt: download,
+        }),
+        session,
+      );
+      await controller.open(orderId);
+      const result =
+        kind === "payment"
+          ? controller.downloadPaymentReceipt(true, true)
+          : controller.downloadReceipt(true, true);
+      session.set("expired");
+      const expiredState = controller.getSnapshot();
+      pending.resolve(new Blob(["%PDF-1.7"], { type: "application/pdf" }));
+      expect(await result).toBeNull();
+      expect(controller.getSnapshot()).toBe(expiredState);
+      expect(expiredState.detail).toBeNull();
+    },
+  );
+
+  it.each(["payment", "final"] as const)(
+    "selects the canonical %s presentation by default and retains explicit original download",
+    async (kind) => {
+      const order = detailWithReceipt();
+      const path = `/api/v1/orders/${orderId}/${kind === "payment" ? "payment-receipt" : "receipt"}/download`;
+      const presentationDownloadUrl = path + "?presentationVersion=2";
+      Object.assign(order.receipt, {
+        presentationDownloadUrl: `/api/v1/orders/${orderId}/receipt/download?presentationVersion=2`,
+      });
+      const capabilities = documents();
+      Object.assign(capabilities.paymentReceipt, {
+        presentationDownloadUrl: `/api/v1/orders/${orderId}/payment-receipt/download?presentationVersion=2`,
+      });
+      const calls: string[] = [];
+      const download = async (_id: string, requested: string) => {
+        calls.push(requested);
+        return new Blob(["%PDF-1.7"], { type: "application/pdf" });
+      };
+      const controller = new OrdersController(
+        api({
+          detail: async () => order,
+          documents: async () => capabilities,
+          downloadReceipt: download,
+          downloadPaymentReceipt: download,
+        }),
+        new SessionStub(),
+      );
+      await controller.open(orderId);
+      expect(calls).toEqual([]);
+      const canonical = await (kind === "payment"
+        ? controller.downloadPaymentReceipt()
+        : controller.downloadReceipt());
+      expect(calls).toEqual([presentationDownloadUrl]);
+      expect(canonical?.filename).not.toContain("Delivery-Breakdown");
+      const original = await (kind === "payment"
+        ? controller.downloadPaymentReceipt(false, false)
+        : controller.downloadReceipt(false, false));
+      expect(calls).toEqual([presentationDownloadUrl, path]);
+      expect(original?.filename).not.toContain("Delivery-Breakdown");
+    },
+  );
+  it.each(["payment", "final"] as const)(
+    "does not substitute the original %s receipt if a presentation capability is absent",
+    async (kind) => {
+      let downloads = 0;
+      const download = async () => {
+        downloads++;
+        return new Blob(["%PDF-1.7"], { type: "application/pdf" });
+      };
+      const controller = new OrdersController(
+        api({
+          detail: async () => detailWithReceipt(),
+          documents: async () => documents(),
+          downloadReceipt: download,
+          downloadPaymentReceipt: download,
+        }),
+        new SessionStub(),
+      );
+      await controller.open(orderId);
+      expect(
+        await (kind === "payment"
+          ? controller.downloadPaymentReceipt(false, true)
+          : controller.downloadReceipt(false, true)),
+      ).toBeNull();
+      expect(downloads).toBe(0);
+    },
+  );
+
   const port = (overrides = {}) => ({
     ...api(),
     documents: async (id: string) => documents(id),
@@ -470,6 +796,44 @@ describe("paid order documents", () => {
       new Blob(["%PDF-1.7"], { type: "application/pdf" }),
     ...overrides,
   });
+
+  it.each(["payment", "final"] as const)(
+    "retains tracking after recoverable %s receipt expiry and requires an explicit new download",
+    async (kind) => {
+      let downloads = 0;
+      const download = async () => {
+        if (++downloads === 1)
+          throw new OrdersError("CUSTOMER_SESSION_INVALID");
+        return new Blob(["%PDF-1.7"], { type: "application/pdf" });
+      };
+      const session = Object.assign(new SessionStub(), {
+        resume: async () => true,
+      });
+      const controller = new OrdersController(
+        port({
+          detail: async () => detailWithReceipt(),
+          downloadReceipt: download,
+          downloadPaymentReceipt: download,
+        }),
+        session,
+      );
+      await controller.open(orderId);
+      const request = () =>
+        kind === "payment"
+          ? controller.downloadPaymentReceipt()
+          : controller.downloadReceipt();
+      expect(await request()).toBeNull();
+      expect(downloads).toBe(1);
+      expect(controller.getSnapshot()).toMatchObject({
+        detailPhase: "ready",
+        detail: { orderId },
+        documentsPhase: "ready",
+      });
+      expect(await request()).not.toBeNull();
+      expect(downloads).toBe(2);
+      controller.dispose();
+    },
+  );
 
   it.each([true, false])(
     "bounds only embedded filenames for payment=%s",
@@ -698,8 +1062,16 @@ describe("paid order documents", () => {
       port({ documents: () => pending }),
       new SessionStub(),
     );
+    const documentsLoading = new Promise<void>((ready) => {
+      const unsubscribe = controller.subscribe(() => {
+        if (controller.getSnapshot().documentsPhase === "loading") {
+          unsubscribe();
+          ready();
+        }
+      });
+    });
     const opening = controller.open(orderId);
-    await Promise.resolve();
+    await documentsLoading;
     expect(controller.getSnapshot().documentsPhase).toBe("loading");
     controller.closeDetail();
     resolve(documents());

@@ -404,11 +404,11 @@ export class CatalogueController {
         }),
     ]);
   }
-  async refresh(binding: Binding): Promise<boolean> {
+  async refresh(binding: Binding, forceAssignment = false): Promise<boolean> {
     const generation = this.generation;
     const rebound = this.bind(binding);
     if (generation !== this.generation) return (await rebound) ?? false;
-    return this.load(true);
+    return this.load(true, forceAssignment);
   }
   private armExpiry(a: Assignment) {
     clearTimeout(this.timer);
