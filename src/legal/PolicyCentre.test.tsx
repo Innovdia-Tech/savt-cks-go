@@ -18,7 +18,7 @@ describe("policy centre presentation", () => {
     expect(html).toContain("Delivery Policy");
     expect(html).toContain("Cancellation &amp; Refund Policy");
     expect(html).toContain("Privacy Notice");
-    expect(html.match(/Not published yet/g)).toHaveLength(4);
+    expect(html.match(/Not available yet/g)).toHaveLength(4);
     expect(html).not.toContain("<time");
     expect(html).not.toContain("Version");
     expect(html).not.toContain("<a ");
@@ -35,7 +35,7 @@ describe("policy centre presentation", () => {
     );
 
     expect(html).toContain("Cancellation &amp; Refund Policy");
-    expect(html).toContain("Not published yet");
+    expect(html).toContain("Not available yet");
     expect(html).toContain("Back to Legal &amp; Policies");
     expect(html).toContain("Return to checkout");
     expect(html).not.toContain("<time");
@@ -56,7 +56,7 @@ describe("policy centre presentation", () => {
 
     expect(html).toContain("Loading policies");
     expect(html).toContain('role="status"');
-    expect(html).not.toContain("Not published yet");
+    expect(html).not.toContain("Not available yet");
     expect(html).not.toContain("<time");
   });
 
@@ -178,7 +178,9 @@ describe("restricted policy preview", () => {
       html.match(/class="customer-button legal-policy-row"/g),
     ).toHaveLength(4);
     expect(html).not.toContain("disabled=");
-    expect(html).toMatch(/draft/i);
+    expect(html).not.toContain("DRAFT");
+    expect(html).not.toContain("Restricted preview");
+    expect(html).not.toContain("<footer");
     for (const policy of draftPolicyPreview.policies) {
       expect(html).toContain(escaped(policy.title));
       expect(html).toContain(escaped(policy.subtitle));
@@ -202,6 +204,8 @@ describe("restricted policy preview", () => {
       expect(html).toContain("Back to Legal &amp; Policies");
       expect(html).toContain("Return to checkout");
       expect(html).toContain("Jump to section");
+      expect(html).not.toContain("DRAFT · NOT EFFECTIVE");
+      expect(html).not.toContain("policies are not published");
       for (const section of policy.sections) {
         expect(html).toContain(escaped(section.heading));
         for (const paragraph of section.paragraphs) {
@@ -249,7 +253,7 @@ describe("restricted policy preview", () => {
         onClose: () => {},
       }),
     );
-    expect(empty).toContain("Not published yet");
+    expect(empty).toContain("Not available yet");
     expect(empty).not.toContain(
       escaped(draftPolicyPreview.policies[0].sections[0].paragraphs[0]),
     );

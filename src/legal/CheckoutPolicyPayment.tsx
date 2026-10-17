@@ -90,7 +90,7 @@ export function CheckoutPolicyPayment({
           />
           <p>
             {preview
-              ? "Draft policies for review. No acceptance is recorded."
+              ? "Shopping, delivery, refunds and privacy—explained clearly."
               : gateway
                 ? "View available policies."
                 : "Policies are not available yet."}

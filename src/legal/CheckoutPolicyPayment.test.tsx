@@ -24,7 +24,7 @@ describe("checkout policy agreement", () => {
     );
     expect(html).toContain("Legal &amp; Policies");
     expect(html).toContain(
-      "Draft policies for review. No acceptance is recorded.",
+      "Shopping, delivery, refunds and privacy—explained clearly.",
     );
     expect(html).toContain("Payments are disabled in this restricted preview.");
     expect(html).not.toContain('type="checkbox"');

@@ -80,13 +80,10 @@ function DraftPolicyReader({ policy }: { policy: DraftPolicy }) {
   const sectionHeadings = useRef<Array<HTMLHeadingElement | null>>([]);
   return (
     <article className="legal-reader legal-reader--draft">
-      <div className="legal-draft-metadata">
-        <span className="ui-status ui-status--warning legal-draft-badge">
-          DRAFT · NOT EFFECTIVE
-        </span>
+      <div className="legal-reader-overview">
+        <p className="legal-reader-subtitle">{policy.subtitle}</p>
         <span className="legal-read-time">{policy.time}</span>
       </div>
-      <p className="legal-reader-subtitle">{policy.subtitle}</p>
       <details className="legal-toc">
         <summary>Jump to section</summary>
         <nav aria-label="Policy sections">
@@ -342,12 +339,6 @@ export function PolicyCentre({
         {!selected && draftPolicies && (
           <div className="legal-hub-intro">
             <p>Shopping, delivery, refunds and privacy—explained clearly.</p>
-            <span className="ui-status ui-status--warning legal-draft-badge">
-              DRAFT · REVIEW ONLY
-            </span>
-            <p className="legal-draft-note">
-              Preview content only. No customer acceptance is recorded.
-            </p>
           </div>
         )}
 
@@ -356,7 +347,7 @@ export function PolicyCentre({
           read.phase === "ready" &&
           read.policies.length === 0 && (
             <p className="legal-feedback" role="status">
-              Published policies will appear here when available.
+              Policies will appear here when available.
             </p>
           )}
 
@@ -371,7 +362,7 @@ export function PolicyCentre({
           ) : (
             read.phase === "ready" && (
               <div className="customer-card legal-empty">
-                <p>Not published yet</p>
+                <p>Not available yet</p>
               </div>
             )
           )
@@ -407,9 +398,9 @@ export function PolicyCentre({
                           : policy
                             ? `Version ${policy.version}`
                             : read.phase === "ready"
-                              ? "Not published yet"
+                              ? "Not available yet"
                               : read.phase === "loading"
-                                ? "Checking publication…"
+                                ? "Checking availability…"
                                 : "Unavailable"}
                       </span>
                     </span>
@@ -426,16 +417,11 @@ export function PolicyCentre({
         )}
       </div>
 
-      {(returnLabel || draftPolicies) && (
+      {returnLabel && (
         <footer className="legal-footer">
-          {draftPolicies && (
-            <p>CKS GO · Restricted preview — policies are not published</p>
-          )}
-          {returnLabel && (
-            <button type="button" className="customer-button" onClick={onClose}>
-              {returnLabel}
-            </button>
-          )}
+          <button type="button" className="customer-button" onClick={onClose}>
+            {returnLabel}
+          </button>
         </footer>
       )}
     </dialog>
