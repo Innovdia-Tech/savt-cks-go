@@ -1,0 +1,223 @@
+{
+  "bundleVersion": "preview-0.1",
+  "status": "DRAFT_PREVIEW_ONLY",
+  "preparedDate": "2026-10-17",
+  "effectiveDate": null,
+  "scope": "CKS Go customer webview; no production publication; no checkout consent activation",
+  "policies": [
+    {
+      "id": "terms",
+      "title": "Terms & Conditions",
+      "subtitle": "Using CKS Go, placing orders and making payments",
+      "time": "4 min read",
+      "sections": [
+        {
+          "heading": "1. About CKS Go",
+          "paragraphs": [
+            "CKS Go is an online ordering and delivery service for eligible products offered through participating CKS outlets. It is accessed through the Savt app or another authorised CKS Go entry point.",
+            "These terms apply to your use of CKS Go. Separate Savt account, membership, Savt Cash and payment-provider terms may also apply to their respective services. The legal contracting entity and contact details must be confirmed before publication."
+          ]
+        },
+        {
+          "heading": "2. Your account and information",
+          "paragraphs": [
+            "To place an order, you must use an authorised Savt member session and provide accurate delivery and contact information. Keep your account access secure and check the selected delivery address and outlet before paying.",
+            "You are responsible for information you submit for an order. If details are incorrect or change, contact Get help promptly; changes after payment are not guaranteed."
+          ]
+        },
+        {
+          "heading": "3. Products, availability and prices",
+          "paragraphs": [
+            "Product availability, outlet serviceability and prices are checked when you request a checkout quote. Adding a product to your basket does not reserve stock or fix its price.",
+            "The checkout summary shows merchandise prices, eligible discounts, delivery charges and any applicable processing or small-order fee. The final payable amount shown in the valid quote is used for payment. If an address, outlet, product or other material selection changes before payment, a new quote may be required."
+          ]
+        },
+        {
+          "heading": "4. Payment and order confirmation",
+          "paragraphs": [
+            "CKS Go sends the payment request securely to Savt Payment. Savt handles the GKash checkout and verifies the payment result. CKS Go treats an order as paid only after it receives an authenticated confirmation from Savt; a browser return screen alone does not confirm payment.",
+            "If a payment fails or remains pending, check the displayed status before starting another payment attempt. Do not assume that closing the checkout means an earlier payment was cancelled. Contact Get help if you suspect a duplicate charge."
+          ]
+        },
+        {
+          "heading": "5. Order changes and cancellations",
+          "paragraphs": [
+            "After an order is confirmed paid, customers cannot change or cancel it directly in CKS Go. Contact Get help if you have a problem. An authorised operational team may review an exception, but a request does not guarantee cancellation or a refund.",
+            "Fulfilment exceptions and refunds are addressed in our Cancellation & Refund Policy."
+          ]
+        },
+        {
+          "heading": "6. Delivery, receipts and rewards",
+          "paragraphs": [
+            "Delivery is available only for addresses that CKS Go can serve. Any shown delivery estimate is based on the information available at checkout and may vary with outlet operations, traffic and other real-world conditions. See the Delivery Policy for details.",
+            "Payment, fulfilment and final sales documents may become available at different stages of an order. Any eligible Savt Cash benefits are subject to the applicable Savt programme and transaction rules; they should not be assumed merely from starting an order."
+          ]
+        },
+        {
+          "heading": "7. Support and your rights",
+          "paragraphs": [
+            "Use Get help in CKS Go to report order, payment or delivery issues. We may review relevant transaction, fulfilment and delivery evidence to resolve a case.",
+            "These terms do not exclude rights or remedies that cannot be excluded under applicable Malaysian law. The effective version, publisher and contact details will be displayed once approved for publication."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "delivery",
+      "title": "Delivery Policy",
+      "subtitle": "Coverage, delivery fees, timing and handover",
+      "time": "3 min read",
+      "sections": [
+        {
+          "heading": "1. Where we deliver",
+          "paragraphs": [
+            "CKS Go serves eligible delivery addresses through participating CKS outlets. Available outlets and whether an address can be served depend on the road route and the outlet's configured delivery area.",
+            "Before placing an order, choose the correct delivery address and confirm the outlet shown by the app. If your location cannot be validated or is outside the service area, checkout may be unavailable."
+          ]
+        },
+        {
+          "heading": "2. Delivery charges",
+          "paragraphs": [
+            "The delivery fee is calculated for the selected outlet and delivery address using the applicable distance-based rules. Eligible delivery discounts, if any, appear in the checkout summary.",
+            "Any separate processing or small-order fee is shown before payment. You will see the total amount payable in the valid checkout quote. Changing the address or outlet before payment may require an updated quote and price."
+          ]
+        },
+        {
+          "heading": "3. Estimated delivery time",
+          "paragraphs": [
+            "The delivery estimate can include outlet preparation, picking, packing and travel time. Road and traffic information is used where available. The estimate is a guide, not a guaranteed arrival appointment.",
+            "Actual arrival may be affected by stock availability, order volume, traffic, weather, access restrictions or operational issues. Follow order-status updates in CKS Go for the current stage; live continuous rider tracking is not part of the current service."
+          ]
+        },
+        {
+          "heading": "4. Preparing and handing over your order",
+          "paragraphs": [
+            "Once payment is verified, the outlet accepts and prepares the order. Available products are picked and checked; the order then moves to delivery. Some items may be unavailable during final picking. If only part of the order can be fulfilled, the approved refund process applies to the unavailable merchandise.",
+            "Please keep your delivery contact reachable and arrange safe access for the delivery rider. A recipient or authorised person should be available to receive the items at the confirmed address."
+          ]
+        },
+        {
+          "heading": "5. Delivery confirmation and problems",
+          "paragraphs": [
+            "The rider may collect delivery evidence, including a proof-of-delivery photo and location evidence needed for operational verification. This information is handled under our Privacy Notice.",
+            "If the rider cannot complete delivery, or if you receive incorrect, damaged or missing goods, contact Get help promptly with the order reference. The operations team will review the circumstances; a failed handover does not automatically mean an order has been cancelled or refunded."
+          ]
+        },
+        {
+          "heading": "6. Help and changes",
+          "paragraphs": [
+            "After payment, changes to the delivery address, recipient or order are not self-service features. Use Get help as soon as possible; operational changes depend on the order's current state and staff review.",
+            "Any refunds arising from an unfulfilled or failed delivery follow the Cancellation & Refund Policy and applicable consumer protections."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "refund",
+      "title": "Cancellation & Refund Policy",
+      "subtitle": "Confirmed orders, unavailable items and refund handling",
+      "time": "3 min read",
+      "sections": [
+        {
+          "heading": "1. Cancelling or changing an order",
+          "paragraphs": [
+            "Once an order has been confirmed as paid, the customer cannot cancel or amend it directly in the CKS Go app, even if the outlet has not started preparing it. A request sent through Get help does not automatically cancel the order.",
+            "Authorised CKS operations or support staff may review exceptional circumstances in line with the applicable process and your rights under Malaysian law."
+          ]
+        },
+        {
+          "heading": "2. Before payment is confirmed",
+          "paragraphs": [
+            "Products in your basket and an unpaid checkout are not a confirmed order. If payment is pending, avoid repeating payment without checking its status. Closing the payment page is not proof that a charge failed or was cancelled.",
+            "If a payment appears duplicated or its status is unclear, contact Get help with the order or payment reference so it can be investigated."
+          ]
+        },
+        {
+          "heading": "3. An item is unavailable",
+          "paragraphs": [
+            "If an outlet can deliver part of a paid order but one or more products cannot be fulfilled, the unfulfilled merchandise amount becomes eligible for an operational refund review and processing.",
+            "For an otherwise fulfilled partial order, the standard refund covers the unavailable merchandise only. Delivery and processing charges are not automatically refunded as part of that partial-fulfilment adjustment, subject to applicable law and any approved exception."
+          ]
+        },
+        {
+          "heading": "4. The whole order cannot be fulfilled",
+          "paragraphs": [
+            "If CKS Go or the outlet determines that the entire order cannot be fulfilled because of an operational failure or outlet rejection, the full refund obligation includes the net merchandise amount, the delivery charge and the processing charge paid for that order.",
+            "Other disputed or exceptional situations, including delivery issues, will be reviewed based on the order's records and applicable consumer rights; they are not automatically classified as full operational failures."
+          ]
+        },
+        {
+          "heading": "5. How refunds are processed",
+          "paragraphs": [
+            "Refunds are reviewed and coordinated by authorised CKS Go operations and finance personnel with Savt Finance where applicable. In the current service, initiating a refund requirement does not mean that money has already been returned: payment refunds are handled manually and require confirmed settlement evidence.",
+            "Refund timing and the method of return depend on the approved finance process and payment provider. We will not promise a fixed refund period before the operating team confirms one. Contact Get help to check the status of a case."
+          ]
+        },
+        {
+          "heading": "6. Reporting an issue",
+          "paragraphs": [
+            "If you receive missing, incorrect or damaged goods, believe you have been charged twice, or cannot receive your delivery, use Get help and provide the relevant order reference and details.",
+            "Your rights and remedies under applicable Malaysian consumer law remain unaffected by this policy. The legal publisher and official support contact will be confirmed before publication."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "privacy",
+      "title": "Privacy Notice",
+      "subtitle": "What information is used to fulfil your order",
+      "time": "4 min read",
+      "sections": [
+        {
+          "heading": "1. Information used in CKS Go",
+          "paragraphs": [
+            "To provide the service, CKS Go may process your Savt member identity and registered mobile number, account/session identifiers, recipient name and contact number, delivery address, basket and order details, transaction references, support requests and fulfilment records.",
+            "Where needed for serviceability and delivery evidence, the service may process the selected delivery location, route estimate and a rider's proof-of-delivery photo or location verification. CKS Go does not provide continuous live rider tracking in this phase."
+          ]
+        },
+        {
+          "heading": "2. Why we use it",
+          "paragraphs": [
+            "Information is used to authenticate customers, validate available outlets, calculate checkout totals, process orders and payments, arrange delivery, issue receipts, resolve problems, manage legitimate refunds, prevent misuse and meet applicable record-keeping obligations.",
+            "The customer's registered Savt member phone number may appear in an access-controlled staff picking ticket. Outlet staff use it to find the member in Panda POS during the manual sales process. The recipient's delivery phone is a separate field and must not be substituted for the registered member number."
+          ]
+        },
+        {
+          "heading": "3. Who needs to receive it",
+          "paragraphs": [
+            "Relevant data may be shared between the participating CKS outlet, authorised outlet or delivery personnel, the Savt platform and approved technology or financial service providers to the extent necessary for an order.",
+            "Payment initiation passes securely from CKS Go to Savt Payment. Savt handles the GKash payment request and verification and returns signed payment status to CKS Go. Card details entered at the hosted payment provider are not requested on the CKS Go checkout screen. The current CKS Go release does not directly call the Panda POS API."
+          ]
+        },
+        {
+          "heading": "4. Access, protection and retention",
+          "paragraphs": [
+            "Staff access to customer details, including the member phone on a picking ticket, should be limited to personnel with operational permission. Information is retained for the period necessary to fulfil orders, handle disputes and meet applicable legal and accounting obligations.",
+            "The exact retention schedule, contracting entity, privacy contact and any additional cross-service disclosures must be confirmed by the responsible operators before this notice is published."
+          ]
+        },
+        {
+          "heading": "5. Your enquiries and requests",
+          "paragraphs": [
+            "Use Get help to ask about an order-related privacy concern, request correction of inaccurate information or ask how to exercise an applicable data-protection right. Requests may require identity verification and may be subject to legal retention obligations.",
+            "Savt account information and membership functions may also be governed by Savt's separate privacy notice and account terms."
+          ]
+        },
+        {
+          "heading": "6. Updates to this notice",
+          "paragraphs": [
+            "The approved Privacy Notice will display its effective date and version. Material changes may require updated notice or acknowledgement where required. This preview draft is not a published policy and does not record customer acceptance."
+          ]
+        }
+      ]
+    }
+  ],
+  "reviewRequired": [
+    "Confirm legal merchant/service operator identity and corporate details",
+    "Confirm official contact/privacy officer or support contact route",
+    "Approve final cancellation/refund business and statutory wording",
+    "Confirm delivery availability, delivery evidence and escalation wording",
+    "Confirm privacy retention, data sharing and applicable PDPA notices",
+    "Publish only approved content with version/effective date and server-side acceptance enforcement"
+  ]
+}

@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import { CheckoutPolicyPayment } from "./CheckoutPolicyPayment";
 import { PolicyGatewayProvider } from "./context";
 import type { PolicyGateway } from "./contracts";
+import { PolicyPreviewProvider } from "./preview-context";
+import { draftPolicyPreview } from "./preview/bundle";
 
 const props = {
   quoteId: "quote-one",
@@ -12,6 +14,23 @@ const props = {
 };
 
 describe("checkout policy agreement", () => {
+  it("keeps draft preview reading available while consent and payment remain inactive", () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        PolicyPreviewProvider,
+        { bundle: draftPolicyPreview },
+        createElement(CheckoutPolicyPayment, props),
+      ),
+    );
+    expect(html).toContain("Legal &amp; Policies");
+    expect(html).toContain(
+      "Draft policies for review. No acceptance is recorded.",
+    );
+    expect(html).toContain("Payments are disabled in this restricted preview.");
+    expect(html).not.toContain('type="checkbox"');
+    expect(html).not.toContain("Policies are not available yet.");
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>Proceed to Payment/);
+  });
   it("offers the policy centre without a consent control or unavailable reading links when acceptance is inactive", () => {
     const html = renderToStaticMarkup(
       createElement(CheckoutPolicyPayment, props),

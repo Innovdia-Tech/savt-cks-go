@@ -17,6 +17,7 @@ import {
   type PolicyKind,
   type PublishedPolicy,
 } from "./contracts";
+import { usePolicyPreview, type DraftPolicy } from "./preview-context";
 import "./legal.css";
 
 type PolicyRead = {
@@ -74,6 +75,61 @@ function PolicyReader({ policy }: { policy: PublishedPolicy }) {
   );
 }
 
+function DraftPolicyReader({ policy }: { policy: DraftPolicy }) {
+  const sectionPrefix = useId();
+  const sectionHeadings = useRef<Array<HTMLHeadingElement | null>>([]);
+  return (
+    <article className="legal-reader legal-reader--draft">
+      <div className="legal-draft-metadata">
+        <span className="ui-status ui-status--warning legal-draft-badge">
+          DRAFT · NOT EFFECTIVE
+        </span>
+        <span className="legal-read-time">{policy.time}</span>
+      </div>
+      <p className="legal-reader-subtitle">{policy.subtitle}</p>
+      <details className="legal-toc">
+        <summary>Jump to section</summary>
+        <nav aria-label="Policy sections">
+          {policy.sections.map((section, index) => (
+            <button
+              key={section.heading}
+              type="button"
+              className="customer-button"
+              onClick={() => {
+                const heading = sectionHeadings.current[index];
+                heading?.scrollIntoView({ block: "start" });
+                heading?.focus({ preventScroll: true });
+              }}
+            >
+              {section.heading}
+            </button>
+          ))}
+        </nav>
+      </details>
+      {policy.sections.map((section, index) => (
+        <section
+          key={section.heading}
+          className="legal-section"
+          aria-labelledby={`${sectionPrefix}-${index}`}
+        >
+          <h3
+            ref={(element) => {
+              sectionHeadings.current[index] = element;
+            }}
+            id={`${sectionPrefix}-${index}`}
+            tabIndex={-1}
+          >
+            {section.heading}
+          </h3>
+          {section.paragraphs.map((paragraph, paragraphIndex) => (
+            <p key={paragraphIndex}>{paragraph}</p>
+          ))}
+        </section>
+      ))}
+    </article>
+  );
+}
+
 export function PolicyCentre({
   gateway,
   policies,
@@ -82,6 +138,10 @@ export function PolicyCentre({
   returnLabel,
   fallbackFocus,
 }: PolicyCentreProps) {
+  const preview = usePolicyPreview();
+  // Drafts are a preview-only source, never a replacement for server versions.
+  const draftPolicies =
+    !gateway && policies === undefined ? preview?.policies : undefined;
   const [selected, setSelected] = useState<PolicyKind | null>(
     initialPolicy ?? null,
   );
@@ -117,7 +177,12 @@ export function PolicyCentre({
   >({});
   const lastPolicy = useRef<PolicyKind | null>(null);
   const titleId = useId();
-  const heading = selected ? POLICY_TITLES[selected] : "Legal & Policies";
+  const selectedDraft = draftPolicies?.find(
+    (policy) => policy.kind === selected,
+  );
+  const heading = selected
+    ? (selectedDraft?.title ?? POLICY_TITLES[selected])
+    : "Legal & Policies";
 
   const back = () => {
     if (selected) setSelected(null);
@@ -211,7 +276,7 @@ export function PolicyCentre({
   return (
     <dialog
       ref={dialog}
-      className="legal-dialog"
+      className={`legal-dialog${selected ? " legal-dialog--reader" : ""}`}
       aria-modal="true"
       aria-labelledby={titleId}
       onCancel={(event) => {
@@ -223,28 +288,27 @@ export function PolicyCentre({
       }}
     >
       <header className="legal-header">
-        <div className="legal-toolbar">
-          {selected && (
-            <button
-              type="button"
-              className="customer-button legal-back"
-              onClick={back}
-            >
-              <span aria-hidden="true">←</span> Back to Legal &amp; Policies
-            </button>
-          )}
+        {selected && (
           <button
             type="button"
-            className="customer-button legal-close"
-            aria-label="Close Legal & Policies"
-            onClick={onClose}
+            className="customer-button legal-back"
+            aria-label="Back to Legal & Policies"
+            onClick={back}
           >
-            <span aria-hidden="true">×</span>
+            <span aria-hidden="true">‹</span>
           </button>
-        </div>
+        )}
         <h2 id={titleId} ref={title} tabIndex={-1}>
           {heading}
         </h2>
+        <button
+          type="button"
+          className="customer-button legal-close"
+          aria-label="Close Legal & Policies"
+          onClick={onClose}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
       </header>
 
       <div
@@ -275,14 +339,34 @@ export function PolicyCentre({
           </div>
         )}
 
-        {!selected && read.phase === "ready" && read.policies.length === 0 && (
-          <p className="legal-feedback" role="status">
-            Published policies will appear here when available.
-          </p>
+        {!selected && draftPolicies && (
+          <div className="legal-hub-intro">
+            <p>Shopping, delivery, refunds and privacy—explained clearly.</p>
+            <span className="ui-status ui-status--warning legal-draft-badge">
+              DRAFT · REVIEW ONLY
+            </span>
+            <p className="legal-draft-note">
+              Preview content only. No customer acceptance is recorded.
+            </p>
+          </div>
         )}
 
+        {!selected &&
+          !draftPolicies &&
+          read.phase === "ready" &&
+          read.policies.length === 0 && (
+            <p className="legal-feedback" role="status">
+              Published policies will appear here when available.
+            </p>
+          )}
+
         {selected ? (
-          selectedPolicy ? (
+          selectedDraft ? (
+            <DraftPolicyReader
+              key={selectedDraft.kind}
+              policy={selectedDraft}
+            />
+          ) : selectedPolicy ? (
             <PolicyReader policy={selectedPolicy} />
           ) : (
             read.phase === "ready" && (
@@ -292,8 +376,9 @@ export function PolicyCentre({
             )
           )
         ) : (
-          <ul className="customer-card legal-policy-list">
+          <ul className="legal-policy-list">
             {POLICY_KINDS.map((kind) => {
+              const draft = draftPolicies?.find((entry) => entry.kind === kind);
               const policy =
                 read.phase === "ready"
                   ? read.policies.find((entry) => entry.kind === kind)
@@ -306,7 +391,7 @@ export function PolicyCentre({
                     }}
                     type="button"
                     className="customer-button legal-policy-row"
-                    disabled={!policy}
+                    disabled={!policy && !draft}
                     onClick={() => {
                       lastPolicy.current = kind;
                       setSelected(kind);
@@ -314,19 +399,21 @@ export function PolicyCentre({
                   >
                     <span>
                       <span className="legal-policy-title">
-                        {POLICY_TITLES[kind]}
+                        {draft?.title ?? POLICY_TITLES[kind]}
                       </span>
                       <span className="legal-policy-state">
-                        {policy
-                          ? `Version ${policy.version}`
-                          : read.phase === "ready"
-                            ? "Not published yet"
-                            : read.phase === "loading"
-                              ? "Checking publication…"
-                              : "Unavailable"}
+                        {draft
+                          ? draft.subtitle
+                          : policy
+                            ? `Version ${policy.version}`
+                            : read.phase === "ready"
+                              ? "Not published yet"
+                              : read.phase === "loading"
+                                ? "Checking publication…"
+                                : "Unavailable"}
                       </span>
                     </span>
-                    {policy && (
+                    {(policy || draft) && (
                       <span className="legal-chevron" aria-hidden="true">
                         ›
                       </span>
@@ -339,11 +426,16 @@ export function PolicyCentre({
         )}
       </div>
 
-      {returnLabel && (
+      {(returnLabel || draftPolicies) && (
         <footer className="legal-footer">
-          <button type="button" className="customer-button" onClick={onClose}>
-            {returnLabel}
-          </button>
+          {draftPolicies && (
+            <p>CKS GO · Restricted preview — policies are not published</p>
+          )}
+          {returnLabel && (
+            <button type="button" className="customer-button" onClick={onClose}>
+              {returnLabel}
+            </button>
+          )}
         </footer>
       )}
     </dialog>

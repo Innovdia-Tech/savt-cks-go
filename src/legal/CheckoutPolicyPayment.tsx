@@ -10,6 +10,7 @@ import { PolicyAcceptanceController } from "./state";
 import { POLICY_TITLES, type PolicyKind } from "./contracts";
 import { PolicyCentre, PolicyEntry } from "./PolicyCentre";
 import { usePolicyGateway } from "./context";
+import { usePolicyPreview } from "./preview-context";
 import "./checkout-policy.css";
 
 // Checkout owns this pre-payment gate; provider, payment/retry and host bridge
@@ -26,6 +27,7 @@ export function CheckoutPolicyPayment({
   retryingInitiation?: boolean;
 }) {
   const gateway = usePolicyGateway();
+  const preview = usePolicyPreview();
   const controller = useMemo(
     () => new PolicyAcceptanceController(quoteId, gateway),
     [quoteId, gateway],
@@ -47,7 +49,8 @@ export function CheckoutPolicyPayment({
     return () => controller.dispose();
   }, [controller]);
   const proceed = async () => {
-    if (inFlight.current || !controller.getSnapshot().canProceed) return;
+    if (preview || inFlight.current || !controller.getSnapshot().canProceed)
+      return;
     inFlight.current = true;
     setProceeding(true);
     try {
@@ -86,9 +89,11 @@ export function CheckoutPolicyPayment({
             onOpen={() => setReading("centre")}
           />
           <p>
-            {gateway
-              ? "View available policies."
-              : "Policies are not available yet."}
+            {preview
+              ? "Draft policies for review. No acceptance is recorded."
+              : gateway
+                ? "View available policies."
+                : "Policies are not available yet."}
           </p>
         </div>
       )}
@@ -164,7 +169,7 @@ export function CheckoutPolicyPayment({
       <button
         type="button"
         className="customer-button customer-primary payment-action"
-        disabled={!state.canProceed || busy}
+        disabled={Boolean(preview) || !state.canProceed || busy}
         aria-busy={proceeding || undefined}
         onClick={() => void proceed()}
       >
@@ -180,6 +185,11 @@ export function CheckoutPolicyPayment({
           </span>
         )}
       </button>
+      {preview && (
+        <p className="legal-checkout__preview-note">
+          Payments are disabled in this restricted preview.
+        </p>
+      )}
       {reading && (
         <PolicyCentre
           gateway={gateway}

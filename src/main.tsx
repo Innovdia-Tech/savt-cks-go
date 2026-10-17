@@ -44,6 +44,11 @@ async function start() {
   try {
     const production = import.meta.env.PROD;
     const config = loadRuntimeConfig(import.meta.env, production);
+    // Draft content is compiled only into the explicitly restricted preview build.
+    const PolicyPreviewBoundary =
+      import.meta.env.MODE === "preview01"
+        ? (await import("./legal/preview/Boundary")).PolicyPreviewBoundary
+        : React.Fragment;
     const api = config.developmentApi
       ? new DevelopmentCustomerApi(production)
       : new CustomerApiClient(config.apiOrigin);
@@ -213,10 +218,12 @@ async function start() {
                       origin={config.apiOrigin}
                       session={session}
                     >
-                      <App
-                        onLogout={() => void session.logout()}
-                        embeddedHost={embeddedHost}
-                      />
+                      <PolicyPreviewBoundary>
+                        <App
+                          onLogout={() => void session.logout()}
+                          embeddedHost={embeddedHost}
+                        />
+                      </PolicyPreviewBoundary>
                     </SupportProvider>
                   </OrdersProvider>
                 </PaymentProvider>

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --config vite.config.js --configLoader runner",
     "build": "tsc -b && tsc -p tsconfig.runtime.json && vite build --config vite.config.js --configLoader runner",
+    "build:preview01": "tsc -b && tsc -p tsconfig.runtime.json && vite build --mode preview01 --config vite.config.js --configLoader runner",
     "preview": "node runtime/preview.mjs",
     "test": "vitest run",
     "test:proxy": "vitest run runtime/server.test.mjs runtime/config.test.mjs src/api/client.test.ts",

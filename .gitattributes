@@ -4,3 +4,6 @@
 # Preserve supplied local regression evidence bytes, including PDF xref spacing.
 /verification/cat-ops-repair01/handoff/* -text
 /verification/cat-ops-repair01/handoff/*.pdf binary
+
+# Preserve management-supplied draft policy fixture bytes.
+/src/legal/preview/CKSGO_LEGAL_POLICY_PREVIEW_v01.json -text

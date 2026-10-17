@@ -1,5 +1,13 @@
 # Customer UI contract
 
+## LEGAL-UX02 restricted draft preview
+
+Management's supplied `CKSGO_LEGAL_POLICY_PREVIEW_v01.zip` supersedes the previous policy visual approval. The existing `PolicyCentre` owns a compact four-policy hub and one selected scrollable reader, with a compact header, Back, Close and section navigation. Orders help-card placement and checkout entry remain. Native dialog focus, Escape/native Back, parent scroll, Orders tab selection, basket and quote state remain with their existing owners.
+
+Only `build:preview01` (Vite mode `preview01`) imports `src/legal/preview/Boundary.tsx`. Its separate view-only context supplies the exact attached draft JSON; only `refund` is mapped to the existing `cancellation-refund` selection key. It does not construct `PublishedPolicy`, supply a `PolicyGateway`, publish records, invent dates/versions, or record acceptance. Explicit published checkout policies or a configured gateway take precedence over draft display. Standard production builds exclude the fixture content.
+
+The restricted preview shows draft status and no consent checkbox. Its final payment action is disabled and its handler cannot initiate payment while preview context exists. Existing PREVIEW01 backend restrictions remain mandatory and unchanged. The live quote journey may remain unavailable while external routing is disabled; local synthetic quote verification must not be presented as live checkout acceptance. No Production activation or backend contract change is authorized.
+
 ## CKSGO-LEGAL-UX01 policy viewing and checkout agreement
 
 Source: the CKSGO-LEGAL-UX01 task, management-approved final navigation refinement and [backend activation contract](docs/legal-ux01-backend-contract.md). Orders exposes Legal & Policies as the second compact row in its top help card, after the existing Need help? / Get help row and a subtle divider, above the current/history selector. The card is independent of order availability; if support is unconfigured, the policy row remains accessible without a dead support action. Home has no policy shortcut. The existing Profile and checkout entries and four bottom navigation items remain. `src/legal/PolicyCentre.tsx` owns the centre and plain-text reader using the shared modal foundation and native Back registration. Opening a policy retains the parent order-tab selection, checkout, basket and scroll position. Unavailable policies have no fabricated text, version or effective date.
