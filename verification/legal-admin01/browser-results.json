@@ -1,0 +1,90 @@
+{
+  "evidence": "LOCAL SYNTHETIC ONLY; no legal approval, live publication or deployment",
+  "at": "2026-10-17T09:27:41.501Z",
+  "checks": [
+    "320px: all four published readers, lists, effective dates, section jumps, overflow, Orders selection and focus PASS",
+    "320px: authorized static preview fallback, no fabricated effective date or repeated footer PASS",
+    "320px: populated basket/quote and checkout focus preserved; preview payment disabled; no acceptance checkbox PASS",
+    "390px: all four published readers, lists, effective dates, section jumps, overflow, Orders selection and focus PASS",
+    "390px: authorized static preview fallback, no fabricated effective date or repeated footer PASS",
+    "390px: populated basket/quote and checkout focus preserved; preview payment disabled; no acceptance checkbox PASS",
+    "430px: all four published readers, lists, effective dates, section jumps, overflow, Orders selection and focus PASS",
+    "430px: authorized static preview fallback, no fabricated effective date or repeated footer PASS",
+    "430px: populated basket/quote and checkout focus preserved; preview payment disabled; no acceptance checkbox PASS"
+  ],
+  "requests": [
+    {
+      "width": 320,
+      "mode": "published",
+      "method": "GET",
+      "path": "/api/v1/customer/legal-policies"
+    },
+    {
+      "width": 320,
+      "mode": "draft",
+      "method": "GET",
+      "path": "/api/v1/customer/legal-policies"
+    },
+    {
+      "width": 320,
+      "mode": "error",
+      "method": "GET",
+      "path": "/api/v1/customer/legal-policies"
+    },
+    {
+      "width": 320,
+      "mode": "published",
+      "method": "GET",
+      "path": "/api/v1/customer/legal-policies"
+    },
+    {
+      "width": 390,
+      "mode": "published",
+      "method": "GET",
+      "path": "/api/v1/customer/legal-policies"
+    },
+    {
+      "width": 390,
+      "mode": "draft",
+      "method": "GET",
+      "path": "/api/v1/customer/legal-policies"
+    },
+    {
+      "width": 390,
+      "mode": "error",
+      "method": "GET",
+      "path": "/api/v1/customer/legal-policies"
+    },
+    {
+      "width": 390,
+      "mode": "published",
+      "method": "GET",
+      "path": "/api/v1/customer/legal-policies"
+    },
+    {
+      "width": 430,
+      "mode": "published",
+      "method": "GET",
+      "path": "/api/v1/customer/legal-policies"
+    },
+    {
+      "width": 430,
+      "mode": "draft",
+      "method": "GET",
+      "path": "/api/v1/customer/legal-policies"
+    },
+    {
+      "width": 430,
+      "mode": "error",
+      "method": "GET",
+      "path": "/api/v1/customer/legal-policies"
+    },
+    {
+      "width": 430,
+      "mode": "published",
+      "method": "GET",
+      "path": "/api/v1/customer/legal-policies"
+    }
+  ],
+  "errors": []
+}

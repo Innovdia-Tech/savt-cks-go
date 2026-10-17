@@ -113,6 +113,13 @@ Buttons/fields use 14px radii, cards 16px, chips/badges full pills, and sheets 2
 
 ## Components
 
+LEGAL-ADMIN01 reuses the LEGAL-UX03 reader for HQ-published structured content.
+Its compact overview shows the authoritative effective date and version, followed
+by the same collapsed section navigation. Paragraphs and semantic lists share the
+existing body rhythm and tokens. No new palette, shell, badge or repeated footer
+is introduced; preview-only fixture readers retain their accepted description and
+reading-time presentation.
+
 LEGAL-UX02 establishes the approved compact Legal & Policies presentation. Follow the management-supplied preview reference: a content-height policy centre with four compact title/subtitle rows, then one dedicated reader with an independently scrolling body. Use one compact header with 44px Back/Close controls and a wrapping 20px title; the reader is bounded to 88dvh (740px on larger screens). Mobile uses the existing sheet radius and bottom placement. Section headings and a collapsed Jump to section control organize long text. LEGAL-UX03 removes draft badges and the repeated preview footer; reading time sits beside the short description, with no reserved badge space. Only the checkout return action retains a footer. Published dates remain backend-authoritative; preview records have no invented dates or status. Current CKS tokens and the 430px shell remain authoritative.
 
 CUST-RECEIPT01 uses the existing compact Orders card variant for the Order Detail hero, Orders support row and current/history selector: 12px outer corners, the established #dce5eb Orders border and white surface, without added shadow. The hero has 12px internal padding; support keeps its compact 44px action; the selector clips its button surfaces to the rounded container and retains the CKS-blue active underline. `src/orders/orders.css` owns the hero/selector variants; `src/styles.css` owns `.support-action--orders`. Existing order cards, type hierarchy, navigation, support handoff and state behavior remain unchanged. The accepted receipt brief supersedes the earlier Payment Receipt presentation: Receipt is the primary payment-proof action, while Final Sales Receipt remains a separate secondary completed-order document, as recorded in `UX-CONTRACT.md`.

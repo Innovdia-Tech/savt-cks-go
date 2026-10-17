@@ -11,6 +11,7 @@ import { POLICY_TITLES, type PolicyKind } from "./contracts";
 import { PolicyCentre, PolicyEntry } from "./PolicyCentre";
 import { usePolicyGateway } from "./context";
 import { usePolicyPreview } from "./preview-context";
+import { usePublishedPolicyGateway } from "./published-context";
 import "./checkout-policy.css";
 
 // Checkout owns this pre-payment gate; provider, payment/retry and host bridge
@@ -27,6 +28,7 @@ export function CheckoutPolicyPayment({
   retryingInitiation?: boolean;
 }) {
   const gateway = usePolicyGateway();
+  const publishedGateway = usePublishedPolicyGateway();
   const preview = usePolicyPreview();
   const controller = useMemo(
     () => new PolicyAcceptanceController(quoteId, gateway),
@@ -91,7 +93,7 @@ export function CheckoutPolicyPayment({
           <p>
             {preview
               ? "Shopping, delivery, refunds and privacy—explained clearly."
-              : gateway
+              : gateway || publishedGateway
                 ? "View available policies."
                 : "Policies are not available yet."}
           </p>

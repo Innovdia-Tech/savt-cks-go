@@ -18,11 +18,21 @@ import {
   type PublishedPolicy,
 } from "./contracts";
 import { usePolicyPreview, type DraftPolicy } from "./preview-context";
+import { usePublishedPolicyGateway } from "./published-context";
+import {
+  parsePublishedPolicyEnvelope,
+  type PublishedPolicyDocument,
+  type PublishedPolicyGateway,
+} from "./published";
+import { PolicySections } from "./PolicySections";
 import "./legal.css";
 
+type ReadablePolicy = PublishedPolicy | PublishedPolicyDocument;
+const policyKind = (policy: ReadablePolicy) =>
+  "slug" in policy ? policy.slug : policy.kind;
 type PolicyRead = {
   phase: "loading" | "error" | "ready";
-  policies: PublishedPolicy[];
+  policies: ReadablePolicy[];
 };
 
 type PolicyCentreProps = {
@@ -76,53 +86,44 @@ function PolicyReader({ policy }: { policy: PublishedPolicy }) {
 }
 
 function DraftPolicyReader({ policy }: { policy: DraftPolicy }) {
-  const sectionPrefix = useId();
-  const sectionHeadings = useRef<Array<HTMLHeadingElement | null>>([]);
   return (
     <article className="legal-reader legal-reader--draft">
       <div className="legal-reader-overview">
         <p className="legal-reader-subtitle">{policy.subtitle}</p>
         <span className="legal-read-time">{policy.time}</span>
       </div>
-      <details className="legal-toc">
-        <summary>Jump to section</summary>
-        <nav aria-label="Policy sections">
-          {policy.sections.map((section, index) => (
-            <button
-              key={section.heading}
-              type="button"
-              className="customer-button"
-              onClick={() => {
-                const heading = sectionHeadings.current[index];
-                heading?.scrollIntoView({ block: "start" });
-                heading?.focus({ preventScroll: true });
-              }}
-            >
-              {section.heading}
-            </button>
-          ))}
-        </nav>
-      </details>
-      {policy.sections.map((section, index) => (
-        <section
-          key={section.heading}
-          className="legal-section"
-          aria-labelledby={`${sectionPrefix}-${index}`}
-        >
-          <h3
-            ref={(element) => {
-              sectionHeadings.current[index] = element;
-            }}
-            id={`${sectionPrefix}-${index}`}
-            tabIndex={-1}
-          >
-            {section.heading}
-          </h3>
-          {section.paragraphs.map((paragraph, paragraphIndex) => (
-            <p key={paragraphIndex}>{paragraph}</p>
-          ))}
-        </section>
-      ))}
+      <PolicySections
+        sections={policy.sections.map((section, index) => ({
+          id: `section-${index + 1}`,
+          heading: section.heading,
+          blocks: section.paragraphs.map((text) => ({
+            type: "paragraph",
+            text,
+          })),
+        }))}
+      />
+    </article>
+  );
+}
+
+function PublishedDocumentReader({
+  policy,
+}: {
+  policy: PublishedPolicyDocument;
+}) {
+  return (
+    <article className="legal-reader">
+      <div className="legal-reader-overview">
+        <p className="legal-reader-subtitle">
+          Effective{" "}
+          <time dateTime={policy.effectiveAt}>
+            {policyDate.format(new Date(policy.effectiveAt))}
+          </time>{" "}
+          (MYT)
+        </p>
+        <span className="legal-read-time">Version {policy.version}</span>
+      </div>
+      <PolicySections sections={policy.sections} />
     </article>
   );
 }
@@ -136,18 +137,17 @@ export function PolicyCentre({
   fallbackFocus,
 }: PolicyCentreProps) {
   const preview = usePolicyPreview();
-  // Drafts are a preview-only source, never a replacement for server versions.
-  const draftPolicies =
-    !gateway && policies === undefined ? preview?.policies : undefined;
+  const publishedGateway = usePublishedPolicyGateway();
+  const source = gateway ?? publishedGateway;
   const [selected, setSelected] = useState<PolicyKind | null>(
     initialPolicy ?? null,
   );
   const [retry, setRetry] = useState(0);
   const [loaded, setLoaded] = useState<
-    PolicyRead & { gateway?: PolicyGateway }
+    PolicyRead & { gateway?: PolicyGateway | PublishedPolicyGateway }
   >(() => ({
-    gateway,
-    phase: gateway ? "loading" : "ready",
+    gateway: source,
+    phase: source ? "loading" : "ready",
     policies: [],
   }));
   const supplied = useMemo<PolicyRead | undefined>(() => {
@@ -160,12 +160,25 @@ export function PolicyCentre({
   }, [policies]);
   const read: PolicyRead =
     supplied ??
-    (loaded.gateway === gateway
+    (loaded.gateway === source
       ? loaded
       : {
-          phase: gateway ? "loading" : "ready",
+          phase: source ? "loading" : "ready",
           policies: [],
         });
+  // Existing authorized preview fixtures are view-only. They cannot replace a
+  // publication, explicit checkout version set, pending read or failed request.
+  const draftPolicies =
+    !gateway && policies === undefined && read.phase === "ready"
+      ? preview?.policies.filter(
+          (draft) =>
+            !read.policies.some((policy) => policyKind(policy) === draft.kind),
+        )
+      : undefined;
+  const selectedPolicy =
+    read.phase === "ready"
+      ? read.policies.find((policy) => policyKind(policy) === selected)
+      : undefined;
   const dialog = useRef<HTMLDialogElement>(null);
   const title = useRef<HTMLHeadingElement>(null);
   const body = useRef<HTMLDivElement>(null);
@@ -178,7 +191,9 @@ export function PolicyCentre({
     (policy) => policy.kind === selected,
   );
   const heading = selected
-    ? (selectedDraft?.title ?? POLICY_TITLES[selected])
+    ? selectedPolicy && "title" in selectedPolicy
+      ? selectedPolicy.title
+      : (selectedDraft?.title ?? POLICY_TITLES[selected])
     : "Legal & Policies";
 
   const back = () => {
@@ -189,31 +204,33 @@ export function PolicyCentre({
   useDeliveryBack(back, true, true, selected);
 
   useEffect(() => {
-    if (supplied || !gateway) return;
+    if (supplied || !source) return;
     const controller = new AbortController();
     let active = true;
     const timeout = setTimeout(() => {
       if (active) {
         controller.abort();
-        setLoaded({ gateway, phase: "error", policies: [] });
+        setLoaded({ gateway: source, phase: "error", policies: [] });
       }
     }, 15_000);
-    setLoaded({ gateway, phase: "loading", policies: [] });
+    setLoaded({ gateway: source, phase: "loading", policies: [] });
     void Promise.resolve()
       .then(() => {
         if (!controller.signal.aborted)
-          return gateway.listPublished(controller.signal);
+          return source.listPublished(controller.signal);
       })
       .then((value) => {
         if (!active || controller.signal.aborted) return;
         clearTimeout(timeout);
-        const published = parsePublishedPolicies(value);
-        setLoaded({ gateway, phase: "ready", policies: published });
+        const published = gateway
+          ? parsePublishedPolicies(value)
+          : parsePublishedPolicyEnvelope({ data: value });
+        setLoaded({ gateway: source, phase: "ready", policies: published });
       })
       .catch(() => {
         clearTimeout(timeout);
         if (active && !controller.signal.aborted) {
-          setLoaded({ gateway, phase: "error", policies: [] });
+          setLoaded({ gateway: source, phase: "error", policies: [] });
         }
       });
     return () => {
@@ -221,7 +238,7 @@ export function PolicyCentre({
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [gateway, retry, supplied]);
+  }, [gateway, source, retry, supplied]);
 
   useLayoutEffect(() => {
     const element = dialog.current;
@@ -264,11 +281,6 @@ export function PolicyCentre({
       title.current?.focus({ preventScroll: true });
     }
   }, [selected]);
-
-  const selectedPolicy =
-    read.phase === "ready"
-      ? read.policies.find((policy) => policy.kind === selected)
-      : undefined;
 
   return (
     <dialog
@@ -321,12 +333,16 @@ export function PolicyCentre({
         {read.phase === "error" && (
           <div role="alert" className="customer-card legal-feedback">
             <p>We couldn't load the policies.</p>
-            {gateway && !supplied && (
+            {source && !supplied && (
               <button
                 type="button"
                 className="customer-button"
                 onClick={() => {
-                  setLoaded({ gateway, phase: "loading", policies: [] });
+                  setLoaded({
+                    gateway: source,
+                    phase: "loading",
+                    policies: [],
+                  });
                   setRetry((attempt) => attempt + 1);
                 }}
               >
@@ -358,7 +374,14 @@ export function PolicyCentre({
               policy={selectedDraft}
             />
           ) : selectedPolicy ? (
-            <PolicyReader policy={selectedPolicy} />
+            "slug" in selectedPolicy ? (
+              <PublishedDocumentReader
+                key={`${selectedPolicy.slug}-${selectedPolicy.version}`}
+                policy={selectedPolicy}
+              />
+            ) : (
+              <PolicyReader policy={selectedPolicy} />
+            )
           ) : (
             read.phase === "ready" && (
               <div className="customer-card legal-empty">
@@ -372,7 +395,7 @@ export function PolicyCentre({
               const draft = draftPolicies?.find((entry) => entry.kind === kind);
               const policy =
                 read.phase === "ready"
-                  ? read.policies.find((entry) => entry.kind === kind)
+                  ? read.policies.find((entry) => policyKind(entry) === kind)
                   : undefined;
               return (
                 <li key={kind}>
@@ -390,7 +413,9 @@ export function PolicyCentre({
                   >
                     <span>
                       <span className="legal-policy-title">
-                        {draft?.title ?? POLICY_TITLES[kind]}
+                        {policy && "title" in policy
+                          ? policy.title
+                          : (draft?.title ?? POLICY_TITLES[kind])}
                       </span>
                       <span className="legal-policy-state">
                         {draft

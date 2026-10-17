@@ -1,5 +1,21 @@
 # Customer UI contract
 
+## LEGAL-ADMIN01 published reader integration
+
+`PublishedPolicyProvider` supplies the existing PolicyCentre with the authenticated,
+read-only `/api/v1/customer/legal-policies` projection. It is independent of the
+unconfigured checkout acceptance provider. Structured headings, paragraphs and lists
+reuse the LEGAL-UX03 compact scrolling reader and section navigation. Actual
+publications show the server effective date in Malaysia time and version; there is
+no fabricated published/updated date. Empty and failed reads are distinct, and Retry
+does not alter payment eligibility. See [the integration contract](docs/legal-admin01-reader-integration.md).
+
+Normal builds read published text only. The separately authorized preview boundary
+retains static review fixtures only for unpublished slugs after a successful read;
+loading/errors never fall back and publications always win. Saved HQ draft previews
+remain staff-protected. Existing Orders, checkout, focus, scroll and preview payment
+guards remain authoritative.
+
 ## LEGAL-UX02 restricted draft preview
 
 Management's supplied `CKSGO_LEGAL_POLICY_PREVIEW_v01.zip` supersedes the previous policy visual approval. The existing `PolicyCentre` owns a compact four-policy hub and one selected scrollable reader, with a compact header, Back, Close and section navigation. Orders help-card placement and checkout entry remain. Native dialog focus, Escape/native Back, parent scroll, Orders tab selection, basket and quote state remain with their existing owners.

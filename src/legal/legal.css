@@ -244,6 +244,26 @@
   margin-bottom: 0;
 }
 
+.legal-section ol,
+.legal-section ul {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-5);
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+
+.legal-section ol {
+  list-style-type: decimal;
+}
+
+.legal-section ul {
+  list-style-type: disc;
+}
+
+.legal-section li + li {
+  margin-top: var(--space-2);
+}
+
 .legal-metadata {
   padding: var(--space-3);
 }

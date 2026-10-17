@@ -37,6 +37,8 @@ import { googlePinMapAdapter } from "./location/DeliveryPinMap";
 import { SupportProvider } from "./support/context";
 import { BasketApi } from "./basket/api";
 import { BasketPersistence } from "./basket/persistence";
+import { PublishedPolicyApi } from "./legal/published";
+import { PublishedPolicyProvider } from "./legal/published-context";
 
 const root = createRoot(document.getElementById("root")!);
 
@@ -69,6 +71,7 @@ async function start() {
     const session = new CustomerSessionController(api, bridge, {
       entryMode: embeddedHost ? "embedded" : "standalone",
     });
+    const publishedPolicies = new PublishedPolicyApi(config.apiOrigin, session);
 
     const development =
       import.meta.env.DEV && config.developmentApi
@@ -219,10 +222,12 @@ async function start() {
                       session={session}
                     >
                       <PolicyPreviewBoundary>
-                        <App
-                          onLogout={() => void session.logout()}
-                          embeddedHost={embeddedHost}
-                        />
+                        <PublishedPolicyProvider gateway={publishedPolicies}>
+                          <App
+                            onLogout={() => void session.logout()}
+                            embeddedHost={embeddedHost}
+                          />
+                        </PublishedPolicyProvider>
                       </PolicyPreviewBoundary>
                     </SupportProvider>
                   </OrdersProvider>
