@@ -524,7 +524,8 @@ describe("real cart and trusted quote presentation", () => {
         onBrowse: () => {},
       } as never),
     );
-    expect(ready).toMatch(/Pay (?:RM|MYR).*14\.32/);
+    expect(ready).toContain("Proceed to Payment");
+    expect(ready).toMatch(/(?:RM|MYR).*14\.32/);
     expect(ready).not.toContain("memory-only-quote-token");
 
     const frozen = renderToStaticMarkup(

@@ -69,6 +69,20 @@
   gap: 12px;
   margin-top: 8px;
 }
+.orders-help-card > .support-action--orders {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+}
+.orders-help-card > .support-action + .orders-policy-row {
+  border-top: 1px solid var(--color-border);
+}
+.orders-policy-row > .legal-entry.customer-button {
+  border: 0;
+  border-radius: 0;
+  padding-inline: 0;
+}
 .orders-header-refresh {
   border: 0;
   color: var(--color-text-muted);

@@ -289,6 +289,8 @@ describe("customer orders presentation", () => {
       } as never),
     );
     expect(html).toContain(copy);
+    expect(html).toContain('aria-haspopup="dialog"');
+    expect(html).toContain("Legal &amp; Policies");
   });
 
   it("renders an actionable empty history", () => {
@@ -306,6 +308,8 @@ describe("customer orders presentation", () => {
       } as never),
     );
     expect(html).toContain("No orders yet");
+    expect(html).toContain("Legal &amp; Policies");
+    expect(html).not.toContain("Get help</button>");
     expect(html).toContain("ui-system-state--empty");
     expect(html).toContain("Browse products");
     expect(html).toContain("<svg");
@@ -333,6 +337,13 @@ describe("customer orders presentation", () => {
       );
       expect(html).toContain("Need help?");
       expect(html).toContain("Get help</button>");
+      expect(html).toContain('aria-label="Help and policies"');
+      expect(html.indexOf("Get help</button>")).toBeLessThan(
+        html.indexOf("Legal &amp; Policies"),
+      );
+      expect(html.indexOf("Legal &amp; Policies")).toBeLessThan(
+        html.indexOf(total ? "orders-status-tabs" : "No orders yet"),
+      );
       expect(html.indexOf("support-action")).toBeLessThan(
         html.indexOf(total ? "orders-status-tabs" : "No orders yet"),
       );

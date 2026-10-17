@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Local policy UX verification</title>
+    <style>
+      body {
+        margin: 16px;
+        font: 14px system-ui;
+        background: #eaf2f6;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      label {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      select {
+        min-height: 44px;
+      }
+      iframe {
+        display: block;
+        border: 1px solid #b7cbd6;
+        background: white;
+        height: 844px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>LOCAL UI TEST · synthetic data only</strong>
+      <label
+        >Viewport width
+        <select id="width">
+          <option>320</option>
+          <option>390</option>
+          <option>430</option>
+          <option>768</option>
+          <option>1280</option>
+        </select></label
+      >
+      <label
+        >Screen
+        <select id="screen">
+          <option value="app">Embedded shopping</option>
+          <option value="required">Required agreement fixture</option>
+          <option value="pending">Delayed requirement fixture</option>
+          <option value="offline">Unavailable requirement fixture</option>
+        </select></label
+      >
+    </header>
+    <iframe
+      id="preview"
+      title="CKS Go responsive preview"
+      width="320"
+      src="./polish-app.html?scenario=cust-shop01r&amp;support=fixture"
+    ></iframe>
+    <script>
+      const preview = document.getElementById("preview");
+      document.getElementById("width").addEventListener("change", (event) => {
+        preview.width = event.target.value;
+      });
+      document.getElementById("screen").addEventListener("change", (event) => {
+        preview.src =
+          event.target.value === "app"
+            ? "./polish-app.html?scenario=cust-shop01r&support=fixture"
+            : "./harness.html?scenario=" + event.target.value;
+      });
+    </script>
+  </body>
+</html>

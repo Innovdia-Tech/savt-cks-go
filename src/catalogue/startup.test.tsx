@@ -83,6 +83,9 @@ describe("authenticated embedded startup presentation", () => {
       expect(html).not.toContain("Getting CKS Go ready…");
       expect(html).not.toContain("cks-go-logo");
       expect(html).not.toContain("Set delivery location");
+      expect(html).not.toMatch(
+        /<button[^>]*aria-haspopup="dialog"[^>]*>Legal &amp; Policies/,
+      );
     },
   );
 
@@ -102,6 +105,9 @@ describe("authenticated embedded startup presentation", () => {
       });
       expect(html).toContain("Set delivery location");
       expect(html).not.toContain("Getting CKS Go ready…");
+      expect(html).not.toMatch(
+        /<button[^>]*aria-haspopup="dialog"[^>]*>Legal &amp; Policies/,
+      );
     },
   );
 

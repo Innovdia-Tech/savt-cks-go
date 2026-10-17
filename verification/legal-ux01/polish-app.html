@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Local embedded CKS Go preview</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Local synthetic host fixture only. Never imported by the product entry.
+      window.SavtCksGoBridge = { postMessage() {} };
+      // Optional local support fixture for inspecting the two-row Orders card.
+      if (new URLSearchParams(location.search).get("support") === "fixture") {
+        const originalFetch = window.fetch.bind(window);
+        window.fetch = (input, init) => {
+          const url = new URL(
+            input instanceof Request ? input.url : input,
+            location.href,
+          );
+          if (
+            url.origin === location.origin &&
+            url.pathname === "/api/v1/customer/support"
+          ) {
+            return Promise.resolve(
+              new Response(
+                JSON.stringify({ data: { whatsapp: "+60123456789" } }),
+                {
+                  status: 200,
+                  headers: { "Content-Type": "application/json" },
+                },
+              ),
+            );
+          }
+          return originalFetch(input, init);
+        };
+      }
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -6,6 +6,8 @@ import type {
 } from "./contracts";
 import type { OrdersController, OrdersState } from "./state";
 import { SupportAction } from "../support/SupportAction";
+import { PolicyLink } from "../legal/PolicyCentre";
+import { usePolicyGateway } from "../legal/context";
 import { IconButton, StatusBadge, SystemState } from "../components/ui";
 import { ReceiptIcon, RefreshIcon } from "../components/Icons";
 import {
@@ -164,9 +166,15 @@ export function OrdersScreen({
   supportWhatsApp = "",
   ...props
 }: OrdersScreenProps) {
+  const policyGateway = usePolicyGateway();
   return (
     <>
-      <SupportAction digits={supportWhatsApp} context="orders" />
+      <section className="orders-help-card" aria-label="Help and policies">
+        <SupportAction digits={supportWhatsApp} context="orders" />
+        <div className="orders-policy-row">
+          <PolicyLink gateway={policyGateway} />
+        </div>
+      </section>
       <OrdersContent {...props} />
     </>
   );

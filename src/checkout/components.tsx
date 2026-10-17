@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState, type ComponentProps } from "react";
 import { PaymentPanel } from "../payment/components";
+import { CheckoutPolicyPayment } from "../legal/CheckoutPolicyPayment";
+import { usePolicyGateway } from "../legal/context";
 import { MAX_LINE_QUANTITY, type ProcessingFee } from "./contracts";
 import { syncDialog } from "../components/ui";
 import {
@@ -513,7 +515,12 @@ function QuoteSummary({
         </p>
       )}
       {state.quotePhase === "ready" && payment?.state.phase === "ready" && (
-        <PaymentPanel {...payment} acceptedTotalMinor={quote.grandTotalMinor} />
+        <CheckoutPolicyPayment
+          key={quote.quoteId}
+          quoteId={quote.quoteId}
+          acceptedTotalMinor={quote.grandTotalMinor}
+          onInitiate={() => payment.controller.initiate()}
+        />
       )}
     </section>
   );
@@ -653,6 +660,7 @@ export function CartScreen({
   onChangeAddress?: () => void;
   checkoutActionPlacement?: "inline" | "shell";
 }) {
+  const policyGateway = usePolicyGateway();
   if (!state.lines.length && payment?.state.paymentIntentId) {
     return (
       <div className="cart-stack cart-stack--shopping">
@@ -696,10 +704,20 @@ export function CartScreen({
   );
   const paymentStatus =
     payment && payment.state.phase !== "ready" ? (
-      <PaymentPanel
-        {...payment}
-        acceptedTotalMinor={state.quote?.grandTotalMinor}
-      />
+      policyGateway && payment.state.canRetryInitiation && state.quote ? (
+        <CheckoutPolicyPayment
+          key={state.quote.quoteId}
+          quoteId={state.quote.quoteId}
+          acceptedTotalMinor={state.quote.grandTotalMinor}
+          onInitiate={() => payment.controller.initiate()}
+          retryingInitiation
+        />
+      ) : (
+        <PaymentPanel
+          {...payment}
+          acceptedTotalMinor={state.quote?.grandTotalMinor}
+        />
+      )
     ) : null;
   return (
     <div className="cart-stack cart-stack--shopping">

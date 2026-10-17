@@ -72,7 +72,8 @@
 .support-action--orders .support-action__row {
   justify-content: space-between;
 }
-.support-action--orders {
+.support-action--orders,
+.orders-help-card {
   border: 1px solid #dce5eb;
   border-radius: 12px;
   background: var(--color-surface);

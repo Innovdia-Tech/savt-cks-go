@@ -1,5 +1,13 @@
 # Customer UI contract
 
+## CKSGO-LEGAL-UX01 policy viewing and checkout agreement
+
+Source: the CKSGO-LEGAL-UX01 task, management-approved final navigation refinement and [backend activation contract](docs/legal-ux01-backend-contract.md). Orders exposes Legal & Policies as the second compact row in its top help card, after the existing Need help? / Get help row and a subtle divider, above the current/history selector. The card is independent of order availability; if support is unconfigured, the policy row remains accessible without a dead support action. Home has no policy shortcut. The existing Profile and checkout entries and four bottom navigation items remain. `src/legal/PolicyCentre.tsx` owns the centre and plain-text reader using the shared modal foundation and native Back registration. Opening a policy retains the parent order-tab selection, checkout, basket and scroll position. Unavailable policies have no fabricated text, version or effective date.
+
+`src/legal/CheckoutPolicyPayment.tsx` owns the initial checkout action presentation, with an unchecked agreement immediately above Proceed to Payment once a validated required response is available. Before that, a single Legal & Policies entry opens the directory with publication availability and a Return to checkout action, without suggesting unavailable documents can be read. Exact policy links and the agreement retain the required response's versions. `src/legal/state.ts` owns the optional server-backed gate. A configured gateway must return published effective versions and a matching server acceptance receipt bound to quote, checkout attempt and requirement. Errors, expiry, version changes and stale completions prevent progression. Server enforcement remains mandatory and is not replaced by client state.
+
+The production gateway is deliberately absent: the agreement control is hidden and acceptance is not required; the existing payment initiation delegate remains available. Checkout presents a compact policy information row instead of an inoperable checkbox. Activation requires approved policy content and backend enforcement. Payment controllers, APIs, retry/handoff and native bridge implementations are unchanged. Synthetic metadata and reader sample text exist only in local tests/verification, outside the production entry.
+
 ## Customer demo refinement — 15 October 2026
 
 Authority: the approved customer refinement and eligibility safeguards request for the 16 October demonstration. This section supersedes the earlier R2 separate receipt-copy actions and expanded checkout delivery rows. Existing identity, payment finality, transaction snapshots and save-bridge contracts remain authoritative.

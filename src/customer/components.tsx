@@ -10,6 +10,8 @@ import { editAddressName } from "../addresses/presentation";
 import { useOptionalCheckout } from "../checkout/context";
 import type { Address } from "../addresses/contracts";
 import { CustomerNotice } from "./CustomerNotice";
+import { PolicyLink } from "../legal/PolicyCentre";
+import { usePolicyGateway } from "../legal/context";
 export { CustomerDataProvider } from "./context";
 export function ProfileSummary() {
   const { state } = useCustomer();
@@ -135,6 +137,7 @@ export function CustomerProfileScreen({
 }: {
   shellOwnsTransientNotice?: boolean;
 }) {
+  const policyGateway = usePolicyGateway();
   const {
     state,
     controller,
@@ -189,6 +192,9 @@ export function CustomerProfileScreen({
     <div className="customer-surface space-y-4 px-5 py-4">
       <h1 className="text-xl font-bold">Profile &amp; addresses</h1>
       <ProfileSummary />
+      <section className="customer-card" aria-label="Legal and policies">
+        <PolicyLink gateway={policyGateway} />
+      </section>
       {state.readOnly && (
         <p role="status" className="rounded-2xl bg-slate-100 p-4 text-sm">
           Your account is read-only. You can view saved addresses but cannot
